@@ -295,3 +295,9 @@
 - [x] Corregir el problema de visualización
 - [x] Verificar que los botones de agregar/reducir stock aparezcan correctamente
 - [x] Probar flujo completo de gestión de inventario
+
+## Mejora UX: Creación Rápida de Proveedor desde Modal de Agregar Stock
+- [x] Agregar botón "Nuevo Proveedor" junto al selector de proveedores en modal de agregar stock
+- [x] Implementar modal anidado para crear proveedor sin salir del flujo de inventario
+- [x] Actualizar lista de proveedores automáticamente después de crear uno nuevo
+- [x] Seleccionar automáticamente el proveedor recién creado en el selector

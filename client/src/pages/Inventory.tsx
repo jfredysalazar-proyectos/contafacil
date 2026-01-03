@@ -21,6 +21,7 @@ export default function Inventory() {
   const [addStockDialogOpen, setAddStockDialogOpen] = useState(false);
   const [reduceStockDialogOpen, setReduceStockDialogOpen] = useState(false);
   const [adjustStockDialogOpen, setAdjustStockDialogOpen] = useState(false);
+  const [quickSupplierDialogOpen, setQuickSupplierDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   
   // Estados para formularios
@@ -36,6 +37,11 @@ export default function Inventory() {
   const [adjustStock, setAdjustStock] = useState("");
   const [adjustReason, setAdjustReason] = useState("");
   const [adjustNotes, setAdjustNotes] = useState("");
+  
+  // Estados para creación rápida de proveedor
+  const [quickSupplierName, setQuickSupplierName] = useState("");
+  const [quickSupplierEmail, setQuickSupplierEmail] = useState("");
+  const [quickSupplierPhone, setQuickSupplierPhone] = useState("");
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -86,6 +92,18 @@ export default function Inventory() {
       toast.error(error.message || "Error al ajustar inventario");
     },
   });
+  
+  const createQuickSupplierMutation = trpc.suppliers.create.useMutation({
+    onSuccess: () => {
+      toast.success("Proveedor creado exitosamente");
+      utils.suppliers.list.invalidate();
+      resetQuickSupplierForm();
+      setQuickSupplierDialogOpen(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error al crear proveedor");
+    },
+  });
 
   const resetAddStockForm = () => {
     setAddQuantity("");
@@ -107,6 +125,12 @@ export default function Inventory() {
     setAdjustReason("");
     setAdjustNotes("");
     setSelectedProduct(null);
+  };
+  
+  const resetQuickSupplierForm = () => {
+    setQuickSupplierName("");
+    setQuickSupplierEmail("");
+    setQuickSupplierPhone("");
   };
 
   const handleAddStock = (e: React.FormEvent) => {
@@ -160,6 +184,20 @@ export default function Inventory() {
     setSelectedProduct(product);
     setAdjustStock(product.stock?.toString() || "0");
     setAdjustStockDialogOpen(true);
+  };
+  
+  const handleCreateQuickSupplier = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickSupplierName.trim()) {
+      toast.error("El nombre del proveedor es requerido");
+      return;
+    }
+    
+    createQuickSupplierMutation.mutate({
+      name: quickSupplierName,
+      email: quickSupplierEmail || undefined,
+      phone: quickSupplierPhone || undefined,
+    });
   };
 
   if (loading || !isAuthenticated) {
@@ -342,7 +380,19 @@ export default function Inventory() {
             </div>
             
             <div>
-              <Label htmlFor="supplier">Proveedor</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="supplier">Proveedor</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setQuickSupplierDialogOpen(true)}
+                  className="h-7 text-xs"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Nuevo
+                </Button>
+              </div>
               <Select value={selectedSupplierId} onValueChange={setSelectedSupplierId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona un proveedor" />
@@ -524,6 +574,67 @@ export default function Inventory() {
                   </>
                 ) : (
                   "Ajustar Inventario"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Modal: Crear Proveedor Rápido */}
+      <Dialog open={quickSupplierDialogOpen} onOpenChange={setQuickSupplierDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Crear Proveedor Rápido</DialogTitle>
+            <DialogDescription>
+              Agrega un nuevo proveedor sin salir del flujo de inventario
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateQuickSupplier} className="space-y-4">
+            <div>
+              <Label htmlFor="quickSupplierName">Nombre *</Label>
+              <Input
+                id="quickSupplierName"
+                value={quickSupplierName}
+                onChange={(e) => setQuickSupplierName(e.target.value)}
+                placeholder="Ej: Distribuidora XYZ"
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="quickSupplierEmail">Email</Label>
+              <Input
+                id="quickSupplierEmail"
+                type="email"
+                value={quickSupplierEmail}
+                onChange={(e) => setQuickSupplierEmail(e.target.value)}
+                placeholder="Ej: contacto@proveedor.com"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="quickSupplierPhone">Teléfono</Label>
+              <Input
+                id="quickSupplierPhone"
+                value={quickSupplierPhone}
+                onChange={(e) => setQuickSupplierPhone(e.target.value)}
+                placeholder="Ej: +57 300 123 4567"
+              />
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setQuickSupplierDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={createQuickSupplierMutation.isPending}>
+                {createQuickSupplierMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creando...
+                  </>
+                ) : (
+                  "Crear Proveedor"
                 )}
               </Button>
             </DialogFooter>
