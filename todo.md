@@ -282,3 +282,8 @@
 - [x] Mostrar alertas de stock bajo en página de inventario
 - [x] Crear tests unitarios para movimientos de inventario
 - [x] Crear tests para actualización automática de stock en ventas
+
+## Mejora de UX: Cerrar Sesión (Nueva Solicitud del Usuario)
+- [x] Agregar botón de cerrar sesión en el sidebar del DashboardLayout
+- [x] Implementar funcionalidad de logout que limpie la sesión
+- [x] Redirigir al usuario a la página de login después de cerrar sesión
