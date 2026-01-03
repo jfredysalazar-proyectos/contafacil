@@ -152,3 +152,24 @@
 - [x] Agregar enlace en página de login
 - [x] Validar expiración de tokens (15 minutos)
 - [x] Invalidar token después de uso exitoso
+
+
+## Integración AWS SES para Emails (Nueva Funcionalidad)
+- [x] Instalar SDK de AWS SES
+- [x] Crear servicio de envío de emails
+- [x] Configurar credenciales de AWS SES
+- [x] Crear plantilla HTML para email de recuperación
+- [x] Integrar envío de email en recuperación de contraseña
+- [ ] Probar envío de emails en sandbox de SES
+- [x] Documentar configuración de AWS SES
+
+## Perfil de Usuario Editable (Nueva Funcionalidad)
+- [x] Crear endpoints backend para obtener perfil
+- [x] Crear endpoint para actualizar perfil
+- [x] Crear endpoint para cambiar contraseña desde perfil
+- [x] Crear página de perfil de usuario
+- [x] Formulario de edición de información personal
+- [x] Formulario de cambio de contraseña
+- [x] Agregar enlace al perfil en navegación
+- [x] Validación de datos en frontend y backend
+- [x] Pruebas unitarias para endpoints de perfil

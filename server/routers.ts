@@ -14,6 +14,7 @@ import {
 } from "./features";
 import { pdfRouter } from "./pdf";
 import { passwordResetRouter } from "./password-reset-router";
+import { profileRouter } from "./profile-router";
 
 export const appRouter = router({
   system: systemRouter,
@@ -29,6 +30,7 @@ export const appRouter = router({
   categories: categoriesRouter,
   pdf: pdfRouter,
   passwordReset: passwordResetRouter,
+  profile: profileRouter,
 });
 
 export type AppRouter = typeof appRouter;

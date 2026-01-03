@@ -6,6 +6,7 @@ import {
   validatePasswordResetToken,
   resetPassword,
 } from "./password-reset";
+import { sendPasswordResetEmail } from "./email-service";
 
 export const passwordResetRouter = router({
   /**
@@ -22,13 +23,17 @@ export const passwordResetRouter = router({
       const token = await createPasswordResetToken(input.email);
 
       if (token) {
-        // Aquí se enviaría el email con el enlace
-        // Por ahora, retornamos el token para pruebas
-        // En producción, esto NO debe retornarse
-        const resetLink = `${process.env.VITE_FRONTEND_FORGE_API_URL || "http://localhost:3000"}/reset-password?token=${token}`;
+        // Construir enlace de recuperación
+        const baseUrl = process.env.VITE_FRONTEND_FORGE_API_URL || "http://localhost:3000";
+        const resetLink = `${baseUrl}/reset-password?token=${token}`;
         
-        // TODO: Enviar email con resetLink
-        console.log("Reset link:", resetLink);
+        // Enviar email con el enlace de recuperación
+        const emailSent = await sendPasswordResetEmail(input.email, resetLink, 15);
+        
+        if (!emailSent) {
+          // Si el email no se pudo enviar, al menos logueamos el enlace
+          console.log("[Password Reset] Email not sent, reset link:", resetLink);
+        }
       }
 
       // Por seguridad, siempre retornamos success

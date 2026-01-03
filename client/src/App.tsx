@@ -17,6 +17,7 @@ import Suppliers from "./pages/Suppliers";
 import Sales from "./pages/Sales";
 import Expenses from "./pages/Expenses";
 import Debts from "./pages/Debts";
+import Profile from "./pages/Profile";
 
 function Router() {
   return (
@@ -52,6 +53,9 @@ function Router() {
       </Route>
       <Route path="/debts">
         <AppLayout><Debts /></AppLayout>
+      </Route>
+      <Route path="/profile">
+        <AppLayout><Profile /></AppLayout>
       </Route>
       
       <Route path="/404" component={NotFound} />

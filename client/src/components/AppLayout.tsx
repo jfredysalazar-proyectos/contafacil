@@ -15,6 +15,7 @@ import {
   LogOut,
   Menu,
   X,
+  UserCircle,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -41,6 +42,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     { name: "Ventas", href: "/sales", icon: ShoppingCart },
     { name: "Gastos", href: "/expenses", icon: Receipt },
     { name: "Deudas", href: "/debts", icon: DollarSign },
+    { name: "Mi Perfil", href: "/profile", icon: UserCircle },
   ];
 
   const handleLogout = () => {
