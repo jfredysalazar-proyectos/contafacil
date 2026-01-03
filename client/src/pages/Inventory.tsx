@@ -135,8 +135,23 @@ export default function Inventory() {
 
   const handleAddStock = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProduct) return;
+    console.log('handleAddStock called!');
+    console.log('selectedProduct:', selectedProduct);
+    console.log('addQuantity:', addQuantity);
+    
+    if (!selectedProduct) {
+      console.error('No product selected');
+      toast.error('No se ha seleccionado un producto');
+      return;
+    }
 
+    if (!addQuantity || parseInt(addQuantity) <= 0) {
+      console.error('Invalid quantity');
+      toast.error('La cantidad debe ser mayor a 0');
+      return;
+    }
+
+    console.log('Calling mutation...');
     addStockMutation.mutate({
       productId: selectedProduct.id,
       quantity: parseInt(addQuantity),

@@ -313,10 +313,16 @@
 - [ ] Probar validación de stock con datos reales (bloqueado por bug de inventario)
 - [ ] Crear tests unitarios para validación de stock
 
-## Bug Crítico: Modal de Agregar Stock No Funciona
-- [ ] El botón "Agregar Stock" en el modal no responde al hacer clic
-- [ ] Investigar por qué el event handler no se está ejecutando
-- [ ] El stock insertado manualmente via SQL tampoco se muestra en la interfaz
-- [ ] Revisar la consulta SQL de getInventoryByUserId para verificar que devuelve datos correctos
-- [ ] Probar con un hard refresh completo del navegador (Ctrl+Shift+R)
-- [ ] Considerar reescribir el componente de inventario desde cero si el problema persiste
+## Bug Crítico: Modal de Agregar Stock No Funciona (BLOQUEADO POR HMR)
+- [x] Revisar código del componente Inventory.tsx para identificar problemas
+- [x] Verificar que la mutación addStock esté correctamente configurada
+- [x] Verificar que el endpoint backend inventory.addStock funcione correctamente
+- [x] Revisar la función handleAddStock para ver si hay errores
+- [x] Verificar que los estados del formulario se actualicen correctamente
+- [x] Agregar logs de debugging extensivos
+- [x] Limpiar caché de Vite y node_modules
+- [x] Reiniciar servidor múltiples veces
+- [x] Probar con hard refresh del navegador
+- [ ] **CAUSA RAÍZ IDENTIFICADA**: Hot Module Replacement (HMR) de Vite no actualiza el código JavaScript en el navegador
+- [ ] **SOLUCIÓN PROPUESTA**: Reescribir componente Inventory.tsx desde cero con código más simple
+- [ ] Ver reporte completo en BUG_REPORT_INVENTORY.md
