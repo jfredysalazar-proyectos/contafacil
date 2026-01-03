@@ -1,0 +1,20 @@
+{
+  "query": "SELECT id, userId, saleNumber FROM sales ORDER BY id",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 33eHsH78PrVTUzX.935a2f0ed688 --database f6UyvHWVP2qWeDdfJX2g4J --execute SELECT id, userId, saleNumber FROM sales ORDER BY id",
+  "rows": [
+    {
+      "id": "1",
+      "userId": "25",
+      "saleNumber": "V-1767422969304"
+    },
+    {
+      "id": "30001",
+      "userId": "30001",
+      "saleNumber": "V-1767452850306"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tsaleNumber\n1\t25\tV-1767422969304\n30001\t30001\tV-1767452850306\n",
+  "stderr": "",
+  "execution_time_ms": 51
+}

@@ -236,3 +236,12 @@
 - [x] Agregar valores por defecto para datos opcionales
 - [x] Manejar correctamente paymentMethod opcional
 - [x] Probar que Ver y Descargar funcionen correctamente
+
+
+## Almacenamiento de Items de Venta (Solicitado por Usuario)
+- [x] Verificar tabla de items de venta en base de datos
+- [x] Modificar endpoint de creación de venta para guardar items
+- [x] Crear endpoint para obtener items de una venta específica
+- [x] Actualizar página de ventas para cargar items al generar PDF
+- [x] Verificar que items se muestren correctamente en comprobantes PDF
+- [x] Probar flujo completo: crear venta → ver PDF con items

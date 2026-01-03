@@ -228,6 +228,12 @@ export const salesRouter = router({
       return await dbQueries.getSaleById(input.id, ctx.user.id);
     }),
 
+  getItems: protectedProcedure
+    .input(z.object({ saleId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      return await dbQueries.getSaleItemsBySaleId(input.saleId, ctx.user.id);
+    }),
+
   create: protectedProcedure
     .input(
       z.object({

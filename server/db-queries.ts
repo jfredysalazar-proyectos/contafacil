@@ -320,6 +320,27 @@ export async function createSale(saleData: InsertSale, items: Omit<InsertSaleIte
   return saleId;
 }
 
+export async function getSaleItemsBySaleId(saleId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Verificar que la venta pertenece al usuario
+  const sale = await db
+    .select()
+    .from(sales)
+    .where(and(eq(sales.id, saleId), eq(sales.userId, userId)))
+    .limit(1);
+  
+  if (sale.length === 0) {
+    throw new Error("Sale not found or unauthorized");
+  }
+  
+  return await db
+    .select()
+    .from(saleItems)
+    .where(eq(saleItems.saleId, saleId));
+}
+
 export async function getSalesByUserId(userId: number, startDate?: Date, endDate?: Date) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

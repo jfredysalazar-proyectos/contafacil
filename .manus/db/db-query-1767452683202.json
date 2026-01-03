@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO products (userId, name, description, price, cost, stockAlert, createdAt, updatedAt) VALUES \n(1, 'Laptop HP Pavilion', 'Laptop HP Pavilion 15 pulgadas, 8GB RAM, 256GB SSD', '2500000', '2000000', 10, NOW(), NOW()),\n(1, 'Mouse Logitech', 'Mouse inalámbrico Logitech MX Master 3', '250000', '180000', 20, NOW(), NOW()),\n(1, 'Teclado Mecánico', 'Teclado mecánico RGB con switches azules', '350000', '250000', 15, NOW(), NOW())",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 33eHsH78PrVTUzX.935a2f0ed688 --database f6UyvHWVP2qWeDdfJX2g4J --execute INSERT INTO products (userId, name, description, price, cost, stockAlert, createdAt, updatedAt) VALUES \n(1, 'Laptop HP Pavilion', 'Laptop HP Pavilion 15 pulgadas, 8GB RAM, 256GB SSD', '2500000', '2000000', 10, NOW(), NOW()),\n(1, 'Mouse Logitech', 'Mouse inalámbrico Logitech MX Master 3', '250000', '180000', 20, NOW(), NOW()),\n(1, 'Teclado Mecánico', 'Teclado mecánico RGB con switches azules', '350000', '250000', 15, NOW(), NOW())",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 116
+}

@@ -1,0 +1,22 @@
+{
+  "query": "SELECT s.id as saleId, s.userId, s.saleNumber, COUNT(si.id) as itemCount FROM sales s LEFT JOIN saleItems si ON s.id = si.saleId GROUP BY s.id ORDER BY s.createdAt DESC LIMIT 5",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 33eHsH78PrVTUzX.935a2f0ed688 --database f6UyvHWVP2qWeDdfJX2g4J --execute SELECT s.id as saleId, s.userId, s.saleNumber, COUNT(si.id) as itemCount FROM sales s LEFT JOIN saleItems si ON s.id = si.saleId GROUP BY s.id ORDER BY s.createdAt DESC LIMIT 5",
+  "rows": [
+    {
+      "saleId": "30001",
+      "userId": "30001",
+      "saleNumber": "V-1767452850306",
+      "itemCount": "2"
+    },
+    {
+      "saleId": "1",
+      "userId": "25",
+      "saleNumber": "V-1767422969304",
+      "itemCount": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "saleId\tuserId\tsaleNumber\titemCount\n30001\t30001\tV-1767452850306\t2\n1\t25\tV-1767422969304\t2\n",
+  "stderr": "",
+  "execution_time_ms": 59
+}

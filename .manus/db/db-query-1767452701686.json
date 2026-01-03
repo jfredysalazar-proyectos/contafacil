@@ -1,0 +1,15 @@
+{
+  "query": "SELECT id, email, name FROM users WHERE email = 'prueba@contafacil.com'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 33eHsH78PrVTUzX.935a2f0ed688 --database f6UyvHWVP2qWeDdfJX2g4J --execute SELECT id, email, name FROM users WHERE email = 'prueba@contafacil.com'",
+  "rows": [
+    {
+      "id": "30001",
+      "email": "prueba@contafacil.com",
+      "name": "Usuario Prueba"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\tname\n30001\tprueba@contafacil.com\tUsuario Prueba\n",
+  "stderr": "",
+  "execution_time_ms": 59
+}

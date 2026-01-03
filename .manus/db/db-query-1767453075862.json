@@ -1,0 +1,54 @@
+{
+  "query": "SELECT si.*, p.name as productName FROM saleItems si LEFT JOIN products p ON si.productId = p.id ORDER BY si.createdAt DESC LIMIT 10",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 33eHsH78PrVTUzX.935a2f0ed688 --database f6UyvHWVP2qWeDdfJX2g4J --execute SELECT si.*, p.name as productName FROM saleItems si LEFT JOIN products p ON si.productId = p.id ORDER BY si.createdAt DESC LIMIT 10",
+  "rows": [
+    {
+      "id": "30002",
+      "saleId": "30001",
+      "productId": "30002",
+      "variationId": "NULL",
+      "productName": "Mouse Logitech",
+      "quantity": "1",
+      "unitPrice": "250000.00",
+      "subtotal": "250000.00",
+      "createdAt": "2026-01-03 15:07:30"
+    },
+    {
+      "id": "30001",
+      "saleId": "30001",
+      "productId": "30001",
+      "variationId": "NULL",
+      "productName": "Laptop HP Pavilion",
+      "quantity": "1",
+      "unitPrice": "2500000.00",
+      "subtotal": "2500000.00",
+      "createdAt": "2026-01-03 15:07:30"
+    },
+    {
+      "id": "1",
+      "saleId": "1",
+      "productId": "1",
+      "variationId": "NULL",
+      "productName": "Mouse Inalámbrico genius",
+      "quantity": "1",
+      "unitPrice": "34000.00",
+      "subtotal": "34000.00",
+      "createdAt": "2026-01-03 06:49:29"
+    },
+    {
+      "id": "2",
+      "saleId": "1",
+      "productId": "1",
+      "variationId": "NULL",
+      "productName": "Mouse Inalámbrico genius",
+      "quantity": "1",
+      "unitPrice": "34000.00",
+      "subtotal": "34000.00",
+      "createdAt": "2026-01-03 06:49:29"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tsaleId\tproductId\tvariationId\tproductName\tquantity\tunitPrice\tsubtotal\tcreatedAt\tproductName\n30002\t30001\t30002\tNULL\tMouse Logitech\t1\t250000.00\t250000.00\t2026-01-03 15:07:30\tMouse Logitech\n30001\t30001\t30001\tNULL\tLaptop HP Pavilion\t1\t2500000.00\t2500000.00\t2026-01-03 15:07:30\tLaptop HP Pavilion\n1\t1\t1\tNULL\tMouse Inalámbrico genius\t1\t34000.00\t34000.00\t2026-01-03 06:49:29\tMouse Inalámbrico genius\n2\t1\t1\tNULL\tMouse Inalámbrico genius\t1\t34000.00\t34000.00\t2026-01-03 06:49:29\tMouse Inalámbrico genius\n",
+  "stderr": "",
+  "execution_time_ms": 110
+}

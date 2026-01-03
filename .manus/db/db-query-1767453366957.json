@@ -1,0 +1,54 @@
+{
+  "query": "SELECT si.id, si.saleId, si.productId, si.quantity, si.unitPrice, si.subtotal, p.name as productName, s.saleNumber, s.total FROM saleItems si LEFT JOIN products p ON si.productId = p.id LEFT JOIN sales s ON si.saleId = s.id ORDER BY si.createdAt DESC LIMIT 10",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 33eHsH78PrVTUzX.935a2f0ed688 --database f6UyvHWVP2qWeDdfJX2g4J --execute SELECT si.id, si.saleId, si.productId, si.quantity, si.unitPrice, si.subtotal, p.name as productName, s.saleNumber, s.total FROM saleItems si LEFT JOIN products p ON si.productId = p.id LEFT JOIN sales s ON si.saleId = s.id ORDER BY si.createdAt DESC LIMIT 10",
+  "rows": [
+    {
+      "id": "30002",
+      "saleId": "30001",
+      "productId": "30002",
+      "quantity": "1",
+      "unitPrice": "250000.00",
+      "subtotal": "250000.00",
+      "productName": "Mouse Logitech",
+      "saleNumber": "V-1767452850306",
+      "total": "3272500.00"
+    },
+    {
+      "id": "30001",
+      "saleId": "30001",
+      "productId": "30001",
+      "quantity": "1",
+      "unitPrice": "2500000.00",
+      "subtotal": "2500000.00",
+      "productName": "Laptop HP Pavilion",
+      "saleNumber": "V-1767452850306",
+      "total": "3272500.00"
+    },
+    {
+      "id": "1",
+      "saleId": "1",
+      "productId": "1",
+      "quantity": "1",
+      "unitPrice": "34000.00",
+      "subtotal": "34000.00",
+      "productName": "Mouse Inalámbrico genius",
+      "saleNumber": "V-1767422969304",
+      "total": "80920.00"
+    },
+    {
+      "id": "2",
+      "saleId": "1",
+      "productId": "1",
+      "quantity": "1",
+      "unitPrice": "34000.00",
+      "subtotal": "34000.00",
+      "productName": "Mouse Inalámbrico genius",
+      "saleNumber": "V-1767422969304",
+      "total": "80920.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tsaleId\tproductId\tquantity\tunitPrice\tsubtotal\tproductName\tsaleNumber\ttotal\n30002\t30001\t30002\t1\t250000.00\t250000.00\tMouse Logitech\tV-1767452850306\t3272500.00\n30001\t30001\t30001\t1\t2500000.00\t2500000.00\tLaptop HP Pavilion\tV-1767452850306\t3272500.00\n1\t1\t1\t1\t34000.00\t34000.00\tMouse Inalámbrico genius\tV-1767422969304\t80920.00\n2\t1\t1\t1\t34000.00\t34000.00\tMouse Inalámbrico genius\tV-1767422969304\t80920.00\n",
+  "stderr": "",
+  "execution_time_ms": 98
+}

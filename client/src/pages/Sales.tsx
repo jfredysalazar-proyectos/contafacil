@@ -50,19 +50,27 @@ export default function Sales() {
     },
   });
 
-  const handleViewPDF = (sale: any) => {
+  const handleViewPDF = async (sale: any) => {
     if (!user) return;
     
     try {
+      // Cargar items de la venta desde la base de datos
+      const items = await utils.sales.getItems.fetch({ saleId: sale.id });
+      
       const pdfDataUrl = generateReceiptPDF(
         {
           saleNumber: sale.saleNumber || "N/A",
           saleDate: new Date(sale.saleDate),
           customerName: sale.customerId ? customers?.find(c => c.id === sale.customerId)?.name : undefined,
-          items: [], // Los items se cargarían desde la venta si los guardamos
-          subtotal: sale.subtotal || 0,
-          tax: sale.tax || 0,
-          total: sale.total || 0,
+          items: items.map((item: any) => ({
+            productName: item.productName,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            subtotal: item.subtotal,
+          })),
+          subtotal: sale.subtotal,
+          tax: sale.tax,
+          total: sale.total,
         },
         {
           name: user.name || "Negocio",
@@ -75,27 +83,43 @@ export default function Sales() {
         }
       );
       
-      // Abrir PDF en nueva pestaña
-      window.open(pdfDataUrl, '_blank');
+      // Crear elemento temporal para abrir el PDF
+      const link = document.createElement('a');
+      link.href = pdfDataUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Comprobante PDF generado');
     } catch (error) {
       console.error("Error al generar PDF:", error);
       toast.error("Error al generar comprobante PDF");
     }
   };
 
-  const handleDownloadPDF = (sale: any) => {
+  const handleDownloadPDF = async (sale: any) => {
     if (!user) return;
     
     try {
+      // Cargar items de la venta desde la base de datos
+      const items = await utils.sales.getItems.fetch({ saleId: sale.id });
+      
       const pdfDataUrl = generateReceiptPDF(
         {
           saleNumber: sale.saleNumber || "N/A",
           saleDate: new Date(sale.saleDate),
           customerName: sale.customerId ? customers?.find(c => c.id === sale.customerId)?.name : undefined,
-          items: [], // Los items se cargarían desde la venta si los guardamos
-          subtotal: sale.subtotal || 0,
-          tax: sale.tax || 0,
-          total: sale.total || 0,
+          items: items.map((item: any) => ({
+            productName: item.productName,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            subtotal: item.subtotal,
+          })),
+          subtotal: sale.subtotal,
+          tax: sale.tax,
+          total: sale.total,
         },
         {
           name: user.name || "Negocio",

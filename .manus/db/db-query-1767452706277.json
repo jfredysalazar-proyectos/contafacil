@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE products SET userId = (SELECT id FROM users WHERE email = 'prueba@contafacil.com' LIMIT 1) WHERE userId = 1",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 33eHsH78PrVTUzX.935a2f0ed688 --database f6UyvHWVP2qWeDdfJX2g4J --execute UPDATE products SET userId = (SELECT id FROM users WHERE email = 'prueba@contafacil.com' LIMIT 1) WHERE userId = 1",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 66
+}
