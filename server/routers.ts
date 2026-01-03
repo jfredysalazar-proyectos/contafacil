@@ -12,6 +12,7 @@ import {
   statsRouter,
   categoriesRouter,
 } from "./features";
+import { pdfRouter } from "./pdf";
 
 export const appRouter = router({
   system: systemRouter,
@@ -25,6 +26,7 @@ export const appRouter = router({
   debts: debtsRouter,
   stats: statsRouter,
   categories: categoriesRouter,
+  pdf: pdfRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -133,3 +133,9 @@
 - [ ] Optimización de consultas a base de datos
 - [ ] Validación de formularios
 - [ ] Manejo de errores
+
+## Tareas Prioritarias (Solicitadas por Usuario)
+- [ ] Completar todas las páginas de gestión con interfaces funcionales
+- [ ] Implementar generación de comprobantes PDF con información fiscal
+- [ ] Implementar generación de reportes financieros en PDF
+- [ ] Integrar almacenamiento S3 para todos los PDFs generados
