@@ -48,6 +48,7 @@ export default function Sales() {
   const { data: sales, isLoading } = trpc.sales.list.useQuery();
   const { data: products } = trpc.products.list.useQuery();
   const { data: customers } = trpc.customers.list.useQuery();
+  const { data: inventory } = trpc.inventory.list.useQuery();
 
   const createMutation = trpc.sales.create.useMutation({
     onSuccess: () => {
@@ -243,6 +244,27 @@ export default function Sales() {
     if (!product) return;
 
     const qty = parseInt(quantity);
+    
+    // Obtener stock disponible del inventario
+    const productInventory = inventory?.find((inv: any) => inv.id === product.id);
+    const availableStock = productInventory?.stock || 0;
+    
+    // Calcular cantidad ya agregada en items actuales
+    const currentItemQuantity = saleItems
+      .filter(item => item.productId === product.id)
+      .reduce((sum, item) => sum + item.quantity, 0);
+    
+    // Validar stock disponible
+    if (currentItemQuantity + qty > availableStock) {
+      toast.error(
+        `Stock insuficiente para ${product.name}. ` +
+        `Stock disponible: ${availableStock}, ` +
+        `ya agregado: ${currentItemQuantity}, ` +
+        `intentando agregar: ${qty}`
+      );
+      return;
+    }
+    
     const unitPrice = Number(product.price);
     const subtotal = qty * unitPrice;
 
@@ -414,11 +436,15 @@ export default function Sales() {
                             <SelectValue placeholder="Selecciona un producto" />
                           </SelectTrigger>
                           <SelectContent>
-                            {products?.map((product) => (
-                              <SelectItem key={product.id} value={product.id.toString()}>
-                                {product.name} - ${Number(product.price).toLocaleString("es-CO")}
-                              </SelectItem>
-                            ))}
+                            {products?.map((product) => {
+                              const productInventory = inventory?.find((inv: any) => inv.id === product.id);
+                              const stock = productInventory?.stock || 0;
+                              return (
+                                <SelectItem key={product.id} value={product.id.toString()}>
+                                  {product.name} - ${Number(product.price).toLocaleString("es-CO")} (Stock: {stock})
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                       </div>
@@ -596,11 +622,15 @@ export default function Sales() {
                             <SelectValue placeholder="Selecciona un producto" />
                           </SelectTrigger>
                           <SelectContent>
-                            {products?.map((product) => (
-                              <SelectItem key={product.id} value={product.id.toString()}>
-                                {product.name} - ${Number(product.price).toLocaleString("es-CO")}
-                              </SelectItem>
-                            ))}
+                            {products?.map((product) => {
+                              const productInventory = inventory?.find((inv: any) => inv.id === product.id);
+                              const stock = productInventory?.stock || 0;
+                              return (
+                                <SelectItem key={product.id} value={product.id.toString()}>
+                                  {product.name} - ${Number(product.price).toLocaleString("es-CO")} (Stock: {stock})
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                       </div>

@@ -327,6 +327,19 @@ export const salesRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { items, ...saleData } = input;
       
+      // Validar stock disponible antes de crear la venta
+      for (const item of items) {
+        const inventory = await dbQueries.getInventoryByProductId(item.productId, ctx.user.id);
+        const currentStock = inventory?.stock || 0;
+        
+        if (currentStock < item.quantity) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Stock insuficiente para ${item.productName}. Stock disponible: ${currentStock}, cantidad solicitada: ${item.quantity}`,
+          });
+        }
+      }
+      
       const saleId = await dbQueries.createSale(
         {
           ...saleData,
@@ -391,6 +404,29 @@ export const salesRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { id, items, ...saleData } = input;
+      
+      // Obtener items actuales de la venta
+      const currentItems = await dbQueries.getSaleItemsBySaleId(id, ctx.user.id);
+      
+      // Validar stock disponible considerando los items actuales
+      for (const newItem of items) {
+        const inventory = await dbQueries.getInventoryByProductId(newItem.productId, ctx.user.id);
+        const currentStock = inventory?.stock || 0;
+        
+        // Encontrar si este producto ya estaba en la venta
+        const oldItem = currentItems.find((item: any) => item.productId === newItem.productId);
+        const oldQuantity = oldItem?.quantity || 0;
+        
+        // Stock disponible = stock actual + cantidad que se va a devolver - cantidad nueva
+        const availableStock = currentStock + oldQuantity;
+        
+        if (availableStock < newItem.quantity) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Stock insuficiente para ${newItem.productName}. Stock disponible: ${availableStock}, cantidad solicitada: ${newItem.quantity}`,
+          });
+        }
+      }
       
       // Actualizar la venta
       await dbQueries.updateSale(id, ctx.user.id, saleData);

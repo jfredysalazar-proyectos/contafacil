@@ -1,0 +1,40 @@
+{
+  "query": "\nSELECT id, name, userId FROM products LIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 33eHsH78PrVTUzX.935a2f0ed688 --database f6UyvHWVP2qWeDdfJX2g4J --execute \nSELECT id, name, userId FROM products LIMIT 10;\n",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Mouse Inalámbrico genius",
+      "userId": "25"
+    },
+    {
+      "id": "30001",
+      "name": "Laptop HP Pavilion",
+      "userId": "30001"
+    },
+    {
+      "id": "30002",
+      "name": "Mouse Logitech",
+      "userId": "30001"
+    },
+    {
+      "id": "30003",
+      "name": "Teclado Mecánico",
+      "userId": "30001"
+    },
+    {
+      "id": "60001",
+      "name": "Monitor Samsung 24\"",
+      "userId": "30001"
+    },
+    {
+      "id": "60002",
+      "name": "CABLE USB IMPRESORA 1.5M",
+      "userId": "25"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tuserId\n1\tMouse Inalámbrico genius\t25\n30001\tLaptop HP Pavilion\t30001\n30002\tMouse Logitech\t30001\n30003\tTeclado Mecánico\t30001\n60001\tMonitor Samsung 24\"\t30001\n60002\tCABLE USB IMPRESORA 1.5M\t25\n",
+  "stderr": "",
+  "execution_time_ms": 56
+}

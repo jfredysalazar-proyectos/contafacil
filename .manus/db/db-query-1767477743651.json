@@ -1,0 +1,9 @@
+{
+  "query": "\n-- Insertar o actualizar stock para Laptop HP Pavilion (productId=1, userId=1)\nINSERT INTO inventory (userId, productId, stock, lastRestockDate)\nVALUES (1, 1, 5, NOW())\nON DUPLICATE KEY UPDATE \n  stock = 5,\n  lastRestockDate = NOW();\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 33eHsH78PrVTUzX.935a2f0ed688 --database f6UyvHWVP2qWeDdfJX2g4J --execute \n-- Insertar o actualizar stock para Laptop HP Pavilion (productId=1, userId=1)\nINSERT INTO inventory (userId, productId, stock, lastRestockDate)\nVALUES (1, 1, 5, NOW())\nON DUPLICATE KEY UPDATE \n  stock = 5,\n  lastRestockDate = NOW();\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 79
+}

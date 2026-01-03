@@ -1,0 +1,9 @@
+{
+  "query": "\n-- Agregar stock a todos los productos\nINSERT INTO inventory (userId, productId, stock, lastRestockDate)\nSELECT 2, id, 10, NOW()\nFROM products\nWHERE userId = 2\nON DUPLICATE KEY UPDATE stock = 10, lastRestockDate = NOW();\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 33eHsH78PrVTUzX.935a2f0ed688 --database f6UyvHWVP2qWeDdfJX2g4J --execute \n-- Agregar stock a todos los productos\nINSERT INTO inventory (userId, productId, stock, lastRestockDate)\nSELECT 2, id, 10, NOW()\nFROM products\nWHERE userId = 2\nON DUPLICATE KEY UPDATE stock = 10, lastRestockDate = NOW();\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 70
+}

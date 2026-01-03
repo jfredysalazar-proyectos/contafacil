@@ -136,10 +136,10 @@ export async function getInventoryByUserId(userId: number) {
   
   // Obtener todos los productos del usuario con su stock actual
   // Si no tienen registro en inventory, el stock es 0
-  return await db
+  const result = await db
     .select({
       id: inventory.id,
-      stock: sql<number>`COALESCE(${inventory.stock}, 0)`.as('stock'),
+      stock: inventory.stock,
       lastRestockDate: inventory.lastRestockDate,
       productId: products.id,
       productName: products.name,
@@ -155,6 +155,12 @@ export async function getInventoryByUserId(userId: number) {
     ))
     .leftJoin(productVariations, eq(inventory.variationId, productVariations.id))
     .where(eq(products.userId, userId));
+  
+  // Asegurar que stock sea 0 si es null
+  return result.map(item => ({
+    ...item,
+    stock: item.stock ?? 0
+  }));
 }
 
 export async function getLowStockItems(userId: number) {

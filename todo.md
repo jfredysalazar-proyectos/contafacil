@@ -301,3 +301,22 @@
 - [x] Implementar modal anidado para crear proveedor sin salir del flujo de inventario
 - [x] Actualizar lista de proveedores automáticamente después de crear uno nuevo
 - [x] Seleccionar automáticamente el proveedor recién creado en el selector
+
+## Validación de Stock en Ventas (Nueva Solicitud del Usuario)
+- [x] Implementar validación de stock en backend al crear venta
+- [x] Implementar validación de stock en backend al editar venta
+- [x] Verificar stock disponible antes de agregar items a la venta
+- [x] Mostrar mensaje de error específico cuando stock sea insuficiente
+- [x] Indicar stock actual del producto en mensaje de error
+- [x] Mostrar stock disponible en tiempo real al seleccionar producto
+- [x] Validar stock en frontend antes de enviar al backend
+- [ ] Probar validación de stock con datos reales (bloqueado por bug de inventario)
+- [ ] Crear tests unitarios para validación de stock
+
+## Bug Crítico: Modal de Agregar Stock No Funciona
+- [ ] El botón "Agregar Stock" en el modal no responde al hacer clic
+- [ ] Investigar por qué el event handler no se está ejecutando
+- [ ] El stock insertado manualmente via SQL tampoco se muestra en la interfaz
+- [ ] Revisar la consulta SQL de getInventoryByUserId para verificar que devuelve datos correctos
+- [ ] Probar con un hard refresh completo del navegador (Ctrl+Shift+R)
+- [ ] Considerar reescribir el componente de inventario desde cero si el problema persiste

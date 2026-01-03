@@ -1,0 +1,14 @@
+{
+  "query": "\n-- Primero obtener el ID del producto Laptop HP Pavilion\nSELECT id, userId FROM products WHERE name = 'Laptop HP Pavilion' LIMIT 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 33eHsH78PrVTUzX.935a2f0ed688 --database f6UyvHWVP2qWeDdfJX2g4J --execute \n-- Primero obtener el ID del producto Laptop HP Pavilion\nSELECT id, userId FROM products WHERE name = 'Laptop HP Pavilion' LIMIT 1;\n",
+  "rows": [
+    {
+      "id": "30001",
+      "userId": "30001"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\n30001\t30001\n",
+  "stderr": "",
+  "execution_time_ms": 125
+}
