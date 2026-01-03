@@ -326,3 +326,14 @@
 - [ ] **CAUSA RAÍZ IDENTIFICADA**: Hot Module Replacement (HMR) de Vite no actualiza el código JavaScript en el navegador
 - [ ] **SOLUCIÓN PROPUESTA**: Reescribir componente Inventory.tsx desde cero con código más simple
 - [ ] Ver reporte completo en BUG_REPORT_INVENTORY.md
+
+
+## Subir Proyecto a GitHub (Nueva Solicitud del Usuario)
+- [ ] Configurar Git en el proyecto
+- [ ] Crear archivo .gitignore apropiado
+- [ ] Hacer commit inicial con todo el código
+- [ ] Crear repositorio público en GitHub usando API
+- [ ] Configurar remote origin con token de acceso
+- [ ] Push del código al repositorio remoto
+- [ ] Verificar que el código se subió correctamente
+- [ ] Entregar URL del repositorio al usuario
