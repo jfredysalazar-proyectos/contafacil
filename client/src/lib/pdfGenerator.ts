@@ -90,8 +90,11 @@ export function generateReceiptPDF(sale: SaleData, user: UserData): string {
     yPos += 7;
   }
   
-  doc.text(`Método de pago: ${sale.paymentMethod}`, 20, yPos);
-  yPos += 15;
+  if (sale.paymentMethod) {
+    doc.text(`Método de pago: ${sale.paymentMethod}`, 20, yPos);
+    yPos += 7;
+  }
+  yPos += 10;
   
   // Tabla de productos
   doc.setFont("helvetica", "bold");
@@ -147,8 +150,8 @@ export function generateReceiptPDF(sale: SaleData, user: UserData): string {
   yPos += 5;
   doc.text("Documento generado por ContaFácil", pageWidth / 2, yPos, { align: "center" });
   
-  // Retornar PDF como base64
-  return doc.output("datauristring").split(",")[1];
+  // Retornar PDF como data URI completo
+  return doc.output("datauristring");
 }
 
 export function generateReportPDF(
@@ -270,5 +273,5 @@ export function generateReportPDF(
   doc.setFont("helvetica", "italic");
   doc.text("Documento generado por ContaFácil", pageWidth / 2, yPos, { align: "center" });
   
-  return doc.output("datauristring").split(",")[1];
+  return doc.output("datauristring");
 }

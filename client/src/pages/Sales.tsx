@@ -56,21 +56,20 @@ export default function Sales() {
     try {
       const pdfDataUrl = generateReceiptPDF(
         {
-          saleNumber: sale.saleNumber,
+          saleNumber: sale.saleNumber || "N/A",
           saleDate: new Date(sale.saleDate),
           customerName: sale.customerId ? customers?.find(c => c.id === sale.customerId)?.name : undefined,
           items: [], // Los items se cargarían desde la venta si los guardamos
-          subtotal: sale.subtotal,
-          tax: sale.tax,
-          total: sale.total,
-          paymentMethod: sale.paymentMethod,
+          subtotal: sale.subtotal || 0,
+          tax: sale.tax || 0,
+          total: sale.total || 0,
         },
         {
-          name: user.name,
+          name: user.name || "Negocio",
           email: user.email || undefined,
-          businessName: user.businessName || undefined,
-          nit: user.nit || undefined,
-          address: user.address || undefined,
+          businessName: (user as any).businessName || user.name || "Mi Negocio",
+          nit: (user as any).nit || undefined,
+          address: (user as any).address || undefined,
           phone: user.phone || undefined,
           logoUrl: (user as any).logoUrl || undefined,
         }
@@ -90,21 +89,20 @@ export default function Sales() {
     try {
       const pdfDataUrl = generateReceiptPDF(
         {
-          saleNumber: sale.saleNumber,
+          saleNumber: sale.saleNumber || "N/A",
           saleDate: new Date(sale.saleDate),
           customerName: sale.customerId ? customers?.find(c => c.id === sale.customerId)?.name : undefined,
           items: [], // Los items se cargarían desde la venta si los guardamos
-          subtotal: sale.subtotal,
-          tax: sale.tax,
-          total: sale.total,
-          paymentMethod: sale.paymentMethod,
+          subtotal: sale.subtotal || 0,
+          tax: sale.tax || 0,
+          total: sale.total || 0,
         },
         {
-          name: user.name,
+          name: user.name || "Negocio",
           email: user.email || undefined,
-          businessName: user.businessName || undefined,
-          nit: user.nit || undefined,
-          address: user.address || undefined,
+          businessName: (user as any).businessName || user.name || "Mi Negocio",
+          nit: (user as any).nit || undefined,
+          address: (user as any).address || undefined,
           phone: user.phone || undefined,
           logoUrl: (user as any).logoUrl || undefined,
         }
@@ -113,7 +111,7 @@ export default function Sales() {
       // Descargar PDF
       const link = document.createElement('a');
       link.href = pdfDataUrl;
-      link.download = `Comprobante-${sale.saleNumber}.pdf`;
+      link.download = `Comprobante-${sale.saleNumber || 'venta'}.pdf`;
       link.click();
       
       toast.success("Comprobante descargado");

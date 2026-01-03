@@ -225,3 +225,14 @@
 - [x] Agregar botón "Ver" para abrir PDF en nueva pestaña
 - [x] Agregar botón "Descargar" para descargar PDF
 - [x] Mostrar ambos botones en la tabla de ventas
+
+
+## Bug Crítico: Error al Generar PDF (Reportado por Usuario) - RESUELTO
+- [x] Investigar "internal server error" al hacer clic en botón Ver
+- [x] Investigar "descarga detenida" al hacer clic en botón Descargar
+- [x] Revisar logs del servidor para identificar el error
+- [x] Revisar consola del navegador para ver errores de JavaScript
+- [x] Corregir generación de PDF (retornar data URI completo)
+- [x] Agregar valores por defecto para datos opcionales
+- [x] Manejar correctamente paymentMethod opcional
+- [x] Probar que Ver y Descargar funcionen correctamente
