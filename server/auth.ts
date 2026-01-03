@@ -4,18 +4,15 @@ import { createUser, getUserByEmail, getUserById, updateUserLastSignIn } from ".
 import { TRPCError } from "@trpc/server";
 import { SignJWT, jwtVerify } from "jose";
 import { ENV } from "./_core/env";
+import bcrypt from "bcryptjs";
 
 const JWT_SECRET = new TextEncoder().encode(ENV.cookieSecret);
-const COOKIE_NAME = "contafacil_session";
+const COOKIE_NAME = "app_session_id";
 
 // Helper para hashear contraseñas
 async function hashPassword(password: string): Promise<string> {
-  // Usar Web Crypto API para hashear
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(password, salt);
 }
 
 // Helper para generar JWT
@@ -127,8 +124,8 @@ export const authRouter = router({
       }
 
       // Verificar contraseña
-      const passwordHash = await hashPassword(input.password);
-      if (passwordHash !== user.passwordHash) {
+      const passwordMatch = await bcrypt.compare(input.password, user.passwordHash);
+      if (!passwordMatch) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "Credenciales inválidas",
@@ -199,6 +196,7 @@ export const authRouter = router({
       secure: true,
       sameSite: "none",
       path: "/",
+      maxAge: -1,
     });
 
     return {

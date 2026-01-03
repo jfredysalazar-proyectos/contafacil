@@ -198,3 +198,14 @@
 - [x] Probar flujo completo de registro
 - [x] Probar flujo completo de login
 - [x] Verificar que las cookies de sesión se establezcan correctamente
+
+
+## Bug Crítico: Login no redirige al dashboard (Reportado por Usuario) - RESUELTO
+- [x] Investigar por qué el login se queda en bucle
+- [x] Verificar que las cookies se establezcan correctamente en login
+- [x] Verificar que la redirección a /dashboard funcione
+- [x] Verificar que useAuth detecte correctamente al usuario autenticado
+- [x] Probar flujo completo: login → dashboard
+- [x] Verificar que el contexto de autenticación funcione correctamente
+- [x] Instalar y configurar cookie-parser middleware en Express
+- [x] Corregir verificación de contraseña usando bcrypt.compare
