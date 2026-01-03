@@ -13,6 +13,7 @@ import {
   categoriesRouter,
 } from "./features";
 import { pdfRouter } from "./pdf";
+import { passwordResetRouter } from "./password-reset-router";
 
 export const appRouter = router({
   system: systemRouter,
@@ -27,6 +28,7 @@ export const appRouter = router({
   stats: statsRouter,
   categories: categoriesRouter,
   pdf: pdfRouter,
+  passwordReset: passwordResetRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -139,3 +139,16 @@
 - [ ] Implementar generación de comprobantes PDF con información fiscal
 - [ ] Implementar generación de reportes financieros en PDF
 - [ ] Integrar almacenamiento S3 para todos los PDFs generados
+
+
+## Recuperación de Contraseña (Nueva Funcionalidad)
+- [x] Crear tabla de tokens de recuperación en base de datos
+- [x] Implementar generación de tokens seguros con expiración
+- [x] Crear endpoint para solicitar recuperación de contraseña
+- [x] Crear endpoint para validar token y restablecer contraseña
+- [x] Crear página de solicitud de recuperación
+- [x] Crear página de restablecimiento de contraseña
+- [ ] Integrar envío de emails con enlace de recuperación
+- [x] Agregar enlace en página de login
+- [x] Validar expiración de tokens (15 minutos)
+- [x] Invalidar token después de uso exitoso

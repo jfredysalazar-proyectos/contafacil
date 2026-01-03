@@ -84,6 +84,14 @@ export default function Login() {
                 "Iniciar sesión"
               )}
             </Button>
+            <div className="text-center text-sm">
+              <a
+                href="/forgot-password"
+                className="text-muted-foreground hover:text-primary hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
             <div className="text-center text-sm text-muted-foreground">
               ¿No tienes cuenta?{" "}
               <a
