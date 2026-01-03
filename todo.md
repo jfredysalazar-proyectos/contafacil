@@ -287,3 +287,11 @@
 - [x] Agregar botón de cerrar sesión en el sidebar del DashboardLayout
 - [x] Implementar funcionalidad de logout que limpie la sesión
 - [x] Redirigir al usuario a la página de login después de cerrar sesión
+
+## Bug Crítico: Página de Inventario Vacía (Reportado por Usuario) - RESUELTO
+- [x] Investigar por qué la página de inventario no muestra el listado de productos
+- [x] Verificar errores en la consola del navegador
+- [x] Verificar que el endpoint de inventario esté funcionando correctamente
+- [x] Corregir el problema de visualización
+- [x] Verificar que los botones de agregar/reducir stock aparezcan correctamente
+- [x] Probar flujo completo de gestión de inventario

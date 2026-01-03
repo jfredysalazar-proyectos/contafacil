@@ -134,10 +134,12 @@ export async function getInventoryByUserId(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
+  // Obtener todos los productos del usuario con su stock actual
+  // Si no tienen registro en inventory, el stock es 0
   return await db
     .select({
       id: inventory.id,
-      stock: inventory.stock,
+      stock: sql<number>`COALESCE(${inventory.stock}, 0)`.as('stock'),
       lastRestockDate: inventory.lastRestockDate,
       productId: products.id,
       productName: products.name,
@@ -146,10 +148,13 @@ export async function getInventoryByUserId(userId: number) {
       variationId: productVariations.id,
       variationName: productVariations.name,
     })
-    .from(inventory)
-    .leftJoin(products, eq(inventory.productId, products.id))
+    .from(products)
+    .leftJoin(inventory, and(
+      eq(inventory.productId, products.id),
+      eq(inventory.userId, userId)
+    ))
     .leftJoin(productVariations, eq(inventory.variationId, productVariations.id))
-    .where(eq(inventory.userId, userId));
+    .where(eq(products.userId, userId));
 }
 
 export async function getLowStockItems(userId: number) {
