@@ -216,5 +216,12 @@
 - [x] Completar funcionalidad de página de gastos con categorización
 - [x] Completar funcionalidad de página de inventario con alertas
 - [x] Integrar generación automática de comprobantes PDF en ventas
-- [ ] Crear guía paso a paso para registro en AWS SES
-- [ ] Documentar configuración de credenciales AWS SES en el proyecto
+- [x] Crear guía paso a paso para registro en AWS SES
+- [x] Documentar configuración de credenciales AWS SES en el proyecto
+
+
+## Mejora de Comprobantes PDF (Solicitado por Usuario)
+- [x] Eliminar descarga automática de PDF al crear venta
+- [x] Agregar botón "Ver" para abrir PDF en nueva pestaña
+- [x] Agregar botón "Descargar" para descargar PDF
+- [x] Mostrar ambos botones en la tabla de ventas

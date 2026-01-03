@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Loader2, Plus, ShoppingCart, Trash2, FileText, Download } from "lucide-react";
+import { Loader2, Plus, ShoppingCart, Trash2, FileText, Download, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { generateReceiptPDF } from "@/lib/pdfGenerator";
 
@@ -37,48 +37,8 @@ export default function Sales() {
   const { data: customers } = trpc.customers.list.useQuery();
 
   const createMutation = trpc.sales.create.useMutation({
-    onSuccess: (data, variables) => {
+    onSuccess: () => {
       toast.success("Venta registrada exitosamente");
-      
-      // Generar PDF automáticamente
-      if (user) {
-        try {
-          const customerName = customers?.find(c => c.id.toString() === customerId)?.name;
-          const pdfDataUrl = generateReceiptPDF(
-            {
-              saleNumber: variables.saleNumber,
-              saleDate: variables.saleDate,
-              customerName: customerName || undefined,
-              items: saleItems,
-              subtotal: variables.subtotal,
-              tax: variables.tax,
-              total: variables.total,
-              paymentMethod: variables.paymentMethod as string,
-            },
-            {
-              name: user.name,
-              email: user.email || undefined,
-              businessName: user.businessName || undefined,
-              nit: user.nit || undefined,
-              address: user.address || undefined,
-              phone: user.phone || undefined,
-              logoUrl: (user as any).logoUrl || undefined,
-            }
-          );
-          
-          // Descargar PDF automáticamente
-          const link = document.createElement('a');
-          link.href = pdfDataUrl;
-          link.download = `Comprobante-${variables.saleNumber}.pdf`;
-          link.click();
-          
-          toast.success("Comprobante PDF generado");
-        } catch (error) {
-          console.error("Error al generar PDF:", error);
-          toast.error("Error al generar comprobante PDF");
-        }
-      }
-      
       utils.sales.list.invalidate();
       utils.inventory.list.invalidate();
       utils.inventory.lowStock.invalidate();
@@ -89,6 +49,79 @@ export default function Sales() {
       toast.error(error.message || "Error al registrar venta");
     },
   });
+
+  const handleViewPDF = (sale: any) => {
+    if (!user) return;
+    
+    try {
+      const pdfDataUrl = generateReceiptPDF(
+        {
+          saleNumber: sale.saleNumber,
+          saleDate: new Date(sale.saleDate),
+          customerName: sale.customerId ? customers?.find(c => c.id === sale.customerId)?.name : undefined,
+          items: [], // Los items se cargarían desde la venta si los guardamos
+          subtotal: sale.subtotal,
+          tax: sale.tax,
+          total: sale.total,
+          paymentMethod: sale.paymentMethod,
+        },
+        {
+          name: user.name,
+          email: user.email || undefined,
+          businessName: user.businessName || undefined,
+          nit: user.nit || undefined,
+          address: user.address || undefined,
+          phone: user.phone || undefined,
+          logoUrl: (user as any).logoUrl || undefined,
+        }
+      );
+      
+      // Abrir PDF en nueva pestaña
+      window.open(pdfDataUrl, '_blank');
+    } catch (error) {
+      console.error("Error al generar PDF:", error);
+      toast.error("Error al generar comprobante PDF");
+    }
+  };
+
+  const handleDownloadPDF = (sale: any) => {
+    if (!user) return;
+    
+    try {
+      const pdfDataUrl = generateReceiptPDF(
+        {
+          saleNumber: sale.saleNumber,
+          saleDate: new Date(sale.saleDate),
+          customerName: sale.customerId ? customers?.find(c => c.id === sale.customerId)?.name : undefined,
+          items: [], // Los items se cargarían desde la venta si los guardamos
+          subtotal: sale.subtotal,
+          tax: sale.tax,
+          total: sale.total,
+          paymentMethod: sale.paymentMethod,
+        },
+        {
+          name: user.name,
+          email: user.email || undefined,
+          businessName: user.businessName || undefined,
+          nit: user.nit || undefined,
+          address: user.address || undefined,
+          phone: user.phone || undefined,
+          logoUrl: (user as any).logoUrl || undefined,
+        }
+      );
+      
+      // Descargar PDF
+      const link = document.createElement('a');
+      link.href = pdfDataUrl;
+      link.download = `Comprobante-${sale.saleNumber}.pdf`;
+      link.click();
+      
+      toast.success("Comprobante descargado");
+    } catch (error) {
+      console.error("Error al generar PDF:", error);
+      toast.error("Error al generar comprobante PDF");
+    }
+  };
 
   const resetForm = () => {
     setSaleItems([]);
@@ -378,10 +411,26 @@ export default function Sales() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="outline" size="sm">
-                          <FileText className="h-4 w-4 mr-2" />
-                          Ver
-                        </Button>
+                        <div className="flex gap-2 justify-end">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewPDF(sale)}
+                            title="Ver comprobante"
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Ver
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDownloadPDF(sale)}
+                            title="Descargar comprobante"
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            Descargar
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
