@@ -384,3 +384,31 @@ export const alertSettings = mysqlTable("alertSettings", {
 
 export type AlertSetting = typeof alertSettings.$inferSelect;
 export type InsertAlertSetting = typeof alertSettings.$inferInsert;
+
+/**
+ * Tabla de movimientos de inventario
+ * Registra todas las entradas y salidas de stock con información del proveedor y costo
+ */
+export const inventoryMovements = mysqlTable("inventoryMovements", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  productId: int("productId").notNull(),
+  variationId: int("variationId"),
+  supplierId: int("supplierId"),
+  saleId: int("saleId"),
+  movementType: mysqlEnum("movementType", ["in", "out", "adjustment"]).notNull(),
+  quantity: int("quantity").notNull(),
+  unitCost: decimal("unitCost", { precision: 15, scale: 2 }),
+  totalCost: decimal("totalCost", { precision: 15, scale: 2 }),
+  reason: text("reason"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("inventoryMovements_userId_idx").on(table.userId),
+  productIdIdx: index("inventoryMovements_productId_idx").on(table.productId),
+  supplierIdIdx: index("inventoryMovements_supplierId_idx").on(table.supplierId),
+  saleIdIdx: index("inventoryMovements_saleId_idx").on(table.saleId),
+}));
+
+export type InventoryMovement = typeof inventoryMovements.$inferSelect;
+export type InsertInventoryMovement = typeof inventoryMovements.$inferInsert;

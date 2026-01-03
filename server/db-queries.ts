@@ -429,28 +429,18 @@ export async function updateSaleItems(
     .from(saleItems)
     .where(eq(saleItems.saleId, saleId));
   
-  // Restaurar inventario de items antiguos
+  // Restaurar inventario de items antiguos (registrar como entrada)
   for (const item of oldItems) {
-    const inventoryRecord = await db
-      .select()
-      .from(inventory)
-      .where(
-        and(
-          eq(inventory.productId, item.productId),
-          item.variationId 
-            ? eq(inventory.variationId, item.variationId)
-            : sql`${inventory.variationId} IS NULL`
-        )
-      )
-      .limit(1);
-    
-    if (inventoryRecord.length > 0) {
-      const newStock = inventoryRecord[0].stock + item.quantity;
-      await db
-        .update(inventory)
-        .set({ stock: newStock })
-        .where(eq(inventory.id, inventoryRecord[0].id));
-    }
+    await addInventoryMovement({
+      userId,
+      productId: item.productId,
+      variationId: item.variationId || undefined,
+      saleId,
+      movementType: "in",
+      quantity: item.quantity,
+      reason: "Edición de venta - devolución",
+      notes: `Venta #${saleId} editada`,
+    });
   }
   
   // Eliminar items antiguos
@@ -460,28 +450,18 @@ export async function updateSaleItems(
   const itemsWithSaleId = items.map(item => ({ ...item, saleId }));
   await db.insert(saleItems).values(itemsWithSaleId);
   
-  // Actualizar inventario con nuevos items
+  // Actualizar inventario con nuevos items (registrar como salida)
   for (const item of items) {
-    const inventoryRecord = await db
-      .select()
-      .from(inventory)
-      .where(
-        and(
-          eq(inventory.productId, item.productId),
-          item.variationId 
-            ? eq(inventory.variationId, item.variationId)
-            : sql`${inventory.variationId} IS NULL`
-        )
-      )
-      .limit(1);
-    
-    if (inventoryRecord.length > 0) {
-      const newStock = inventoryRecord[0].stock - item.quantity;
-      await db
-        .update(inventory)
-        .set({ stock: newStock })
-        .where(eq(inventory.id, inventoryRecord[0].id));
-    }
+    await addInventoryMovement({
+      userId,
+      productId: item.productId,
+      variationId: item.variationId || undefined,
+      saleId,
+      movementType: "out",
+      quantity: item.quantity,
+      reason: "Edición de venta - nueva salida",
+      notes: `Venta #${saleId} editada`,
+    });
   }
 }
 
@@ -804,6 +784,165 @@ export async function getExpensesByCategory(userId: number, startDate: Date, end
       )
     )
     .groupBy(expenses.categoryId, expenseCategories.name);
+  
+  return result;
+}
+
+// ==================== MOVIMIENTOS DE INVENTARIO ====================
+
+export async function getInventoryByProductId(productId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db
+    .select()
+    .from(inventory)
+    .where(and(
+      eq(inventory.productId, productId),
+      eq(inventory.userId, userId)
+    ))
+    .limit(1);
+  
+  return result[0];
+}
+
+export async function updateInventoryStock(productId: number, userId: number, newStock: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Verificar si existe un registro de inventario para este producto
+  const existing = await getInventoryByProductId(productId, userId);
+  
+  if (existing) {
+    // Actualizar stock existente
+    await db
+      .update(inventory)
+      .set({ 
+        stock: newStock,
+        lastRestockDate: new Date(),
+      })
+      .where(and(
+        eq(inventory.productId, productId),
+        eq(inventory.userId, userId)
+      ));
+  } else {
+    // Crear nuevo registro de inventario
+    await db.insert(inventory).values({
+      userId,
+      productId,
+      stock: newStock,
+      lastRestockDate: new Date(),
+    });
+  }
+}
+
+export async function addInventoryMovement(data: {
+  userId: number;
+  productId: number;
+  variationId?: number;
+  supplierId?: number;
+  saleId?: number;
+  movementType: "in" | "out" | "adjustment";
+  quantity: number;
+  unitCost?: number;
+  totalCost?: number;
+  reason?: string;
+  notes?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Insertar movimiento
+  await db.execute(sql`
+    INSERT INTO inventoryMovements (
+      userId, productId, variationId, supplierId, saleId,
+      movementType, quantity, unitCost, totalCost, reason, notes
+    ) VALUES (
+      ${data.userId}, ${data.productId}, ${data.variationId}, ${data.supplierId}, ${data.saleId},
+      ${data.movementType}, ${data.quantity}, ${data.unitCost}, ${data.totalCost}, ${data.reason}, ${data.notes}
+    )
+  `);
+  
+  // Actualizar stock en la tabla inventory
+  const currentInventory = await getInventoryByProductId(data.productId, data.userId);
+  const currentStock = currentInventory?.stock || 0;
+  
+  let newStock = currentStock;
+  if (data.movementType === "in") {
+    newStock = currentStock + data.quantity;
+  } else if (data.movementType === "out") {
+    newStock = currentStock - data.quantity;
+  } else if (data.movementType === "adjustment") {
+    newStock = data.quantity; // Para ajustes, la cantidad es el nuevo stock total
+  }
+  
+  await updateInventoryStock(data.productId, data.userId, newStock);
+  
+  return { success: true, newStock };
+}
+
+export async function getInventoryMovementsByProductId(productId: number, userId: number, limit: number = 50) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.execute(sql`
+    SELECT 
+      im.*,
+      p.name as productName,
+      s.name as supplierName
+    FROM inventoryMovements im
+    LEFT JOIN products p ON im.productId = p.id
+    LEFT JOIN suppliers s ON im.supplierId = s.id
+    WHERE im.productId = ${productId} AND im.userId = ${userId}
+    ORDER BY im.createdAt DESC
+    LIMIT ${limit}
+  `);
+  
+  return result as any[];
+}
+
+export async function getInventoryMovementsByUserId(userId: number, limit: number = 100) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.execute(sql`
+    SELECT 
+      im.*,
+      p.name as productName,
+      s.name as supplierName
+    FROM inventoryMovements im
+    LEFT JOIN products p ON im.productId = p.id
+    LEFT JOIN suppliers s ON im.supplierId = s.id
+    WHERE im.userId = ${userId}
+    ORDER BY im.createdAt DESC
+    LIMIT ${limit}
+  `);
+  
+  return result as any[];
+}
+
+export async function getLowStockProducts(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db
+    .select({
+      id: products.id,
+      name: products.name,
+      sku: products.sku,
+      stock: inventory.stock,
+      stockAlert: products.stockAlert,
+    })
+    .from(products)
+    .innerJoin(inventory, and(
+      eq(inventory.productId, products.id),
+      eq(inventory.userId, userId)
+    ))
+    .where(and(
+      eq(products.userId, userId),
+      sql`${inventory.stock} <= ${products.stockAlert}`
+    ))
+    .orderBy(inventory.stock);
   
   return result;
 }

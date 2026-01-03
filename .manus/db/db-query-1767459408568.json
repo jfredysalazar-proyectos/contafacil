@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS inventoryMovements (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  userId INT NOT NULL,\n  productId INT NOT NULL,\n  variationId INT,\n  supplierId INT,\n  saleId INT,\n  movementType ENUM('in', 'out', 'adjustment') NOT NULL,\n  quantity INT NOT NULL,\n  unitCost DECIMAL(15, 2),\n  totalCost DECIMAL(15, 2),\n  reason TEXT,\n  notes TEXT,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  INDEX inventoryMovements_userId_idx (userId),\n  INDEX inventoryMovements_productId_idx (productId),\n  INDEX inventoryMovements_supplierId_idx (supplierId),\n  INDEX inventoryMovements_saleId_idx (saleId)\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 33eHsH78PrVTUzX.935a2f0ed688 --database f6UyvHWVP2qWeDdfJX2g4J --execute CREATE TABLE IF NOT EXISTS inventoryMovements (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  userId INT NOT NULL,\n  productId INT NOT NULL,\n  variationId INT,\n  supplierId INT,\n  saleId INT,\n  movementType ENUM('in', 'out', 'adjustment') NOT NULL,\n  quantity INT NOT NULL,\n  unitCost DECIMAL(15, 2),\n  totalCost DECIMAL(15, 2),\n  reason TEXT,\n  notes TEXT,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  INDEX inventoryMovements_userId_idx (userId),\n  INDEX inventoryMovements_productId_idx (productId),\n  INDEX inventoryMovements_supplierId_idx (supplierId),\n  INDEX inventoryMovements_saleId_idx (saleId)\n)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 389
+}

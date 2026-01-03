@@ -65,26 +65,91 @@ export const inventoryRouter = router({
   }),
 
   lowStock: protectedProcedure.query(async ({ ctx }) => {
-    return await dbQueries.getLowStockItems(ctx.user.id);
+    return await dbQueries.getLowStockProducts(ctx.user.id);
   }),
 
-  update: protectedProcedure
+  addStock: protectedProcedure
     .input(
       z.object({
         productId: z.number(),
-        variationId: z.number().optional(),
-        stock: z.number(),
+        quantity: z.number().positive(),
+        supplierId: z.number().optional(),
+        unitCost: z.number().optional(),
+        notes: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      await dbQueries.createOrUpdateInventory({
+      const totalCost = input.unitCost ? input.unitCost * input.quantity : undefined;
+      
+      return await dbQueries.addInventoryMovement({
         userId: ctx.user.id,
         productId: input.productId,
-        variationId: input.variationId || null,
-        stock: input.stock,
-        lastRestockDate: new Date(),
+        supplierId: input.supplierId,
+        movementType: "in",
+        quantity: input.quantity,
+        unitCost: input.unitCost,
+        totalCost,
+        reason: "Compra a proveedor",
+        notes: input.notes,
       });
-      return { success: true };
+    }),
+
+  reduceStock: protectedProcedure
+    .input(
+      z.object({
+        productId: z.number(),
+        quantity: z.number().positive(),
+        reason: z.string().optional(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      return await dbQueries.addInventoryMovement({
+        userId: ctx.user.id,
+        productId: input.productId,
+        movementType: "out",
+        quantity: input.quantity,
+        reason: input.reason || "Ajuste manual",
+        notes: input.notes,
+      });
+    }),
+
+  adjustStock: protectedProcedure
+    .input(
+      z.object({
+        productId: z.number(),
+        newStock: z.number().nonnegative(),
+        reason: z.string().optional(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      return await dbQueries.addInventoryMovement({
+        userId: ctx.user.id,
+        productId: input.productId,
+        movementType: "adjustment",
+        quantity: input.newStock,
+        reason: input.reason || "Ajuste de inventario",
+        notes: input.notes,
+      });
+    }),
+
+  getMovements: protectedProcedure
+    .input(
+      z.object({
+        productId: z.number().optional(),
+        limit: z.number().optional(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      if (input.productId) {
+        return await dbQueries.getInventoryMovementsByProductId(
+          input.productId,
+          ctx.user.id,
+          input.limit
+        );
+      }
+      return await dbQueries.getInventoryMovementsByUserId(ctx.user.id, input.limit);
     }),
 });
 
@@ -269,6 +334,20 @@ export const salesRouter = router({
         },
         items
       );
+      
+      // Actualizar inventario automáticamente
+      for (const item of items) {
+        await dbQueries.addInventoryMovement({
+          userId: ctx.user.id,
+          productId: item.productId,
+          variationId: item.variationId,
+          saleId,
+          movementType: "out",
+          quantity: item.quantity,
+          reason: "Venta registrada",
+          notes: `Venta ${input.saleNumber}`,
+        });
+      }
       
       // Si es venta a crédito, crear deuda por cobrar
       if (input.paymentMethod === "credit" && input.customerId) {

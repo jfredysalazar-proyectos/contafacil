@@ -246,11 +246,11 @@ export default function Dashboard() {
               <div className="space-y-2">
                 {lowStockItems.map((item) => (
                   <div
-                    key={item.productId}
+                    key={item.id}
                     className="flex justify-between items-center p-3 bg-muted/50 rounded-lg"
                   >
                     <div>
-                      <p className="font-medium">{item.productName}</p>
+                      <p className="font-medium">{item.name}</p>
                       <p className="text-sm text-muted-foreground">
                         Stock actual: {item.stock} | Alerta: {item.stockAlert}
                       </p>

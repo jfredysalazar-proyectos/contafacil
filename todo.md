@@ -264,3 +264,21 @@
 - [x] Actualizar base de datos al guardar cambios en venta
 - [x] Regenerar PDF con los nuevos datos al editar venta
 - [x] Crear tests unitarios para edición de ventas
+## Sistema Completo de Inventario (Nueva Solicitud del Usuario)
+
+- [x] Mostrar listado de productos con stock actual en página de inventario
+- [x] Implementar formulario para agregar stock a productos existentes
+- [x] Implementar formulario para reducir stock manualmente
+- [x] Agregar selección de proveedor al agregar stock
+- [x] Permitir seleccionar múltiples proveedores para un producto
+- [x] Registrar costo de compra por cada entrada de inventario
+- [x] Crear tabla de movimientos de inventario en base de datos
+- [x] Registrar tipo de movimiento (entrada/salida)
+- [x] Crear endpoint backend para agregar movimiento de inventario
+- [x] Crear endpoint backend para obtener historial de movimientos
+- [x] Actualizar stock automáticamente al registrar venta
+- [x] Actualizar stock automáticamente al editar venta
+- [ ] Validar stock disponible antes de permitir venta
+- [x] Mostrar alertas de stock bajo en página de inventario
+- [x] Crear tests unitarios para movimientos de inventario
+- [x] Crear tests para actualización automática de stock en ventas
