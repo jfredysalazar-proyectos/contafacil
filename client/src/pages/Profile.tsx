@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Loader2, User, Lock, Building2, Mail, Phone } from "lucide-react";
+import { Loader2, User, Lock, Building2, Mail, Phone, Upload, X } from "lucide-react";
 
 export default function Profile() {
   const { data: profile, isLoading } = trpc.profile.getProfile.useQuery();
@@ -21,6 +21,9 @@ export default function Profile() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  // Estado para logo
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   // Cargar datos del perfil cuando estén disponibles
   useState(() => {
@@ -53,6 +56,27 @@ export default function Profile() {
     },
   });
 
+  const uploadLogoMutation = trpc.profile.uploadLogo.useMutation({
+    onSuccess: (data) => {
+      toast.success("Logo subido exitosamente");
+      utils.profile.getProfile.invalidate();
+      setLogoPreview(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Error al subir logo");
+    },
+  });
+
+  const deleteLogoMutation = trpc.profile.deleteLogo.useMutation({
+    onSuccess: () => {
+      toast.success("Logo eliminado exitosamente");
+      utils.profile.getProfile.invalidate();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Error al eliminar logo");
+    },
+  });
+
   const handleUpdateProfile = (e: React.FormEvent) => {
     e.preventDefault();
     updateProfileMutation.mutate({
@@ -81,6 +105,44 @@ export default function Profile() {
     });
   };
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo
+    const validTypes = ["image/png", "image/jpeg", "image/jpg", "image/svg+xml"];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Solo se permiten archivos PNG, JPG, JPEG o SVG");
+      return;
+    }
+
+    // Validar tamaño (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("El logo no puede superar los 2MB");
+      return;
+    }
+
+    // Leer archivo y convertir a base64
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setLogoPreview(base64);
+      
+      // Subir inmediatamente
+      uploadLogoMutation.mutate({
+        base64Image: base64,
+        mimeType: file.type as any,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDeleteLogo = () => {
+    if (confirm("¿Estás seguro de que deseas eliminar el logo?")) {
+      deleteLogoMutation.mutate();
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -97,6 +159,83 @@ export default function Profile() {
           Administra tu información personal y preferencias
         </p>
       </div>
+
+      {/* Logo del Negocio */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            Logo del Negocio
+          </CardTitle>
+          <CardDescription>
+            Sube el logo de tu negocio (PNG, JPG, SVG - Máx. 2MB)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Vista previa del logo */}
+            <div className="flex items-center justify-center">
+              {profile?.logoUrl || logoPreview ? (
+                <div className="relative">
+                  <img
+                    src={logoPreview || profile?.logoUrl || ""}
+                    alt="Logo del negocio"
+                    className="h-32 w-32 object-contain rounded-lg border-2 border-border"
+                  />
+                  {profile?.logoUrl && !uploadLogoMutation.isPending && (
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                      onClick={handleDeleteLogo}
+                      disabled={deleteLogoMutation.isPending}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="h-32 w-32 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-muted">
+                  <Upload className="h-8 w-8 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+
+            {/* Botón de carga */}
+            <div>
+              <Input
+                id="logo-upload"
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/svg+xml"
+                onChange={handleLogoChange}
+                className="hidden"
+                disabled={uploadLogoMutation.isPending}
+              />
+              <Label htmlFor="logo-upload">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={uploadLogoMutation.isPending}
+                  onClick={() => document.getElementById("logo-upload")?.click()}
+                >
+                  {uploadLogoMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Subiendo...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      {profile?.logoUrl ? "Cambiar logo" : "Subir logo"}
+                    </>
+                  )}
+                </Button>
+              </Label>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Información Personal */}

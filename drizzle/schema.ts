@@ -11,6 +11,7 @@ export const users = mysqlTable("users", {
   name: text("name").notNull(),
   phone: varchar("phone", { length: 20 }),
   businessName: text("businessName"),
+  logoUrl: text("logoUrl"),
   nit: varchar("nit", { length: 20 }),
   address: text("address"),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),

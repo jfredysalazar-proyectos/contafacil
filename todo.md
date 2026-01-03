@@ -173,3 +173,17 @@
 - [x] Agregar enlace al perfil en navegación
 - [x] Validación de datos en frontend y backend
 - [x] Pruebas unitarias para endpoints de perfil
+
+
+## Logo del Negocio (Nueva Funcionalidad)
+- [x] Agregar campo logoUrl a la tabla users
+- [x] Crear endpoint backend para subir logo
+- [x] Validar tipo de archivo (PNG, JPG, JPEG, SVG)
+- [x] Validar tamaño de archivo (máximo 2MB)
+- [x] Subir logo a S3 con nombre único
+- [x] Actualizar página de perfil con vista previa de logo
+- [x] Componente de carga de imagen con drag & drop
+- [ ] Mostrar logo en el sidebar del layout
+- [ ] Integrar logo en comprobantes PDF
+- [x] Permitir eliminar logo
+- [x] Pruebas de subida y visualización
