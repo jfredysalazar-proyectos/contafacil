@@ -11,9 +11,9 @@ interface SaleData {
     subtotal: string;
   }>;
   subtotal: string;
-  tax: string;
+  tax?: string;
   total: string;
-  paymentMethod: string;
+  paymentMethod?: string;
 }
 
 interface UserData {

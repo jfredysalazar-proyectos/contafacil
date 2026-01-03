@@ -209,3 +209,12 @@
 - [x] Verificar que el contexto de autenticación funcione correctamente
 - [x] Instalar y configurar cookie-parser middleware en Express
 - [x] Corregir verificación de contraseña usando bcrypt.compare
+
+
+## Tareas Prioritarias - Nueva Solicitud del Usuario
+- [x] Completar funcionalidad de página de ventas con selección de productos y cálculos
+- [x] Completar funcionalidad de página de gastos con categorización
+- [x] Completar funcionalidad de página de inventario con alertas
+- [x] Integrar generación automática de comprobantes PDF en ventas
+- [ ] Crear guía paso a paso para registro en AWS SES
+- [ ] Documentar configuración de credenciales AWS SES en el proyecto

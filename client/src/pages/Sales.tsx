@@ -11,8 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Loader2, Plus, ShoppingCart, Trash2, FileText } from "lucide-react";
+import { Loader2, Plus, ShoppingCart, Trash2, FileText, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { generateReceiptPDF } from "@/lib/pdfGenerator";
 
 export default function Sales() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -36,8 +37,48 @@ export default function Sales() {
   const { data: customers } = trpc.customers.list.useQuery();
 
   const createMutation = trpc.sales.create.useMutation({
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       toast.success("Venta registrada exitosamente");
+      
+      // Generar PDF automáticamente
+      if (user) {
+        try {
+          const customerName = customers?.find(c => c.id.toString() === customerId)?.name;
+          const pdfDataUrl = generateReceiptPDF(
+            {
+              saleNumber: variables.saleNumber,
+              saleDate: variables.saleDate,
+              customerName: customerName || undefined,
+              items: saleItems,
+              subtotal: variables.subtotal,
+              tax: variables.tax,
+              total: variables.total,
+              paymentMethod: variables.paymentMethod as string,
+            },
+            {
+              name: user.name,
+              email: user.email || undefined,
+              businessName: user.businessName || undefined,
+              nit: user.nit || undefined,
+              address: user.address || undefined,
+              phone: user.phone || undefined,
+              logoUrl: (user as any).logoUrl || undefined,
+            }
+          );
+          
+          // Descargar PDF automáticamente
+          const link = document.createElement('a');
+          link.href = pdfDataUrl;
+          link.download = `Comprobante-${variables.saleNumber}.pdf`;
+          link.click();
+          
+          toast.success("Comprobante PDF generado");
+        } catch (error) {
+          console.error("Error al generar PDF:", error);
+          toast.error("Error al generar comprobante PDF");
+        }
+      }
+      
       utils.sales.list.invalidate();
       utils.inventory.list.invalidate();
       utils.inventory.lowStock.invalidate();
