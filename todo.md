@@ -187,3 +187,14 @@
 - [x] Integrar logo en comprobantes PDF
 - [x] Permitir eliminar logo
 - [x] Pruebas de subida y visualización
+
+
+## Bug Crítico: Sistema de Autenticación (Reportado por Usuario) - RESUELTO
+- [x] Investigar por qué el registro redirige a login.manus.im
+- [x] Investigar por qué el login redirige a login.manus.im
+- [x] Corregir redirecciones incorrectas a Manus OAuth
+- [x] Verificar que endpoints de auth.ts se estén usando correctamente
+- [x] Verificar configuración de contexto de autenticación
+- [x] Probar flujo completo de registro
+- [x] Probar flujo completo de login
+- [x] Verificar que las cookies de sesión se establezcan correctamente
