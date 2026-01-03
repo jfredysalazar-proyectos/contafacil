@@ -285,6 +285,49 @@ export const salesRouter = router({
       
       return { success: true, saleId };
     }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        customerId: z.number().optional(),
+        items: z.array(
+          z.object({
+            productId: z.number(),
+            variationId: z.number().optional(),
+            productName: z.string(),
+            quantity: z.number(),
+            unitPrice: z.string(),
+            subtotal: z.string(),
+          })
+        ),
+        subtotal: z.string(),
+        tax: z.string(),
+        discount: z.string().optional(),
+        total: z.string(),
+        paymentMethod: z.enum(["cash", "card", "transfer", "credit"]),
+        status: z.enum(["completed", "pending", "cancelled"]).optional(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { id, items, ...saleData } = input;
+      
+      // Actualizar la venta
+      await dbQueries.updateSale(id, ctx.user.id, saleData);
+      
+      // Actualizar los items (eliminar los antiguos y crear los nuevos)
+      await dbQueries.updateSaleItems(id, ctx.user.id, items);
+      
+      return { success: true };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      await dbQueries.deleteSale(input.id, ctx.user.id);
+      return { success: true };
+    }),
 });
 
 // ==================== GASTOS ====================

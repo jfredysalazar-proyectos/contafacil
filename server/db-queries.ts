@@ -379,6 +379,164 @@ export async function getSaleById(id: number, userId: number) {
   return { ...sale[0], items };
 }
 
+export async function updateSale(
+  id: number,
+  userId: number,
+  data: Partial<Omit<InsertSale, 'userId'>>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Verificar que la venta pertenece al usuario
+  const sale = await db
+    .select()
+    .from(sales)
+    .where(and(eq(sales.id, id), eq(sales.userId, userId)))
+    .limit(1);
+  
+  if (sale.length === 0) {
+    throw new Error("Sale not found or unauthorized");
+  }
+  
+  await db
+    .update(sales)
+    .set(data)
+    .where(eq(sales.id, id));
+}
+
+export async function updateSaleItems(
+  saleId: number,
+  userId: number,
+  items: Omit<InsertSaleItem, 'saleId'>[]
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Verificar que la venta pertenece al usuario
+  const sale = await db
+    .select()
+    .from(sales)
+    .where(and(eq(sales.id, saleId), eq(sales.userId, userId)))
+    .limit(1);
+  
+  if (sale.length === 0) {
+    throw new Error("Sale not found or unauthorized");
+  }
+  
+  // Obtener items antiguos para restaurar inventario
+  const oldItems = await db
+    .select()
+    .from(saleItems)
+    .where(eq(saleItems.saleId, saleId));
+  
+  // Restaurar inventario de items antiguos
+  for (const item of oldItems) {
+    const inventoryRecord = await db
+      .select()
+      .from(inventory)
+      .where(
+        and(
+          eq(inventory.productId, item.productId),
+          item.variationId 
+            ? eq(inventory.variationId, item.variationId)
+            : sql`${inventory.variationId} IS NULL`
+        )
+      )
+      .limit(1);
+    
+    if (inventoryRecord.length > 0) {
+      const newStock = inventoryRecord[0].stock + item.quantity;
+      await db
+        .update(inventory)
+        .set({ stock: newStock })
+        .where(eq(inventory.id, inventoryRecord[0].id));
+    }
+  }
+  
+  // Eliminar items antiguos
+  await db.delete(saleItems).where(eq(saleItems.saleId, saleId));
+  
+  // Insertar nuevos items
+  const itemsWithSaleId = items.map(item => ({ ...item, saleId }));
+  await db.insert(saleItems).values(itemsWithSaleId);
+  
+  // Actualizar inventario con nuevos items
+  for (const item of items) {
+    const inventoryRecord = await db
+      .select()
+      .from(inventory)
+      .where(
+        and(
+          eq(inventory.productId, item.productId),
+          item.variationId 
+            ? eq(inventory.variationId, item.variationId)
+            : sql`${inventory.variationId} IS NULL`
+        )
+      )
+      .limit(1);
+    
+    if (inventoryRecord.length > 0) {
+      const newStock = inventoryRecord[0].stock - item.quantity;
+      await db
+        .update(inventory)
+        .set({ stock: newStock })
+        .where(eq(inventory.id, inventoryRecord[0].id));
+    }
+  }
+}
+
+export async function deleteSale(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Verificar que la venta pertenece al usuario
+  const sale = await db
+    .select()
+    .from(sales)
+    .where(and(eq(sales.id, id), eq(sales.userId, userId)))
+    .limit(1);
+  
+  if (sale.length === 0) {
+    throw new Error("Sale not found or unauthorized");
+  }
+  
+  // Obtener items para restaurar inventario
+  const items = await db
+    .select()
+    .from(saleItems)
+    .where(eq(saleItems.saleId, id));
+  
+  // Restaurar inventario
+  for (const item of items) {
+    const inventoryRecord = await db
+      .select()
+      .from(inventory)
+      .where(
+        and(
+          eq(inventory.productId, item.productId),
+          item.variationId 
+            ? eq(inventory.variationId, item.variationId)
+            : sql`${inventory.variationId} IS NULL`
+        )
+      )
+      .limit(1);
+    
+    if (inventoryRecord.length > 0) {
+      const newStock = inventoryRecord[0].stock + item.quantity;
+      await db
+        .update(inventory)
+        .set({ stock: newStock })
+        .where(eq(inventory.id, inventoryRecord[0].id));
+    }
+  }
+  
+  // Eliminar items
+  await db.delete(saleItems).where(eq(saleItems.saleId, id));
+  
+  // Eliminar venta
+  await db.delete(sales).where(eq(sales.id, id));
+}
+
 // ==================== GASTOS ====================
 
 export async function createExpense(data: InsertExpense) {

@@ -245,3 +245,22 @@
 - [x] Actualizar página de ventas para cargar items al generar PDF
 - [x] Verificar que items se muestren correctamente en comprobantes PDF
 - [x] Probar flujo completo: crear venta → ver PDF con items
+
+## Mejoras al Sistema de Ventas (Nueva Solicitud del Usuario)
+- [x] Agregar botón de creación rápida de productos desde modal de nueva venta
+- [x] Implementar modal anidado para crear producto sin salir de nueva venta
+- [x] Actualizar lista de productos automáticamente después de crear uno nuevo
+- [x] Agregar botón de creación rápida de clientes desde modal de nueva venta
+- [x] Implementar modal anidado para crear cliente sin salir de nueva venta
+- [x] Actualizar lista de clientes automáticamente después de crear uno nuevo
+- [x] Crear endpoint backend para actualizar una venta existente
+- [x] Crear endpoint backend para actualizar items de una venta
+- [x] Agregar botón "Editar" en la tabla de ventas
+- [x] Implementar modal de edición de ventas con items actuales
+- [x] Permitir agregar nuevos items en edición de venta
+- [x] Permitir eliminar items existentes en edición de venta
+- [x] Permitir modificar cantidades de items en edición de venta
+- [x] Recalcular totales automáticamente al editar items
+- [x] Actualizar base de datos al guardar cambios en venta
+- [x] Regenerar PDF con los nuevos datos al editar venta
+- [x] Crear tests unitarios para edición de ventas

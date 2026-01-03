@@ -19,11 +19,24 @@ export default function Sales() {
   const { user, loading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isQuickProductDialogOpen, setIsQuickProductDialogOpen] = useState(false);
+  const [isQuickCustomerDialogOpen, setIsQuickCustomerDialogOpen] = useState(false);
+  const [editingSale, setEditingSale] = useState<any>(null);
   const [saleItems, setSaleItems] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [customerId, setCustomerId] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "transfer" | "credit">("cash");
+  
+  // Estados para creación rápida de producto
+  const [quickProductName, setQuickProductName] = useState("");
+  const [quickProductPrice, setQuickProductPrice] = useState("");
+  
+  // Estados para creación rápida de cliente
+  const [quickCustomerName, setQuickCustomerName] = useState("");
+  const [quickCustomerEmail, setQuickCustomerEmail] = useState("");
+  const [quickCustomerPhone, setQuickCustomerPhone] = useState("");
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -47,6 +60,48 @@ export default function Sales() {
     },
     onError: (error) => {
       toast.error(error.message || "Error al registrar venta");
+    },
+  });
+
+  const quickCreateProductMutation = trpc.products.create.useMutation({
+    onSuccess: () => {
+      toast.success("Producto creado exitosamente");
+      utils.products.list.invalidate();
+      setIsQuickProductDialogOpen(false);
+      setQuickProductName("");
+      setQuickProductPrice("");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error al crear producto");
+    },
+  });
+
+  const quickCreateCustomerMutation = trpc.customers.create.useMutation({
+    onSuccess: () => {
+      toast.success("Cliente creado exitosamente");
+      utils.customers.list.invalidate();
+      setIsQuickCustomerDialogOpen(false);
+      setQuickCustomerName("");
+      setQuickCustomerEmail("");
+      setQuickCustomerPhone("");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error al crear cliente");
+    },
+  });
+
+  const updateMutation = trpc.sales.update.useMutation({
+    onSuccess: () => {
+      toast.success("Venta actualizada exitosamente");
+      utils.sales.list.invalidate();
+      utils.inventory.list.invalidate();
+      utils.inventory.lowStock.invalidate();
+      setIsEditDialogOpen(false);
+      setEditingSale(null);
+      resetForm();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error al actualizar venta");
     },
   });
 
@@ -145,12 +200,40 @@ export default function Sales() {
     }
   };
 
+  const handleEditSale = async (sale: any) => {
+    try {
+      // Cargar items de la venta
+      const items = await utils.sales.getItems.fetch({ saleId: sale.id });
+      
+      // Establecer la venta en edición
+      setEditingSale(sale);
+      
+      // Cargar datos en el formulario
+      setCustomerId(sale.customerId?.toString() || "");
+      setPaymentMethod(sale.paymentMethod);
+      setSaleItems(items.map((item: any) => ({
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        subtotal: item.subtotal,
+      })));
+      
+      // Abrir modal de edición
+      setIsEditDialogOpen(true);
+    } catch (error) {
+      console.error("Error al cargar venta:", error);
+      toast.error("Error al cargar datos de la venta");
+    }
+  };
+
   const resetForm = () => {
     setSaleItems([]);
     setSelectedProduct("");
     setQuantity("1");
     setCustomerId("");
     setPaymentMethod("cash");
+    setEditingSale(null);
   };
 
   const addItem = () => {
@@ -197,20 +280,36 @@ export default function Sales() {
       return;
     }
 
-    const saleNumber = `V-${Date.now()}`;
+    if (editingSale) {
+      // Modo edición
+      updateMutation.mutate({
+        id: editingSale.id,
+        customerId: customerId ? parseInt(customerId) : undefined,
+        items: saleItems,
+        subtotal: totals.subtotal.toString(),
+        tax: totals.tax.toString(),
+        discount: "0",
+        total: totals.total.toString(),
+        paymentMethod,
+        status: "completed",
+      });
+    } else {
+      // Modo creación
+      const saleNumber = `V-${Date.now()}`;
 
-    createMutation.mutate({
-      customerId: customerId ? parseInt(customerId) : undefined,
-      saleNumber,
-      saleDate: new Date(),
-      items: saleItems,
-      subtotal: totals.subtotal.toString(),
-      tax: totals.tax.toString(),
-      discount: "0",
-      total: totals.total.toString(),
-      paymentMethod,
-      status: "completed",
-    });
+      createMutation.mutate({
+        customerId: customerId ? parseInt(customerId) : undefined,
+        saleNumber,
+        saleDate: new Date(),
+        items: saleItems,
+        subtotal: totals.subtotal.toString(),
+        tax: totals.tax.toString(),
+        discount: "0",
+        total: totals.total.toString(),
+        paymentMethod,
+        status: "completed",
+      });
+    }
   };
 
   if (loading || !isAuthenticated) {
@@ -252,7 +351,19 @@ export default function Sales() {
                 <div className="space-y-4 py-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="customer">Cliente (opcional)</Label>
+                      <div className="flex justify-between items-center">
+                        <Label htmlFor="customer">Cliente (opcional)</Label>
+                        <Button 
+                          type="button" 
+                          variant="link" 
+                          size="sm"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => setIsQuickCustomerDialogOpen(true)}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Nuevo
+                        </Button>
+                      </div>
                       <Select value={customerId} onValueChange={setCustomerId}>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecciona un cliente" />
@@ -284,7 +395,18 @@ export default function Sales() {
                   </div>
 
                   <div className="border-t pt-4">
-                    <h3 className="font-semibold mb-3">Agregar productos</h3>
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="font-semibold">Agregar productos</h3>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setIsQuickProductDialogOpen(true)}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Nuevo Producto
+                      </Button>
+                    </div>
                     <div className="grid grid-cols-12 gap-2">
                       <div className="col-span-7">
                         <Select value={selectedProduct} onValueChange={setSelectedProduct}>
@@ -394,6 +516,187 @@ export default function Sales() {
               </form>
             </DialogContent>
           </Dialog>
+
+          {/* Modal de edición de venta */}
+          <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+            setIsEditDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <form onSubmit={handleSubmit}>
+                <DialogHeader>
+                  <DialogTitle>Editar Venta</DialogTitle>
+                  <DialogDescription>
+                    Modifica los datos de la venta
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <Label htmlFor="customer">Cliente (opcional)</Label>
+                        <Button 
+                          type="button" 
+                          variant="link" 
+                          size="sm"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => setIsQuickCustomerDialogOpen(true)}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Nuevo
+                        </Button>
+                      </div>
+                      <Select value={customerId} onValueChange={setCustomerId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona un cliente" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Sin cliente</SelectItem>
+                          {customers?.map((customer) => (
+                            <SelectItem key={customer.id} value={customer.id.toString()}>
+                              {customer.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="paymentMethod">Método de pago *</Label>
+                      <Select value={paymentMethod} onValueChange={(value: any) => setPaymentMethod(value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cash">Efectivo</SelectItem>
+                          <SelectItem value="card">Tarjeta</SelectItem>
+                          <SelectItem value="transfer">Transferencia</SelectItem>
+                          <SelectItem value="credit">Crédito</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="font-semibold">Productos en la venta</h3>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setIsQuickProductDialogOpen(true)}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Nuevo Producto
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-7">
+                        <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona un producto" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {products?.map((product) => (
+                              <SelectItem key={product.id} value={product.id.toString()}>
+                                {product.name} - ${Number(product.price).toLocaleString("es-CO")}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="col-span-3">
+                        <Input
+                          type="number"
+                          placeholder="Cantidad"
+                          value={quantity}
+                          onChange={(e) => setQuantity(e.target.value)}
+                          min="1"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Button type="button" onClick={addItem} className="w-full">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {saleItems.length > 0 && (
+                    <div className="border rounded-lg p-4 space-y-3">
+                      <h3 className="font-semibold">Items de la venta</h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Producto</TableHead>
+                            <TableHead>Cantidad</TableHead>
+                            <TableHead>Precio Unit.</TableHead>
+                            <TableHead>Subtotal</TableHead>
+                            <TableHead></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {saleItems.map((item, index) => (
+                            <TableRow key={index}>
+                              <TableCell>{item.productName}</TableCell>
+                              <TableCell>{item.quantity}</TableCell>
+                              <TableCell>${Number(item.unitPrice).toLocaleString("es-CO")}</TableCell>
+                              <TableCell>${Number(item.subtotal).toLocaleString("es-CO")}</TableCell>
+                              <TableCell>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeItem(index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      <div className="border-t pt-3 space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Subtotal:</span>
+                          <span className="font-medium">${totals.subtotal.toLocaleString("es-CO")}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>IVA (19%):</span>
+                          <span className="font-medium">${totals.tax.toLocaleString("es-CO")}</span>
+                        </div>
+                        <div className="flex justify-between text-lg font-bold">
+                          <span>Total:</span>
+                          <span>${totals.total.toLocaleString("es-CO")}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditDialogOpen(false);
+                      resetForm();
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={updateMutation.isPending || saleItems.length === 0}>
+                    {updateMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Actualizando...
+                      </>
+                    ) : (
+                      "Actualizar Venta"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <Card className="shadow-lg">
@@ -437,6 +740,15 @@ export default function Sales() {
                           <Button 
                             variant="outline" 
                             size="sm"
+                            onClick={() => handleEditSale(sale)}
+                            title="Editar venta"
+                          >
+                            <FileText className="h-4 w-4 mr-1" />
+                            Editar
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
                             onClick={() => handleViewPDF(sale)}
                             title="Ver comprobante"
                           >
@@ -470,6 +782,159 @@ export default function Sales() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de creación rápida de producto */}
+      <Dialog open={isQuickProductDialogOpen} onOpenChange={setIsQuickProductDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Crear Producto Rápido</DialogTitle>
+            <DialogDescription>
+              Crea un producto nuevo sin salir del registro de venta
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (!quickProductName || !quickProductPrice) {
+              toast.error("Completa todos los campos");
+              return;
+            }
+            quickCreateProductMutation.mutate({
+              name: quickProductName,
+              price: quickProductPrice,
+              stockAlert: 10,
+            });
+          }}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="quickProductName">Nombre del producto *</Label>
+                <Input
+                  id="quickProductName"
+                  value={quickProductName}
+                  onChange={(e) => setQuickProductName(e.target.value)}
+                  placeholder="Ej: Laptop HP"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quickProductPrice">Precio de venta *</Label>
+                <Input
+                  id="quickProductPrice"
+                  type="number"
+                  value={quickProductPrice}
+                  onChange={(e) => setQuickProductPrice(e.target.value)}
+                  placeholder="Ej: 2500000"
+                  min="0"
+                  step="0.01"
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsQuickProductDialogOpen(false);
+                  setQuickProductName("");
+                  setQuickProductPrice("");
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={quickCreateProductMutation.isPending}>
+                {quickCreateProductMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creando...
+                  </>
+                ) : (
+                  "Crear Producto"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de creación rápida de cliente */}
+      <Dialog open={isQuickCustomerDialogOpen} onOpenChange={setIsQuickCustomerDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Crear Cliente Rápido</DialogTitle>
+            <DialogDescription>
+              Crea un cliente nuevo sin salir del registro de venta
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (!quickCustomerName) {
+              toast.error("El nombre del cliente es obligatorio");
+              return;
+            }
+            quickCreateCustomerMutation.mutate({
+              name: quickCustomerName,
+              email: quickCustomerEmail || undefined,
+              phone: quickCustomerPhone || undefined,
+            });
+          }}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="quickCustomerName">Nombre del cliente *</Label>
+                <Input
+                  id="quickCustomerName"
+                  value={quickCustomerName}
+                  onChange={(e) => setQuickCustomerName(e.target.value)}
+                  placeholder="Ej: Juan Pérez"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quickCustomerEmail">Email (opcional)</Label>
+                <Input
+                  id="quickCustomerEmail"
+                  type="email"
+                  value={quickCustomerEmail}
+                  onChange={(e) => setQuickCustomerEmail(e.target.value)}
+                  placeholder="cliente@ejemplo.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quickCustomerPhone">Teléfono (opcional)</Label>
+                <Input
+                  id="quickCustomerPhone"
+                  value={quickCustomerPhone}
+                  onChange={(e) => setQuickCustomerPhone(e.target.value)}
+                  placeholder="3001234567"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsQuickCustomerDialogOpen(false);
+                  setQuickCustomerName("");
+                  setQuickCustomerEmail("");
+                  setQuickCustomerPhone("");
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={quickCreateCustomerMutation.isPending}>
+                {quickCreateCustomerMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creando...
+                  </>
+                ) : (
+                  "Crear Cliente"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
