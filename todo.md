@@ -183,7 +183,7 @@
 - [x] Subir logo a S3 con nombre único
 - [x] Actualizar página de perfil con vista previa de logo
 - [x] Componente de carga de imagen con drag & drop
-- [ ] Mostrar logo en el sidebar del layout
-- [ ] Integrar logo en comprobantes PDF
+- [x] Mostrar logo en el sidebar del layout
+- [x] Integrar logo en comprobantes PDF
 - [x] Permitir eliminar logo
 - [x] Pruebas de subida y visualización

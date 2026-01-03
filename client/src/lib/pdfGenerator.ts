@@ -23,6 +23,7 @@ interface UserData {
   nit?: string;
   address?: string;
   phone?: string;
+  logoUrl?: string;
 }
 
 export function generateReceiptPDF(sale: SaleData, user: UserData): string {
@@ -31,6 +32,16 @@ export function generateReceiptPDF(sale: SaleData, user: UserData): string {
   // Configuración
   const pageWidth = doc.internal.pageSize.getWidth();
   let yPos = 20;
+  
+  // Logo (si existe)
+  if (user.logoUrl) {
+    try {
+      // Agregar logo en la esquina superior derecha
+      doc.addImage(user.logoUrl, "PNG", pageWidth - 50, 10, 40, 40);
+    } catch (error) {
+      console.error("Error al agregar logo al PDF:", error);
+    }
+  }
   
   // Título
   doc.setFontSize(20);
@@ -150,6 +161,16 @@ export function generateReportPDF(
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   let yPos = 20;
+  
+  // Logo (si existe)
+  if (user.logoUrl) {
+    try {
+      // Agregar logo en la esquina superior derecha
+      doc.addImage(user.logoUrl, "PNG", pageWidth - 50, 10, 40, 40);
+    } catch (error) {
+      console.error("Error al agregar logo al PDF:", error);
+    }
+  }
   
   // Título
   doc.setFontSize(18);

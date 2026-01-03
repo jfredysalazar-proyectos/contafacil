@@ -26,6 +26,7 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
   const [location] = useLocation();
   const { user } = useAuth();
+  const { data: profile } = trpc.profile.getProfile.useQuery();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
@@ -73,11 +74,23 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center gap-3 px-6 py-6 border-b border-border">
-            <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-2xl font-bold text-primary-foreground">CF</span>
-            </div>
+            {profile?.logoUrl ? (
+              <div className="w-12 h-12 rounded-lg overflow-hidden border-2 border-primary/20 flex items-center justify-center bg-background">
+                <img
+                  src={profile.logoUrl}
+                  alt="Logo del negocio"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
+                <span className="text-2xl font-bold text-primary-foreground">CF</span>
+              </div>
+            )}
             <div>
-              <h1 className="text-xl font-bold text-foreground">ContaFácil</h1>
+              <h1 className="text-xl font-bold text-foreground">
+                {profile?.businessName || "ContaFácil"}
+              </h1>
               <p className="text-xs text-muted-foreground">Gestión empresarial</p>
             </div>
           </div>
