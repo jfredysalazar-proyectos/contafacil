@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Loader2, Package, AlertTriangle, Plus, Minus, Edit } from "lucide-react";
+import { Loader2, Package, AlertTriangle, Plus, Minus, Edit, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function Inventory() {
   const { user, loading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+  
+  // Estado para búsqueda
+  const [searchTerm, setSearchTerm] = useState("");
   
   // Estados para modales
   const [addStockDialogOpen, setAddStockDialogOpen] = useState(false);
@@ -27,6 +30,7 @@ export default function Inventory() {
   // Estados para formularios
   const [addQuantity, setAddQuantity] = useState("");
   const [selectedSupplierId, setSelectedSupplierId] = useState("");
+  const [invoiceNumber, setInvoiceNumber] = useState("");
   const [unitCost, setUnitCost] = useState("");
   const [addNotes, setAddNotes] = useState("");
   
@@ -53,6 +57,19 @@ export default function Inventory() {
   const { data: inventory, isLoading } = trpc.inventory.list.useQuery();
   const { data: lowStockItems } = trpc.inventory.lowStock.useQuery();
   const { data: suppliers } = trpc.suppliers.list.useQuery();
+
+  // Filtrar productos según el término de búsqueda
+  const filteredInventory = useMemo(() => {
+    if (!inventory) return [];
+    if (!searchTerm.trim()) return inventory;
+    
+    const term = searchTerm.toLowerCase();
+    return inventory.filter((item: any) => {
+      const productName = (item.productName || item.name || "").toLowerCase();
+      const sku = (item.sku || "").toLowerCase();
+      return productName.includes(term) || sku.includes(term);
+    });
+  }, [inventory, searchTerm]);
 
   const addStockMutation = trpc.inventory.addStock.useMutation({
     onSuccess: () => {
@@ -108,6 +125,7 @@ export default function Inventory() {
   const resetAddStockForm = () => {
     setAddQuantity("");
     setSelectedSupplierId("");
+    setInvoiceNumber("");
     setUnitCost("");
     setAddNotes("");
     setSelectedProduct(null);
@@ -135,29 +153,29 @@ export default function Inventory() {
 
   const handleAddStock = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('handleAddStock called!');
-    console.log('selectedProduct:', selectedProduct);
-    console.log('addQuantity:', addQuantity);
     
     if (!selectedProduct) {
-      console.error('No product selected');
       toast.error('No se ha seleccionado un producto');
       return;
     }
 
     if (!addQuantity || parseInt(addQuantity) <= 0) {
-      console.error('Invalid quantity');
       toast.error('La cantidad debe ser mayor a 0');
       return;
     }
 
-    console.log('Calling mutation...');
+    // Construir notas con número de factura si existe
+    let notes = addNotes || "";
+    if (invoiceNumber.trim()) {
+      notes = `Factura: ${invoiceNumber}${notes ? ` - ${notes}` : ""}`;
+    }
+
     addStockMutation.mutate({
-      productId: selectedProduct.id,
+      productId: selectedProduct.productId,
       quantity: parseInt(addQuantity),
       supplierId: selectedSupplierId ? parseInt(selectedSupplierId) : undefined,
       unitCost: unitCost ? parseFloat(unitCost) : undefined,
-      notes: addNotes || undefined,
+      notes: notes || undefined,
     });
   };
 
@@ -166,7 +184,7 @@ export default function Inventory() {
     if (!selectedProduct) return;
 
     reduceStockMutation.mutate({
-      productId: selectedProduct.id,
+      productId: selectedProduct.productId,
       quantity: parseInt(reduceQuantity),
       reason: reduceReason || undefined,
       notes: reduceNotes || undefined,
@@ -178,7 +196,7 @@ export default function Inventory() {
     if (!selectedProduct) return;
 
     adjustStockMutation.mutate({
-      productId: selectedProduct.id,
+      productId: selectedProduct.productId,
       newStock: parseInt(adjustStock),
       reason: adjustReason || undefined,
       notes: adjustNotes || undefined,
@@ -286,15 +304,28 @@ export default function Inventory() {
               Listado de Productos
             </CardTitle>
             <CardDescription>
-              {inventory?.length || 0} productos en inventario
+              {filteredInventory?.length || 0} productos en inventario
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Buscador */}
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nombre o SKU..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : inventory && inventory.length > 0 ? (
+            ) : filteredInventory && filteredInventory.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -307,7 +338,7 @@ export default function Inventory() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {inventory.map((item: any) => {
+                  {filteredInventory.map((item: any) => {
                     const stock = item.stock || 0;
                     const stockAlert = item.stockAlert || 10;
                     const isLowStock = stock <= stockAlert;
@@ -364,7 +395,7 @@ export default function Inventory() {
               </Table>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                No hay productos en el inventario
+                {searchTerm ? "No se encontraron productos que coincidan con la búsqueda" : "No hay productos en el inventario"}
               </div>
             )}
           </CardContent>
@@ -423,7 +454,17 @@ export default function Inventory() {
             </div>
 
             <div>
-              <Label htmlFor="unitCost">Costo unitario</Label>
+              <Label htmlFor="invoiceNumber">Número de Factura</Label>
+              <Input
+                id="invoiceNumber"
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)}
+                placeholder="Ej: FAC-001234"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="unitCost">Costo unitario de compra</Label>
               <Input
                 id="unitCost"
                 type="number"
@@ -441,7 +482,7 @@ export default function Inventory() {
             </div>
 
             <div>
-              <Label htmlFor="addNotes">Notas</Label>
+              <Label htmlFor="addNotes">Notas adicionales</Label>
               <Input
                 id="addNotes"
                 value={addNotes}
@@ -485,25 +526,36 @@ export default function Inventory() {
                 id="reduceQuantity"
                 type="number"
                 min="1"
+                max={selectedProduct?.stock || 0}
                 value={reduceQuantity}
                 onChange={(e) => setReduceQuantity(e.target.value)}
                 placeholder="Ej: 10"
                 required
               />
+              <p className="text-sm text-muted-foreground mt-1">
+                Stock disponible: {selectedProduct?.stock || 0}
+              </p>
             </div>
 
             <div>
-              <Label htmlFor="reduceReason">Motivo</Label>
-              <Input
-                id="reduceReason"
-                value={reduceReason}
-                onChange={(e) => setReduceReason(e.target.value)}
-                placeholder="Ej: Producto dañado, Muestra, etc."
-              />
+              <Label htmlFor="reduceReason">Motivo *</Label>
+              <Select value={reduceReason} onValueChange={setReduceReason} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un motivo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="damaged">Producto dañado</SelectItem>
+                  <SelectItem value="expired">Producto vencido</SelectItem>
+                  <SelectItem value="sample">Muestra o regalo</SelectItem>
+                  <SelectItem value="theft">Pérdida o robo</SelectItem>
+                  <SelectItem value="return">Devolución a proveedor</SelectItem>
+                  <SelectItem value="other">Otro motivo</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
-              <Label htmlFor="reduceNotes">Notas</Label>
+              <Label htmlFor="reduceNotes">Notas adicionales</Label>
               <Input
                 id="reduceNotes"
                 value={reduceNotes}

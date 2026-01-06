@@ -869,8 +869,8 @@ export async function addInventoryMovement(data: {
       userId, productId, variationId, supplierId, saleId,
       movementType, quantity, unitCost, totalCost, reason, notes
     ) VALUES (
-      ${data.userId}, ${data.productId}, ${data.variationId}, ${data.supplierId}, ${data.saleId},
-      ${data.movementType}, ${data.quantity}, ${data.unitCost}, ${data.totalCost}, ${data.reason}, ${data.notes}
+      ${data.userId}, ${data.productId}, ${data.variationId ?? null}, ${data.supplierId ?? null}, ${data.saleId ?? null},
+      ${data.movementType}, ${data.quantity}, ${data.unitCost ?? null}, ${data.totalCost ?? null}, ${data.reason ?? null}, ${data.notes ?? null}
     )
   `);
   

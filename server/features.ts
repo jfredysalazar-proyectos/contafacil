@@ -89,7 +89,6 @@ export const inventoryRouter = router({
         quantity: input.quantity,
         unitCost: input.unitCost,
         totalCost,
-        reason: "Compra a proveedor",
         notes: input.notes,
       });
     }),
