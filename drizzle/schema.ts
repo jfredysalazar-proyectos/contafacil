@@ -412,3 +412,57 @@ export const inventoryMovements = mysqlTable("inventoryMovements", {
 
 export type InventoryMovement = typeof inventoryMovements.$inferSelect;
 export type InsertInventoryMovement = typeof inventoryMovements.$inferInsert;
+
+/**
+ * Tabla de cotizaciones
+ */
+export const quotations = mysqlTable("quotations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  customerId: int("customerId"),
+  quotationNumber: varchar("quotationNumber", { length: 50 }).notNull().unique(),
+  quotationDate: timestamp("quotationDate").notNull(),
+  validUntil: timestamp("validUntil").notNull(),
+  subtotal: decimal("subtotal", { precision: 15, scale: 2 }).notNull(),
+  tax: decimal("tax", { precision: 15, scale: 2 }).default("0").notNull(),
+  discount: decimal("discount", { precision: 15, scale: 2 }).default("0").notNull(),
+  total: decimal("total", { precision: 15, scale: 2 }).notNull(),
+  status: mysqlEnum("status", ["draft", "sent", "accepted", "rejected", "expired", "converted"]).default("draft").notNull(),
+  paymentTerms: text("paymentTerms"),
+  deliveryTerms: text("deliveryTerms"),
+  notes: text("notes"),
+  convertedToSaleId: int("convertedToSaleId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("quotations_userId_idx").on(table.userId),
+  customerIdIdx: index("quotations_customerId_idx").on(table.customerId),
+  quotationDateIdx: index("quotations_quotationDate_idx").on(table.quotationDate),
+  statusIdx: index("quotations_status_idx").on(table.status),
+}));
+
+export type Quotation = typeof quotations.$inferSelect;
+export type InsertQuotation = typeof quotations.$inferInsert;
+
+/**
+ * Tabla de items de cotización
+ */
+export const quotationItems = mysqlTable("quotationItems", {
+  id: int("id").autoincrement().primaryKey(),
+  quotationId: int("quotationId").notNull(),
+  productId: int("productId").notNull(),
+  variationId: int("variationId"),
+  productName: text("productName").notNull(),
+  description: text("description"),
+  quantity: int("quantity").notNull(),
+  unitPrice: decimal("unitPrice", { precision: 15, scale: 2 }).notNull(),
+  discount: decimal("discount", { precision: 15, scale: 2 }).default("0").notNull(),
+  subtotal: decimal("subtotal", { precision: 15, scale: 2 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  quotationIdIdx: index("quotationItems_quotationId_idx").on(table.quotationId),
+  productIdIdx: index("quotationItems_productId_idx").on(table.productId),
+}));
+
+export type QuotationItem = typeof quotationItems.$inferSelect;
+export type InsertQuotationItem = typeof quotationItems.$inferInsert;

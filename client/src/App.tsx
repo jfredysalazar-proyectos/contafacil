@@ -18,6 +18,7 @@ import Sales from "./pages/Sales";
 import Expenses from "./pages/Expenses";
 import Debts from "./pages/Debts";
 import Profile from "./pages/Profile";
+import Quotations from "./pages/Quotations";
 
 function Router() {
   return (
@@ -47,6 +48,9 @@ function Router() {
       </Route>
       <Route path="/sales">
         <AppLayout><Sales /></AppLayout>
+      </Route>
+      <Route path="/quotations">
+        <AppLayout><Quotations /></AppLayout>
       </Route>
       <Route path="/expenses">
         <AppLayout><Expenses /></AppLayout>

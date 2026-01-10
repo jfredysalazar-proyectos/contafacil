@@ -11,6 +11,7 @@ import {
   debtsRouter,
   statsRouter,
   categoriesRouter,
+  quotationsRouter,
 } from "./features";
 import { pdfRouter } from "./pdf";
 import { passwordResetRouter } from "./password-reset-router";
@@ -28,6 +29,7 @@ export const appRouter = router({
   debts: debtsRouter,
   stats: statsRouter,
   categories: categoriesRouter,
+  quotations: quotationsRouter,
   pdf: pdfRouter,
   passwordReset: passwordResetRouter,
   profile: profileRouter,

@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   UserCircle,
+  FileText,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -41,6 +42,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     { name: "Clientes", href: "/customers", icon: Users },
     { name: "Proveedores", href: "/suppliers", icon: Building2 },
     { name: "Ventas", href: "/sales", icon: ShoppingCart },
+    { name: "Cotizaciones", href: "/quotations", icon: FileText },
     { name: "Gastos", href: "/expenses", icon: Receipt },
     { name: "Deudas", href: "/debts", icon: DollarSign },
     { name: "Mi Perfil", href: "/profile", icon: UserCircle },

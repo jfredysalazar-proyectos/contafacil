@@ -14,6 +14,8 @@ import {
   payments,
   productCategories,
   expenseCategories,
+  quotations,
+  quotationItems,
   type InsertProduct,
   type InsertProductVariation,
   type InsertInventory,
@@ -27,6 +29,8 @@ import {
   type InsertPayment,
   type InsertProductCategory,
   type InsertExpenseCategory,
+  type InsertQuotation,
+  type InsertQuotationItem,
 } from "../drizzle/schema";
 
 // ==================== PRODUCTOS ====================
@@ -956,4 +960,220 @@ export async function getLowStockProducts(userId: number) {
     .orderBy(inventory.stock);
   
   return result;
+}
+
+// ==================== COTIZACIONES ====================
+
+export async function createQuotation(
+  data: InsertQuotation,
+  items: Omit<InsertQuotationItem, 'quotationId'>[]
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Insertar cotización
+  const quotationResult = await db.insert(quotations).values(data);
+  const quotationId = Number(quotationResult[0].insertId);
+  
+  // Insertar items de cotización
+  const itemsWithQuotationId = items.map(item => ({ ...item, quotationId }));
+  await db.insert(quotationItems).values(itemsWithQuotationId);
+  
+  return quotationId;
+}
+
+export async function getQuotationsByUserId(userId: number, status?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const conditions = [eq(quotations.userId, userId)];
+  
+  if (status) {
+    conditions.push(eq(quotations.status, status as any));
+  }
+  
+  return await db
+    .select()
+    .from(quotations)
+    .where(and(...conditions))
+    .orderBy(desc(quotations.quotationDate));
+}
+
+export async function getQuotationById(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const quotation = await db
+    .select()
+    .from(quotations)
+    .where(and(eq(quotations.id, id), eq(quotations.userId, userId)))
+    .limit(1);
+  
+  if (quotation.length === 0) return null;
+  
+  const items = await db
+    .select()
+    .from(quotationItems)
+    .where(eq(quotationItems.quotationId, id));
+  
+  return { ...quotation[0], items };
+}
+
+export async function updateQuotation(
+  id: number,
+  userId: number,
+  data: Partial<Omit<InsertQuotation, 'userId'>>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Verificar que la cotización pertenece al usuario
+  const quotation = await db
+    .select()
+    .from(quotations)
+    .where(and(eq(quotations.id, id), eq(quotations.userId, userId)))
+    .limit(1);
+  
+  if (quotation.length === 0) {
+    throw new Error("Quotation not found or unauthorized");
+  }
+  
+  await db
+    .update(quotations)
+    .set(data)
+    .where(eq(quotations.id, id));
+}
+
+export async function deleteQuotation(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Verificar que la cotización pertenece al usuario
+  const quotation = await db
+    .select()
+    .from(quotations)
+    .where(and(eq(quotations.id, id), eq(quotations.userId, userId)))
+    .limit(1);
+  
+  if (quotation.length === 0) {
+    throw new Error("Quotation not found or unauthorized");
+  }
+  
+  // Eliminar items primero
+  await db
+    .delete(quotationItems)
+    .where(eq(quotationItems.quotationId, id));
+  
+  // Eliminar cotización
+  await db
+    .delete(quotations)
+    .where(eq(quotations.id, id));
+}
+
+export async function getQuotationItemsByQuotationId(quotationId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Verificar que la cotización pertenece al usuario
+  const quotation = await db
+    .select()
+    .from(quotations)
+    .where(and(eq(quotations.id, quotationId), eq(quotations.userId, userId)))
+    .limit(1);
+  
+  if (quotation.length === 0) {
+    throw new Error("Quotation not found or unauthorized");
+  }
+  
+  return await db
+    .select()
+    .from(quotationItems)
+    .where(eq(quotationItems.quotationId, quotationId));
+}
+
+export async function updateQuotationItems(
+  quotationId: number,
+  userId: number,
+  items: Omit<InsertQuotationItem, 'quotationId'>[]
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Verificar que la cotización pertenece al usuario
+  const quotation = await db
+    .select()
+    .from(quotations)
+    .where(and(eq(quotations.id, quotationId), eq(quotations.userId, userId)))
+    .limit(1);
+  
+  if (quotation.length === 0) {
+    throw new Error("Quotation not found or unauthorized");
+  }
+  
+  // Eliminar items antiguos
+  await db
+    .delete(quotationItems)
+    .where(eq(quotationItems.quotationId, quotationId));
+  
+  // Insertar nuevos items
+  const itemsWithQuotationId = items.map(item => ({ ...item, quotationId }));
+  await db.insert(quotationItems).values(itemsWithQuotationId);
+}
+
+export async function convertQuotationToSale(
+  quotationId: number,
+  userId: number,
+  saleData: {
+    saleNumber: string;
+    saleDate: Date;
+    paymentMethod: 'cash' | 'card' | 'transfer' | 'credit';
+    status?: 'completed' | 'pending' | 'cancelled';
+    notes?: string;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Obtener cotización con items
+  const quotation = await getQuotationById(quotationId, userId);
+  if (!quotation) {
+    throw new Error("Quotation not found");
+  }
+  
+  if (quotation.status === 'converted') {
+    throw new Error("Quotation already converted to sale");
+  }
+  
+  // Crear venta
+  const saleId = await createSale(
+    {
+      userId,
+      customerId: quotation.customerId || undefined,
+      saleNumber: saleData.saleNumber,
+      saleDate: saleData.saleDate,
+      subtotal: quotation.subtotal,
+      tax: quotation.tax,
+      discount: quotation.discount,
+      total: quotation.total,
+      paymentMethod: saleData.paymentMethod,
+      status: saleData.status || 'completed',
+      notes: saleData.notes || quotation.notes || undefined,
+    },
+    quotation.items.map(item => ({
+      productId: item.productId,
+      variationId: item.variationId || undefined,
+      productName: item.productName,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      subtotal: item.subtotal,
+    }))
+  );
+  
+  // Actualizar cotización como convertida
+  await updateQuotation(quotationId, userId, {
+    status: 'converted',
+    convertedToSaleId: saleId,
+  });
+  
+  return saleId;
 }

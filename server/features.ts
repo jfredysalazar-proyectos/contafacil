@@ -653,3 +653,151 @@ export const categoriesRouter = router({
       }),
   }),
 });
+
+// ==================== COTIZACIONES ====================
+
+export const quotationsRouter = router({
+  list: protectedProcedure
+    .input(
+      z.object({
+        status: z.enum(["draft", "sent", "accepted", "rejected", "expired", "converted"]).optional(),
+      }).optional()
+    )
+    .query(async ({ input, ctx }) => {
+      return await dbQueries.getQuotationsByUserId(ctx.user.id, input?.status);
+    }),
+
+  getById: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input, ctx }) => {
+      return await dbQueries.getQuotationById(input.id, ctx.user.id);
+    }),
+
+  getItems: protectedProcedure
+    .input(z.object({ quotationId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      return await dbQueries.getQuotationItemsByQuotationId(input.quotationId, ctx.user.id);
+    }),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        customerId: z.number().optional(),
+        quotationNumber: z.string(),
+        quotationDate: z.date(),
+        validUntil: z.date(),
+        items: z.array(
+          z.object({
+            productId: z.number(),
+            variationId: z.number().optional(),
+            productName: z.string(),
+            description: z.string().optional(),
+            quantity: z.number(),
+            unitPrice: z.string(),
+            discount: z.string().default("0"),
+            subtotal: z.string(),
+          })
+        ),
+        subtotal: z.string(),
+        tax: z.string().default("0"),
+        discount: z.string().default("0"),
+        total: z.string(),
+        status: z.enum(["draft", "sent", "accepted", "rejected", "expired", "converted"]).default("draft"),
+        paymentTerms: z.string().optional(),
+        deliveryTerms: z.string().optional(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { items, ...quotationData } = input;
+      
+      const quotationId = await dbQueries.createQuotation(
+        {
+          ...quotationData,
+          userId: ctx.user.id,
+        },
+        items
+      );
+      
+      return { success: true, quotationId };
+    }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        customerId: z.number().optional(),
+        validUntil: z.date().optional(),
+        items: z.array(
+          z.object({
+            productId: z.number(),
+            variationId: z.number().optional(),
+            productName: z.string(),
+            description: z.string().optional(),
+            quantity: z.number(),
+            unitPrice: z.string(),
+            discount: z.string().default("0"),
+            subtotal: z.string(),
+          })
+        ).optional(),
+        subtotal: z.string().optional(),
+        tax: z.string().optional(),
+        discount: z.string().optional(),
+        total: z.string().optional(),
+        status: z.enum(["draft", "sent", "accepted", "rejected", "expired", "converted"]).optional(),
+        paymentTerms: z.string().optional(),
+        deliveryTerms: z.string().optional(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { id, items, ...updateData } = input;
+      
+      // Actualizar cotización
+      await dbQueries.updateQuotation(id, ctx.user.id, updateData);
+      
+      // Si se proporcionan items, actualizarlos
+      if (items) {
+        await dbQueries.updateQuotationItems(id, ctx.user.id, items);
+      }
+      
+      return { success: true };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      await dbQueries.deleteQuotation(input.id, ctx.user.id);
+      return { success: true };
+    }),
+
+  convertToSale: protectedProcedure
+    .input(
+      z.object({
+        quotationId: z.number(),
+        saleNumber: z.string(),
+        saleDate: z.date(),
+        paymentMethod: z.enum(["cash", "card", "transfer", "credit"]),
+        status: z.enum(["completed", "pending", "cancelled"]).default("completed"),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { quotationId, ...saleData } = input;
+      
+      try {
+        const saleId = await dbQueries.convertQuotationToSale(
+          quotationId,
+          ctx.user.id,
+          saleData
+        );
+        
+        return { success: true, saleId };
+      } catch (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: error instanceof Error ? error.message : "Error al convertir cotización a venta",
+        });
+      }
+    }),
+});
