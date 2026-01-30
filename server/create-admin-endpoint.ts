@@ -5,7 +5,7 @@
 
 import { Express, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { db } from './db';
+import { getDb } from './db';
 import { users } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
@@ -20,6 +20,11 @@ export function registerAdminEndpoint(app: Express) {
       console.log('🔐 Iniciando creación de usuario administrador...');
 
       // Verificar si ya existe un usuario administrador
+      const db = await getDb();
+      if (!db) {
+        throw new Error('Base de datos no disponible');
+      }
+
       const existingAdmins = await db
         .select()
         .from(users)
