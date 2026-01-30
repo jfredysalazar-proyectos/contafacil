@@ -8,6 +8,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { registerAdminEndpoint } from "../create-admin-endpoint";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -38,6 +39,8 @@ async function startServer() {
   app.use(cookieParser());
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+  // Temporary endpoint to create admin user
+  registerAdminEndpoint(app);
   // tRPC API
   app.use(
     "/api/trpc",
