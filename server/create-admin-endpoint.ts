@@ -5,7 +5,9 @@
 
 import { Express, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import mysql from 'mysql2/promise';
+import { getDb, createUser, getUserByEmail } from './db';
+import { users } from '../drizzle/schema';
+import { eq, sql } from 'drizzle-orm';
 
 const ADMIN_EMAIL = 'admin@contafacil.com';
 const ADMIN_PASSWORD = 'Admin123!';
@@ -14,24 +16,22 @@ const ADMIN_NAME = 'Administrador';
 export function registerAdminEndpoint(app: Express) {
   // Endpoint para crear usuario administrador
   app.get('/api/create-admin-user', async (req: Request, res: Response) => {
-    let connection: mysql.Connection | null = null;
-    
     try {
       console.log('🔐 Iniciando creación de usuario administrador...');
 
-      if (!process.env.DATABASE_URL) {
-        throw new Error('DATABASE_URL no está configurada');
+      const db = await getDb();
+      if (!db) {
+        throw new Error('Base de datos no disponible');
       }
 
-      // Crear conexión directa a MySQL
-      connection = await mysql.createConnection(process.env.DATABASE_URL);
-      
       console.log('✓ Conexión a base de datos establecida');
 
-      // Verificar si ya existe un usuario administrador
-      const [existingAdmins] = await connection.query<mysql.RowDataPacket[]>(
-        "SELECT id, email, name, role FROM users WHERE role = 'admin'"
+      // Verificar si ya existe un usuario administrador usando SQL raw
+      const existingAdminsResult = await db.execute(
+        sql`SELECT id, email, name, role FROM users WHERE role = 'admin'`
       );
+      
+      const existingAdmins = existingAdminsResult.rows as any[];
 
       if (existingAdmins.length > 0) {
         console.log('⚠️  Ya existe un usuario administrador');
@@ -48,21 +48,18 @@ export function registerAdminEndpoint(app: Express) {
       }
 
       // Verificar si el email ya existe
-      const [existingUser] = await connection.query<mysql.RowDataPacket[]>(
-        'SELECT id, email, name, role FROM users WHERE email = ?',
-        [ADMIN_EMAIL]
-      );
+      const existingUser = await getUserByEmail(ADMIN_EMAIL);
 
-      if (existingUser.length > 0) {
+      if (existingUser) {
         console.log('⚠️  Ya existe un usuario con el email especificado');
         return res.json({
           success: false,
           message: `Ya existe un usuario con el email ${ADMIN_EMAIL}`,
           user: {
-            id: existingUser[0].id,
-            email: existingUser[0].email,
-            name: existingUser[0].name,
-            role: existingUser[0].role
+            id: existingUser.id,
+            email: existingUser.email,
+            name: existingUser.name,
+            role: existingUser.role
           }
         });
       }
@@ -72,15 +69,14 @@ export function registerAdminEndpoint(app: Express) {
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, salt);
 
-      // Insertar usuario administrador
+      // Insertar usuario administrador usando SQL raw para evitar problemas con el enum
       console.log('👤 Creando usuario administrador...');
-      const [result] = await connection.query<mysql.ResultSetHeader>(
-        `INSERT INTO users (email, passwordHash, name, role, createdAt, updatedAt, lastSignedIn)
-         VALUES (?, ?, ?, 'admin', NOW(), NOW(), NOW())`,
-        [ADMIN_EMAIL, passwordHash, ADMIN_NAME]
+      const insertResult = await db.execute(
+        sql`INSERT INTO users (email, passwordHash, name, role, createdAt, updatedAt, lastSignedIn)
+            VALUES (${ADMIN_EMAIL}, ${passwordHash}, ${ADMIN_NAME}, 'admin', NOW(), NOW(), NOW())`
       );
 
-      const insertId = result.insertId;
+      const insertId = (insertResult as any).insertId || 0;
 
       console.log('✅ Usuario administrador creado exitosamente!');
       console.log(`   Email: ${ADMIN_EMAIL}`);
@@ -88,9 +84,11 @@ export function registerAdminEndpoint(app: Express) {
       console.log(`   ID: ${insertId}`);
 
       // Obtener todos los usuarios para mostrar
-      const [allUsers] = await connection.query<mysql.RowDataPacket[]>(
-        'SELECT id, email, name, role, createdAt FROM users ORDER BY id'
+      const allUsersResult = await db.execute(
+        sql`SELECT id, email, name, role, createdAt FROM users ORDER BY id`
       );
+      
+      const allUsers = allUsersResult.rows as any[];
 
       return res.json({
         success: true,
@@ -115,13 +113,9 @@ export function registerAdminEndpoint(app: Express) {
       return res.status(500).json({
         success: false,
         message: 'Error al crear usuario administrador',
-        error: error instanceof Error ? error.message : 'Error desconocido'
+        error: error instanceof Error ? error.message : 'Error desconocido',
+        stack: error instanceof Error ? error.stack : undefined
       });
-    } finally {
-      if (connection) {
-        await connection.end();
-        console.log('✓ Conexión cerrada');
-      }
     }
   });
 
