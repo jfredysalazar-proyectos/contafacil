@@ -7,7 +7,6 @@ import { Express, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { getDb, createUser, getUserByEmail } from './db';
 import { users } from '../drizzle/schema';
-import { eq, sql } from 'drizzle-orm';
 
 const ADMIN_EMAIL = 'admin@contafacil.com';
 const ADMIN_PASSWORD = 'Admin123!';
@@ -26,19 +25,18 @@ export function registerAdminEndpoint(app: Express) {
 
       console.log('✓ Conexión a base de datos establecida');
 
-      // Verificar si ya existe un usuario administrador usando SQL raw
-      const existingAdminsResult = await db.execute(
-        sql`SELECT id, email, name, role FROM users WHERE role = 'admin'`
-      );
+      // Obtener todos los usuarios
+      const allUsers = await db.select().from(users);
       
-      const existingAdmins = existingAdminsResult.rows as any[];
+      // Filtrar usuarios administradores en JavaScript
+      const existingAdmins = allUsers.filter(user => user.role === 'admin');
 
       if (existingAdmins.length > 0) {
         console.log('⚠️  Ya existe un usuario administrador');
         return res.json({
           success: false,
           message: 'Ya existe un usuario administrador en la base de datos',
-          existingAdmins: existingAdmins.map((admin: any) => ({
+          existingAdmins: existingAdmins.map(admin => ({
             id: admin.id,
             email: admin.email,
             name: admin.name,
@@ -69,26 +67,24 @@ export function registerAdminEndpoint(app: Express) {
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, salt);
 
-      // Insertar usuario administrador usando SQL raw para evitar problemas con el enum
+      // Insertar usuario administrador usando la función createUser
       console.log('👤 Creando usuario administrador...');
-      const insertResult = await db.execute(
-        sql`INSERT INTO users (email, passwordHash, name, role, createdAt, updatedAt, lastSignedIn)
-            VALUES (${ADMIN_EMAIL}, ${passwordHash}, ${ADMIN_NAME}, 'admin', NOW(), NOW(), NOW())`
-      );
+      const result = await createUser({
+        email: ADMIN_EMAIL,
+        passwordHash,
+        name: ADMIN_NAME,
+        role: 'admin',
+      });
 
-      const insertId = (insertResult as any).insertId || 0;
+      const insertId = result[0].insertId;
 
       console.log('✅ Usuario administrador creado exitosamente!');
       console.log(`   Email: ${ADMIN_EMAIL}`);
       console.log(`   Contraseña: ${ADMIN_PASSWORD}`);
       console.log(`   ID: ${insertId}`);
 
-      // Obtener todos los usuarios para mostrar
-      const allUsersResult = await db.execute(
-        sql`SELECT id, email, name, role, createdAt FROM users ORDER BY id`
-      );
-      
-      const allUsers = allUsersResult.rows as any[];
+      // Obtener todos los usuarios actualizados
+      const updatedUsers = await db.select().from(users);
 
       return res.json({
         success: true,
@@ -98,8 +94,8 @@ export function registerAdminEndpoint(app: Express) {
           password: ADMIN_PASSWORD,
           id: insertId
         },
-        totalUsers: allUsers.length,
-        users: allUsers.map((user: any) => ({
+        totalUsers: updatedUsers.length,
+        users: updatedUsers.map(user => ({
           id: user.id,
           email: user.email,
           name: user.name,
