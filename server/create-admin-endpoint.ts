@@ -13,6 +13,51 @@ const ADMIN_PASSWORD = 'Admin123!';
 const ADMIN_NAME = 'Administrador';
 
 export function registerAdminEndpoint(app: Express) {
+  // Endpoint de diagnóstico
+  app.get('/api/db-test', async (req: Request, res: Response) => {
+    try {
+      console.log('🔍 Probando conexión a base de datos...');
+      
+      const db = await getDb();
+      if (!db) {
+        return res.json({
+          success: false,
+          message: 'No se pudo obtener la conexión a la base de datos',
+          env: {
+            hasDatabaseUrl: !!process.env.DATABASE_URL,
+            databaseUrlPrefix: process.env.DATABASE_URL?.substring(0, 20) + '...'
+          }
+        });
+      }
+
+      console.log('✓ Conexión obtenida, intentando consulta...');
+      
+      // Intentar una consulta simple
+      try {
+        const result = await db.select().from(users).limit(1);
+        return res.json({
+          success: true,
+          message: 'Conexión exitosa',
+          userCount: result.length,
+          hasUsers: result.length > 0
+        });
+      } catch (queryError) {
+        return res.json({
+          success: false,
+          message: 'Error al ejecutar consulta',
+          error: queryError instanceof Error ? queryError.message : 'Error desconocido',
+          stack: queryError instanceof Error ? queryError.stack : undefined
+        });
+      }
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Error general',
+        error: error instanceof Error ? error.message : 'Error desconocido'
+      });
+    }
+  });
+
   // Endpoint para crear usuario administrador
   app.get('/api/create-admin-user', async (req: Request, res: Response) => {
     try {
@@ -26,7 +71,12 @@ export function registerAdminEndpoint(app: Express) {
       console.log('✓ Conexión a base de datos establecida');
 
       // Obtener todos los usuarios
-      const allUsers = await db.select().from(users);
+      let allUsers;
+      try {
+        allUsers = await db.select().from(users);
+      } catch (selectError) {
+        throw new Error(`Error al obtener usuarios: ${selectError instanceof Error ? selectError.message : 'Error desconocido'}`);
+      }
       
       // Filtrar usuarios administradores en JavaScript
       const existingAdmins = allUsers.filter(user => user.role === 'admin');
@@ -115,5 +165,5 @@ export function registerAdminEndpoint(app: Express) {
     }
   });
 
-  console.log('✓ Endpoint temporal /api/create-admin-user registrado');
+  console.log('✓ Endpoints temporales registrados: /api/db-test y /api/create-admin-user');
 }
