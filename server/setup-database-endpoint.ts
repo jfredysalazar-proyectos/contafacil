@@ -57,6 +57,32 @@ export function registerSetupEndpoint(app: Express) {
 
       console.log('✅ Tabla users encontrada');
 
+      // Verificar las columnas de la tabla users
+      console.log('🔍 Verificando columnas de la tabla users...');
+      const [columns]: any = await connection.query('DESCRIBE users');
+      const columnNames = columns.map((c: any) => c.Field);
+      console.log(`📋 Columnas encontradas: ${columnNames.join(', ')}`);
+
+      // Determinar el nombre correcto de la columna de contraseña
+      let passwordColumn = 'passwordHash';
+      if (!columnNames.includes('passwordHash')) {
+        // Buscar alternativas comunes
+        const alternatives = ['password_hash', 'password', 'hash'];
+        const found = alternatives.find(alt => columnNames.includes(alt));
+        if (found) {
+          passwordColumn = found;
+          console.log(`⚠️  Usando columna alternativa: ${passwordColumn}`);
+        } else {
+          await connection.end();
+          return res.json({
+            success: false,
+            message: 'No se encontró una columna de contraseña en la tabla users',
+            columns: columnNames,
+            action: 'Verifica el schema de la base de datos'
+          });
+        }
+      }
+
       // Verificar si ya existe un usuario administrador
       console.log('👤 Verificando usuarios existentes...');
       const [existingUsers]: any = await connection.query('SELECT * FROM users');
@@ -103,7 +129,7 @@ export function registerSetupEndpoint(app: Express) {
       const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, salt);
 
       const [result]: any = await connection.query(
-        'INSERT INTO users (email, passwordHash, name, role, createdAt, updatedAt) VALUES (?, ?, ?, ?, NOW(), NOW())',
+        `INSERT INTO users (email, ${passwordColumn}, name, role, createdAt, updatedAt) VALUES (?, ?, ?, ?, NOW(), NOW())`,
         [ADMIN_EMAIL, passwordHash, ADMIN_NAME, 'admin']
       );
 
@@ -122,7 +148,8 @@ export function registerSetupEndpoint(app: Express) {
           password: ADMIN_PASSWORD,
           id: result.insertId
         },
-        totalUsers: existingUsers.length + 1
+        totalUsers: existingUsers.length + 1,
+        passwordColumn: passwordColumn
       });
 
     } catch (error) {
