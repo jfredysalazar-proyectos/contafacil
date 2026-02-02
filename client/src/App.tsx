@@ -21,6 +21,9 @@ import Expenses from "./pages/Expenses";
 import Debts from "./pages/Debts";
 import Profile from "./pages/Profile";
 import Quotations from "./pages/Quotations";
+import Employees from "./pages/Employees";
+import Roles from "./pages/Roles";
+import Unauthorized from "./pages/Unauthorized";
 
 function Router() {
   return (
@@ -69,7 +72,14 @@ function Router() {
       <Route path="/profile">
         <AppLayout><Profile /></AppLayout>
       </Route>
+      <Route path="/employees">
+        <AppLayout><Employees /></AppLayout>
+      </Route>
+      <Route path="/roles">
+        <AppLayout><Roles /></AppLayout>
+      </Route>
       
+      <Route path="/unauthorized" component={Unauthorized} />
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

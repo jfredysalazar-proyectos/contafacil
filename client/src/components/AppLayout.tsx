@@ -17,6 +17,8 @@ import {
   X,
   UserCircle,
   FileText,
+  UserCog,
+  Shield,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -45,6 +47,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
     { name: "Cotizaciones", href: "/quotations", icon: FileText },
     { name: "Gastos", href: "/expenses", icon: Receipt },
     { name: "Deudas", href: "/debts", icon: DollarSign },
+    { name: "Empleados", href: "/employees", icon: UserCog },
+    { name: "Roles", href: "/roles", icon: Shield },
     { name: "Mi Perfil", href: "/profile", icon: UserCircle },
   ];
 
