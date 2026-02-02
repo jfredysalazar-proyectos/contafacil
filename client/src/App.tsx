@@ -49,7 +49,7 @@ function Router() {
         <AppLayout><Suppliers /></AppLayout>
       </Route>
       <Route path="/sales">
-        <SalesPOS />
+        <AppLayout><SalesPOS /></AppLayout>
       </Route>
       <Route path="/sales-history">
         <AppLayout><SalesHistory /></AppLayout>

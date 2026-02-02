@@ -173,9 +173,9 @@ export default function SalesPOS() {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-gray-50">
+    <div className="flex flex-col h-full overflow-hidden bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
+      <div className="bg-white border-b px-6 py-3 flex items-center justify-between flex-shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Punto de Venta</h1>
           <p className="text-sm text-gray-500">Registra ventas de forma rápida y eficiente</p>
