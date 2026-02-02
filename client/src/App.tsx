@@ -15,6 +15,8 @@ import Inventory from "./pages/Inventory";
 import Customers from "./pages/Customers";
 import Suppliers from "./pages/Suppliers";
 import Sales from "./pages/Sales";
+import SalesPOS from "./pages/SalesPOS";
+import SalesHistory from "./pages/SalesHistory";
 import Expenses from "./pages/Expenses";
 import Debts from "./pages/Debts";
 import Profile from "./pages/Profile";
@@ -47,6 +49,12 @@ function Router() {
         <AppLayout><Suppliers /></AppLayout>
       </Route>
       <Route path="/sales">
+        <SalesPOS />
+      </Route>
+      <Route path="/sales-history">
+        <AppLayout><SalesHistory /></AppLayout>
+      </Route>
+      <Route path="/sales-old">
         <AppLayout><Sales /></AppLayout>
       </Route>
       <Route path="/quotations">
