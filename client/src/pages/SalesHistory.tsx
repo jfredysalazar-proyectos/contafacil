@@ -8,6 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2, FileText, Download, Eye, ArrowLeft, Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { generateReceiptPDF } from "@/lib/pdfGenerator";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -15,6 +16,8 @@ import { es } from "date-fns/locale";
 export default function SalesHistory() {
   const { user, loading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [showPdfModal, setShowPdfModal] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -58,14 +61,8 @@ export default function SalesHistory() {
         }
       );
       
-      const link = document.createElement('a');
-      link.href = pdfDataUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
+      setPdfUrl(pdfDataUrl);
+      setShowPdfModal(true);
       toast.success('Comprobante PDF generado');
     } catch (error) {
       console.error("Error al generar PDF:", error);
@@ -244,6 +241,24 @@ export default function SalesHistory() {
           )}
         </CardContent>
       </Card>
+
+      {/* PDF Viewer Modal */}
+      <Dialog open={showPdfModal} onOpenChange={setShowPdfModal}>
+        <DialogContent className="max-w-4xl h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Comprobante de Venta</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            {pdfUrl && (
+              <iframe
+                src={pdfUrl}
+                className="w-full h-full border-0"
+                title="Comprobante PDF"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
