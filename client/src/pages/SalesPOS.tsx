@@ -10,6 +10,11 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Search, ShoppingCart, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown, UserPlus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function SalesPOS() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -23,6 +28,17 @@ export default function SalesPOS() {
   // Estados de búsqueda y filtros
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  
+  // Estados para crear cliente rápido
+  const [isAddCustomerDialogOpen, setIsAddCustomerDialogOpen] = useState(false);
+  const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+  const [openCustomerPopover, setOpenCustomerPopover] = useState(false);
+  const [newCustomerData, setNewCustomerData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    idNumber: "",
+  });
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -45,6 +61,19 @@ export default function SalesPOS() {
     },
     onError: (error) => {
       toast.error(error.message || "Error al registrar venta");
+    },
+  });
+  
+  const createCustomerMutation = trpc.customers.create.useMutation({
+    onSuccess: (data) => {
+      toast.success("Cliente creado exitosamente");
+      utils.customers.list.invalidate();
+      setCustomerId(data.id.toString());
+      setIsAddCustomerDialogOpen(false);
+      setNewCustomerData({ name: "", email: "", phone: "", idNumber: "" });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error al crear cliente");
     },
   });
 
@@ -136,6 +165,36 @@ export default function SalesPOS() {
     setCustomerId("");
     setPaymentMethod("cash");
   };
+  
+  const handleCreateCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newCustomerData.name.trim()) {
+      toast.error("El nombre del cliente es requerido");
+      return;
+    }
+    
+    await createCustomerMutation.mutateAsync({
+      name: newCustomerData.name,
+      email: newCustomerData.email || undefined,
+      phone: newCustomerData.phone || undefined,
+      idNumber: newCustomerData.idNumber || undefined,
+    });
+  };
+  
+  // Filtrar clientes por búsqueda
+  const filteredCustomers = useMemo(() => {
+    if (!customers) return [];
+    if (!customerSearchTerm.trim()) return customers;
+    
+    const searchLower = customerSearchTerm.toLowerCase();
+    return customers.filter(customer => 
+      customer.name.toLowerCase().includes(searchLower) ||
+      customer.email?.toLowerCase().includes(searchLower) ||
+      customer.phone?.includes(searchLower) ||
+      customer.idNumber?.includes(searchLower)
+    );
+  }, [customers, customerSearchTerm]);
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -298,19 +357,80 @@ export default function SalesPOS() {
             {/* Customer Selection */}
             <div className="space-y-2">
               <Label>Cliente (opcional)</Label>
-              <Select value={customerId} onValueChange={setCustomerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin cliente</SelectItem>
-                  {customers?.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id.toString()}>
-                      {customer.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Popover open={openCustomerPopover} onOpenChange={setOpenCustomerPopover}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openCustomerPopover}
+                      className="flex-1 justify-between"
+                    >
+                      {customerId && customerId !== "none"
+                        ? customers?.find((c) => c.id.toString() === customerId)?.name
+                        : "Seleccionar cliente"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Buscar cliente..." />
+                      <CommandEmpty>No se encontró cliente.</CommandEmpty>
+                      <CommandGroup className="max-h-64 overflow-auto">
+                        <CommandItem
+                          value="none"
+                          onSelect={() => {
+                            setCustomerId("none");
+                            setOpenCustomerPopover(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              customerId === "none" ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          Sin cliente
+                        </CommandItem>
+                        {customers?.map((customer) => (
+                          <CommandItem
+                            key={customer.id}
+                            value={customer.name}
+                            onSelect={() => {
+                              setCustomerId(customer.id.toString());
+                              setOpenCustomerPopover(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                customerId === customer.id.toString()
+                                  ? "opacity-100"
+                                  : "opacity-0"
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span>{customer.name}</span>
+                              {customer.phone && (
+                                <span className="text-xs text-gray-500">{customer.phone}</span>
+                              )}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  onClick={() => setIsAddCustomerDialogOpen(true)}
+                  title="Agregar cliente nuevo"
+                >
+                  <UserPlus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -430,6 +550,85 @@ export default function SalesPOS() {
           )}
         </div>
       </div>
+      
+      {/* Dialog para crear cliente rápido */}
+      <Dialog open={isAddCustomerDialogOpen} onOpenChange={setIsAddCustomerDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agregar Cliente Nuevo</DialogTitle>
+            <DialogDescription>
+              Crea un cliente rápidamente para agregarlo a la venta
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateCustomer}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="customer-name">Nombre *</Label>
+                <Input
+                  id="customer-name"
+                  placeholder="Nombre del cliente"
+                  value={newCustomerData.name}
+                  onChange={(e) => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="customer-phone">Teléfono</Label>
+                <Input
+                  id="customer-phone"
+                  placeholder="Teléfono"
+                  value={newCustomerData.phone}
+                  onChange={(e) => setNewCustomerData({ ...newCustomerData, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="customer-email">Email</Label>
+                <Input
+                  id="customer-email"
+                  type="email"
+                  placeholder="email@ejemplo.com"
+                  value={newCustomerData.email}
+                  onChange={(e) => setNewCustomerData({ ...newCustomerData, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="customer-id">Cédula/RUC</Label>
+                <Input
+                  id="customer-id"
+                  placeholder="Cédula o RUC"
+                  value={newCustomerData.idNumber}
+                  onChange={(e) => setNewCustomerData({ ...newCustomerData, idNumber: e.target.value })}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsAddCustomerDialogOpen(false);
+                  setNewCustomerData({ name: "", email: "", phone: "", idNumber: "" });
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={createCustomerMutation.isPending}>
+                {createCustomerMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creando...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Crear Cliente
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
