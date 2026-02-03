@@ -5,9 +5,7 @@ nixPkgs = ["nodejs_20", "pnpm"]
 cmds = ["pnpm install"]
 
 [phases.build]
-# Temporalmente omitido db:push para resolver problema de migración con duplicados
-# cmds = ["pnpm install && pnpm db:push && pnpm build"]
-cmds = ["pnpm build"]
+cmds = ["pnpm db:push && pnpm build"]
 
 [start]
 cmd = "pnpm start"
