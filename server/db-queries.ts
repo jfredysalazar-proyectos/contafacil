@@ -893,6 +893,13 @@ export async function addInventoryMovement(data: {
   
   await updateInventoryStock(data.productId, data.userId, newStock);
   
+  // También actualizar stock en la tabla products para mantener sincronización
+  await db.execute(sql`
+    UPDATE products
+    SET stock = ${newStock}
+    WHERE id = ${data.productId} AND userId = ${data.userId}
+  `);
+  
   return { success: true, newStock };
 }
 
