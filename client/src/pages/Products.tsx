@@ -98,19 +98,51 @@ export default function Products() {
     setEditingProduct(null);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const uploadImageMutation = trpc.upload.uploadImage.useMutation({
+    onSuccess: (data) => {
+      setFormData({ ...formData, imageUrl: data.url });
+      toast.success("Imagen subida exitosamente");
+      setIsUploadingImage(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error al subir la imagen");
+      setIsUploadingImage(false);
+    },
+  });
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validar tamaño (máx 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("La imagen no debe superar los 5MB");
+        return;
+      }
+
+      // Validar tipo
+      if (!file.type.startsWith("image/")) {
+        toast.error("Solo se permiten archivos de imagen");
+        return;
+      }
+
+      setIsUploadingImage(true);
+      toast.info("Subiendo imagen...");
+
       // Crear preview
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        const base64Image = reader.result as string;
+        setImagePreview(base64Image);
+        
+        // Subir a Cloudinary
+        uploadImageMutation.mutate({
+          image: base64Image,
+          folder: "contafacil/products",
+        });
       };
       reader.readAsDataURL(file);
-      
-      // TODO: Implementar upload a S3 o servidor
-      // Por ahora solo guardamos el preview
-      toast.info("Funcionalidad de upload de imagen en desarrollo");
     }
   };
 
@@ -217,10 +249,18 @@ export default function Products() {
                           accept="image/*"
                           onChange={handleImageChange}
                           className="cursor-pointer"
+                          disabled={isUploadingImage}
                         />
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Sube una imagen del producto (JPG, PNG, máx 5MB)
-                        </p>
+                        {isUploadingImage ? (
+                          <p className="text-sm text-blue-600 mt-2 flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Subiendo imagen a Cloudinary...
+                          </p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground mt-2">
+                            Sube una imagen del producto (JPG, PNG, máx 5MB)
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

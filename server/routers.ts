@@ -16,6 +16,7 @@ import {
 import { pdfRouter } from "./pdf";
 import { passwordResetRouter } from "./password-reset-router";
 import { profileRouter } from "./profile-router";
+import { uploadRouter } from "./upload-router";
 import {
   rolesRouter,
   permissionsRouter,
@@ -39,6 +40,7 @@ export const appRouter = router({
   pdf: pdfRouter,
   passwordReset: passwordResetRouter,
   profile: profileRouter,
+  upload: uploadRouter,
   roles: rolesRouter,
   permissions: permissionsRouter,
   businessUsers: businessUsersRouter,
