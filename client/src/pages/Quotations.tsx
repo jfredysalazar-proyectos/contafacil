@@ -169,7 +169,7 @@ export default function Quotations() {
     const quotationNumber = `COT-${Date.now()}`;
 
     createMutation.mutate({
-      customerId: customerId ? parseInt(customerId) : undefined,
+      customerId: customerId && customerId !== "0" ? parseInt(customerId) : undefined,
       quotationNumber,
       quotationDate: new Date(),
       validUntil: new Date(validUntil),
@@ -269,7 +269,7 @@ export default function Quotations() {
                         <SelectValue placeholder="Selecciona un cliente" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Sin cliente</SelectItem>
+                        <SelectItem value="0">Sin cliente</SelectItem>
                         {customers?.map((customer: any) => (
                           <SelectItem key={customer.id} value={customer.id.toString()}>
                             {customer.name}
