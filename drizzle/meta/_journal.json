@@ -8,6 +8,13 @@
       "when": 1769878348192,
       "tag": "0000_green_the_professor",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1770131737000,
+      "tag": "0001_sour_rictor",
+      "breakpoints": true
     }
   ]
 }
