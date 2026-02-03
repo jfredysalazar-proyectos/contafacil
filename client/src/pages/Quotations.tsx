@@ -223,7 +223,7 @@ export default function Quotations() {
         : null;
 
       // Obtener los items de la cotización
-      const quotationItems = await trpc.quotationItems.list.query({ quotationId: quotation.id });
+      const quotationItems = await trpc.quotations.getItems.query({ quotationId: quotation.id });
 
       // Preparar datos para el PDF
       const quotationData = {
