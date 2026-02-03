@@ -231,17 +231,14 @@ export default function Quotations() {
         quotationDate: quotation.quotationDate,
         validUntil: quotation.validUntil,
         customerName: customer?.name,
-        items: quotationItems.map((item: any) => {
-          const product = products?.find((p: any) => p.id === item.productId);
-          return {
-            productName: product?.name || "Producto desconocido",
-            description: product?.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            discount: item.discount || "0",
-            subtotal: item.subtotal,
-          };
-        }),
+        items: quotationItems.map((item: any) => ({
+          productName: item.productName,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discount: item.discount || "0",
+          subtotal: item.subtotal,
+        })),
         subtotal: quotation.subtotal,
         tax: quotation.tax,
         discount: quotation.discount,
