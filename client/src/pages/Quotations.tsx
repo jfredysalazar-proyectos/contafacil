@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Loader2, Plus, FileText, Trash2, Eye, CheckCircle, XCircle, ArrowRight, Calendar } from "lucide-react";
+import { Loader2, Plus, FileText, Trash2, Eye, CheckCircle, XCircle, ArrowRight, Calendar, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { generateQuotationPDF } from "@/lib/pdfGenerator";
 
 export default function Quotations() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -212,6 +213,69 @@ export default function Quotations() {
       paymentMethod,
       status: "completed",
     });
+  };
+
+  const handleDownloadPDF = async (quotation: any) => {
+    try {
+      // Obtener el cliente si existe
+      const customer = quotation.customerId
+        ? customers?.find((c: any) => c.id === quotation.customerId)
+        : null;
+
+      // Obtener los items de la cotización
+      const quotationItems = await trpc.quotationItems.list.query({ quotationId: quotation.id });
+
+      // Preparar datos para el PDF
+      const quotationData = {
+        quotationNumber: quotation.quotationNumber,
+        quotationDate: quotation.quotationDate,
+        validUntil: quotation.validUntil,
+        customerName: customer?.name,
+        items: quotationItems.map((item: any) => {
+          const product = products?.find((p: any) => p.id === item.productId);
+          return {
+            productName: product?.name || "Producto desconocido",
+            description: product?.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            discount: item.discount || "0",
+            subtotal: item.subtotal,
+          };
+        }),
+        subtotal: quotation.subtotal,
+        tax: quotation.tax,
+        discount: quotation.discount,
+        total: quotation.total,
+        paymentTerms: quotation.paymentTerms,
+        deliveryTerms: quotation.deliveryTerms,
+        notes: quotation.notes,
+        status: quotation.status,
+      };
+
+      const userData = {
+        name: user?.name || "Usuario",
+        email: user?.email,
+        businessName: user?.businessName,
+        nit: user?.nit,
+        address: user?.address,
+        phone: user?.phone,
+        logoUrl: user?.logoUrl,
+      };
+
+      // Generar PDF
+      const pdfDataUrl = generateQuotationPDF(quotationData, userData);
+
+      // Descargar PDF
+      const link = document.createElement("a");
+      link.href = pdfDataUrl;
+      link.download = `Cotizacion-${quotation.quotationNumber}.pdf`;
+      link.click();
+
+      toast.success("PDF descargado exitosamente");
+    } catch (error) {
+      console.error("Error al generar PDF:", error);
+      toast.error("Error al generar el PDF");
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -496,14 +560,24 @@ export default function Quotations() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleViewQuotation(quotation.id)}
+                          title="Ver cotización"
                         >
                           <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDownloadPDF(quotation)}
+                          title="Descargar PDF"
+                        >
+                          <Download className="h-4 w-4" />
                         </Button>
                         {quotation.status === "accepted" && (
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleConvertToSale(quotation)}
+                            title="Convertir a venta"
                           >
                             <ArrowRight className="h-4 w-4" />
                           </Button>
@@ -519,6 +593,7 @@ export default function Quotations() {
                                   status: "sent",
                                 });
                               }}
+                              title="Marcar como enviada"
                             >
                               <CheckCircle className="h-4 w-4 text-green-600" />
                             </Button>
@@ -530,6 +605,7 @@ export default function Quotations() {
                                   deleteMutation.mutate({ id: quotation.id });
                                 }
                               }}
+                              title="Eliminar cotización"
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
