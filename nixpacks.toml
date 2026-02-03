@@ -9,4 +9,4 @@ cmds = ["pnpm build"]
 
 [start]
 cmd = "pnpm start"
-# Build configuration - Updated Tue Feb  3 16:51:38 EST 2026
+# Build configuration - Updated Tue Feb  3 17:10:00 EST 2026 - Force rebuild
