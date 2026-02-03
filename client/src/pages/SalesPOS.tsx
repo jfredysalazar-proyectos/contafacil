@@ -210,9 +210,12 @@ export default function SalesPOS() {
     try {
       await createSaleMutation.mutateAsync({
         customerId: customerId && customerId !== "none" ? parseInt(customerId) : undefined,
+        saleNumber: `VTA-${Date.now()}`,
+        saleDate: new Date(),
         paymentMethod,
         items: cartItems.map(item => ({
           productId: item.productId,
+          productName: item.productName,
           quantity: item.quantity,
           unitPrice: item.unitPrice.toString(),
           subtotal: item.subtotal.toString(),
