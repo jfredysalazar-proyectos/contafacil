@@ -195,7 +195,16 @@ export async function createCustomer(data: InsertCustomer) {
   if (!db) throw new Error("Database not available");
   
   const result = await db.insert(customers).values(data);
-  return result;
+  const insertId = result.insertId;
+  
+  // Devolver el cliente creado con su ID
+  const newCustomer = await db
+    .select()
+    .from(customers)
+    .where(eq(customers.id, insertId))
+    .limit(1);
+  
+  return newCustomer[0];
 }
 
 export async function getCustomersByUserId(userId: number) {
