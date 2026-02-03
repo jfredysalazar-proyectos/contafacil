@@ -17,15 +17,17 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
-      - name: Deploy to Railway
+      - name: Trigger Railway Deployment
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service d3e274c2-4120-4ccf-aa86-39ce76aee7ba --environment fa556eb9-a704-477a-80ce-34b69f14f7bb
+        run: |
+          railway link d3e274c2-4120-4ccf-aa86-39ce76aee7ba
+          railway redeploy --environment fa556eb9-a704-477a-80ce-34b69f14f7bb
 
       - name: Deployment Summary
         run: |
-          echo "✅ Deployment completed successfully!"
-          echo "🚀 Service: web (Contafacil)"
+          echo "✅ Railway redeploy triggered successfully!"
+          echo "🚀 Service: web (Contafacil )"
           echo "🌍 Environment: production"
           echo "📦 Commit: ${{ github.sha }}"
           echo "👤 Author: ${{ github.actor }}"
