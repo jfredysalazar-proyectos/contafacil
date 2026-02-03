@@ -15,6 +15,13 @@
       "when": 1770131737000,
       "tag": "0001_sour_rictor",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1770133940230,
+      "tag": "0002_milky_taskmaster",
+      "breakpoints": true
     }
   ]
 }

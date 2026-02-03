@@ -8,9 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Loader2, Plus, Edit, Trash2, Package } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Package, Upload, Image as ImageIcon } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
 export default function Products() {
@@ -18,13 +20,20 @@ export default function Products() {
   const [, setLocation] = useLocation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     sku: "",
     price: "",
     cost: "",
+    imageUrl: "",
+    stockControlEnabled: false,
+    stock: "0",
     stockAlert: "10",
+    sellBy: "unit" as "unit" | "fraction",
+    promotionalPrice: "",
+    featured: false,
   });
 
   useEffect(() => {
@@ -77,25 +86,50 @@ export default function Products() {
       sku: "",
       price: "",
       cost: "",
+      imageUrl: "",
+      stockControlEnabled: false,
+      stock: "0",
       stockAlert: "10",
+      sellBy: "unit",
+      promotionalPrice: "",
+      featured: false,
     });
+    setImagePreview(null);
     setEditingProduct(null);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Crear preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      // TODO: Implementar upload a S3 o servidor
+      // Por ahora solo guardamos el preview
+      toast.info("Funcionalidad de upload de imagen en desarrollo");
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    const payload = {
+      ...formData,
+      stockAlert: parseInt(formData.stockAlert),
+      stock: parseInt(formData.stock),
+    };
+
     if (editingProduct) {
       updateMutation.mutate({
         id: editingProduct.id,
-        ...formData,
-        stockAlert: parseInt(formData.stockAlert),
+        ...payload,
       });
     } else {
-      createMutation.mutate({
-        ...formData,
-        stockAlert: parseInt(formData.stockAlert),
-      });
+      createMutation.mutate(payload);
     }
   };
 
@@ -107,8 +141,17 @@ export default function Products() {
       sku: product.sku || "",
       price: product.price,
       cost: product.cost || "",
-      stockAlert: product.stockAlert.toString(),
+      imageUrl: product.imageUrl || "",
+      stockControlEnabled: product.stockControlEnabled || false,
+      stock: product.stock?.toString() || "0",
+      stockAlert: product.stockAlert?.toString() || "10",
+      sellBy: product.sellBy || "unit",
+      promotionalPrice: product.promotionalPrice || "",
+      featured: product.featured || false,
     });
+    if (product.imageUrl) {
+      setImagePreview(product.imageUrl);
+    }
     setIsDialogOpen(true);
   };
 
@@ -146,7 +189,7 @@ export default function Products() {
                 Nuevo Producto
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
                   <DialogTitle>
@@ -156,44 +199,77 @@ export default function Products() {
                     Completa la información del producto
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
+                <div className="grid gap-6 py-4">
+                  {/* Imagen del Producto */}
+                  <div className="space-y-2">
+                    <Label>Imagen del Producto (Opcional)</Label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
+                        {imagePreview ? (
+                          <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageIcon className="h-12 w-12 text-gray-400" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          className="cursor-pointer"
+                        />
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Sube una imagen del producto (JPG, PNG, máx 5MB)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Información Básica */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Nombre *</Label>
+                      <Label htmlFor="name">Nombre del Producto *</Label>
                       <Input
                         id="name"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Ej: Laptop HP 15"
                         required
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="sku">SKU</Label>
+                      <Label htmlFor="sku">SKU / Código</Label>
                       <Input
                         id="sku"
                         value={formData.sku}
                         onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                        placeholder="Ej: LAP-HP-001"
                       />
                     </div>
                   </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="description">Descripción</Label>
                     <Textarea
                       id="description"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Describe las características del producto..."
                       rows={3}
                     />
                   </div>
+
+                  {/* Precios */}
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="price">Precio de venta (COP) *</Label>
+                      <Label htmlFor="price">Precio de Venta (COP) *</Label>
                       <Input
                         id="price"
                         type="number"
                         step="0.01"
                         value={formData.price}
                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                        placeholder="0.00"
                         required
                       />
                     </div>
@@ -205,19 +281,131 @@ export default function Products() {
                         step="0.01"
                         value={formData.cost}
                         onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                        placeholder="0.00"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="stockAlert">Alerta de stock</Label>
+                      <Label htmlFor="promotionalPrice">Precio Promocional (COP)</Label>
                       <Input
-                        id="stockAlert"
+                        id="promotionalPrice"
                         type="number"
-                        value={formData.stockAlert}
-                        onChange={(e) => setFormData({ ...formData, stockAlert: e.target.value })}
+                        step="0.01"
+                        value={formData.promotionalPrice}
+                        onChange={(e) => setFormData({ ...formData, promotionalPrice: e.target.value })}
+                        placeholder="0.00"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        El precio normal aparecerá tachado
+                      </p>
                     </div>
                   </div>
+
+                  {/* Tipo de Venta */}
+                  <div className="space-y-2">
+                    <Label htmlFor="sellBy">Vender por</Label>
+                    <Select
+                      value={formData.sellBy}
+                      onValueChange={(value: "unit" | "fraction") => 
+                        setFormData({ ...formData, sellBy: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unit">Unidad (enteros)</SelectItem>
+                        <SelectItem value="fraction">Fracción (kg, litros, metros, etc.)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm text-muted-foreground">
+                      {formData.sellBy === "unit" 
+                        ? "Se venderá en cantidades enteras (1, 2, 3...)" 
+                        : "Se puede vender en cantidades decimales (1.5 kg, 2.75 litros...)"}
+                    </p>
+                  </div>
+
+                  {/* Control de Stock */}
+                  <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="stockControl" className="text-base font-semibold">
+                          Control de Stock
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Activa esta opción para controlar el inventario del producto
+                        </p>
+                      </div>
+                      <Switch
+                        id="stockControl"
+                        checked={formData.stockControlEnabled}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, stockControlEnabled: checked })
+                        }
+                      />
+                    </div>
+
+                    {formData.stockControlEnabled && (
+                      <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                        <div className="space-y-2">
+                          <Label htmlFor="stock">Stock Actual</Label>
+                          <Input
+                            id="stock"
+                            type="number"
+                            value={formData.stock}
+                            onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="stockAlert">Stock Mínimo (Alerta)</Label>
+                          <Input
+                            id="stockAlert"
+                            type="number"
+                            value={formData.stockAlert}
+                            onChange={(e) => setFormData({ ...formData, stockAlert: e.target.value })}
+                            placeholder="10"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Recibirás una alerta cuando el stock esté por debajo de este valor
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Producto Destacado */}
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="featured" className="text-base font-semibold">
+                        Producto Destacado
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Este producto aparecerá destacado en tu catálogo
+                      </p>
+                    </div>
+                    <Switch
+                      id="featured"
+                      checked={formData.featured}
+                      onCheckedChange={(checked) => 
+                        setFormData({ ...formData, featured: checked })
+                      }
+                    />
+                  </div>
+
+                  {/* TODO: Sección de Variaciones */}
+                  <div className="p-4 border-2 border-dashed rounded-lg bg-blue-50/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Package className="h-5 w-5 text-blue-600" />
+                      <h3 className="font-semibold text-blue-900">Producto con Variación</h3>
+                      <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">PRÓXIMAMENTE</span>
+                    </div>
+                    <p className="text-sm text-blue-700">
+                      Agrega variaciones como color, talla, voltaje o sabor a tus productos.
+                      Esta funcionalidad estará disponible próximamente.
+                    </p>
+                  </div>
                 </div>
+
                 <DialogFooter>
                   <Button
                     type="button"
@@ -236,7 +424,7 @@ export default function Products() {
                         Guardando...
                       </>
                     ) : (
-                      "Guardar"
+                      "Guardar Producto"
                     )}
                   </Button>
                 </DialogFooter>
@@ -254,45 +442,90 @@ export default function Products() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex justify-center items-center py-8">
+              <div className="flex justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : products && products.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Imagen</TableHead>
                     <TableHead>Nombre</TableHead>
                     <TableHead>SKU</TableHead>
                     <TableHead>Precio</TableHead>
-                    <TableHead>Costo</TableHead>
-                    <TableHead>Alerta Stock</TableHead>
+                    <TableHead>Stock</TableHead>
+                    <TableHead>Tipo</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {products.map((product) => (
+                  {products.map((product: any) => (
                     <TableRow key={product.id}>
-                      <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell>{product.sku || "-"}</TableCell>
-                      <TableCell>${Number(product.price).toLocaleString("es-CO")}</TableCell>
                       <TableCell>
-                        {product.cost ? `$${Number(product.cost).toLocaleString("es-CO")}` : "-"}
+                        {product.imageUrl ? (
+                          <img 
+                            src={product.imageUrl} 
+                            alt={product.name} 
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                            <ImageIcon className="h-6 w-6 text-gray-400" />
+                          </div>
+                        )}
                       </TableCell>
-                      <TableCell>{product.stockAlert}</TableCell>
+                      <TableCell className="font-medium">
+                        {product.name}
+                        {product.featured && (
+                          <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
+                            ⭐ Destacado
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>{product.sku || "-"}</TableCell>
+                      <TableCell>
+                        {product.promotionalPrice ? (
+                          <div>
+                            <span className="line-through text-gray-400 text-sm">
+                              ${parseFloat(product.price).toLocaleString()}
+                            </span>
+                            <br />
+                            <span className="text-green-600 font-semibold">
+                              ${parseFloat(product.promotionalPrice).toLocaleString()}
+                            </span>
+                          </div>
+                        ) : (
+                          `$${parseFloat(product.price).toLocaleString()}`
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {product.stockControlEnabled ? (
+                          <span className={product.stock <= product.stockAlert ? "text-red-600 font-semibold" : ""}>
+                            {product.stock} {product.stock <= product.stockAlert && "⚠️"}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                          {product.sellBy === "unit" ? "Unidad" : "Fracción"}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleEdit(product)}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleDelete(product.id)}
-                            disabled={deleteMutation.isPending}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -304,10 +537,12 @@ export default function Products() {
               </Table>
             ) : (
               <div className="text-center py-12">
-                <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No hay productos registrados</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Crea tu primer producto para comenzar
+                <Package className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-4 text-lg font-semibold text-gray-900">
+                  No hay productos registrados
+                </h3>
+                <p className="mt-2 text-sm text-gray-500">
+                  Comienza agregando tu primer producto
                 </p>
               </div>
             )}

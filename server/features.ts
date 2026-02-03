@@ -21,7 +21,13 @@ export const productsRouter = router({
         price: z.string(),
         cost: z.string().optional(),
         hasVariations: z.boolean().default(false),
+        imageUrl: z.string().optional(),
+        stockControlEnabled: z.boolean().default(false),
+        stock: z.number().default(0),
         stockAlert: z.number().default(10),
+        sellBy: z.enum(["unit", "fraction"]).default("unit"),
+        promotionalPrice: z.string().optional(),
+        featured: z.boolean().default(false),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -40,7 +46,13 @@ export const productsRouter = router({
         categoryId: z.number().optional(),
         price: z.string().optional(),
         cost: z.string().optional(),
+        imageUrl: z.string().optional(),
+        stockControlEnabled: z.boolean().optional(),
+        stock: z.number().optional(),
         stockAlert: z.number().optional(),
+        sellBy: z.enum(["unit", "fraction"]).optional(),
+        promotionalPrice: z.string().optional(),
+        featured: z.boolean().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {

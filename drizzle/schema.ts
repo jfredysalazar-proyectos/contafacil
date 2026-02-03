@@ -112,7 +112,13 @@ export const products = mysqlTable("products", {
   price: decimal("price", { precision: 15, scale: 2 }).notNull(),
   cost: decimal("cost", { precision: 15, scale: 2 }),
   hasVariations: boolean("hasVariations").default(false).notNull(),
+  imageUrl: text("imageUrl"),
+  stockControlEnabled: boolean("stockControlEnabled").default(false).notNull(),
+  stock: int("stock").default(0).notNull(),
   stockAlert: int("stockAlert").default(10),
+  sellBy: mysqlEnum("sellBy", ["unit", "fraction"]).default("unit").notNull(),
+  promotionalPrice: decimal("promotionalPrice", { precision: 15, scale: 2 }),
+  featured: boolean("featured").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
