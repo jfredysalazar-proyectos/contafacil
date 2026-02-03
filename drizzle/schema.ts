@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, index } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, index, uniqueIndex } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
 /**
@@ -55,6 +55,9 @@ export const customers = mysqlTable("customers", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
   userIdIdx: index("customers_userId_idx").on(table.userId),
+  emailIdx: uniqueIndex("customers_email_userId_unique").on(table.email, table.userId),
+  phoneIdx: uniqueIndex("customers_phone_userId_unique").on(table.phone, table.userId),
+  idNumberIdx: uniqueIndex("customers_idNumber_userId_unique").on(table.idNumber, table.userId),
 }));
 
 export type Customer = typeof customers.$inferSelect;

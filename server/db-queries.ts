@@ -194,6 +194,40 @@ export async function createCustomer(data: InsertCustomer) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
+  // Validar que no exista otro cliente con el mismo email, phone o idNumber
+  if (data.email) {
+    const existingByEmail = await db
+      .select()
+      .from(customers)
+      .where(and(eq(customers.email, data.email), eq(customers.userId, data.userId)))
+      .limit(1);
+    if (existingByEmail.length > 0) {
+      throw new Error("Ya existe un cliente con este email");
+    }
+  }
+  
+  if (data.phone) {
+    const existingByPhone = await db
+      .select()
+      .from(customers)
+      .where(and(eq(customers.phone, data.phone), eq(customers.userId, data.userId)))
+      .limit(1);
+    if (existingByPhone.length > 0) {
+      throw new Error("Ya existe un cliente con este teléfono");
+    }
+  }
+  
+  if (data.idNumber) {
+    const existingByIdNumber = await db
+      .select()
+      .from(customers)
+      .where(and(eq(customers.idNumber, data.idNumber), eq(customers.userId, data.userId)))
+      .limit(1);
+    if (existingByIdNumber.length > 0) {
+      throw new Error("Ya existe un cliente con esta cédula/NIT");
+    }
+  }
+  
   const result = await db.insert(customers).values(data);
   const insertId = result.insertId;
   
