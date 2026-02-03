@@ -153,6 +153,9 @@ export default function Products() {
       ...formData,
       stockAlert: parseInt(formData.stockAlert),
       stock: parseInt(formData.stock),
+      promotionalPrice: formData.promotionalPrice ? parseFloat(formData.promotionalPrice) : null,
+      price: parseFloat(formData.price),
+      cost: formData.cost ? parseFloat(formData.cost) : null,
     };
 
     if (editingProduct) {
