@@ -240,11 +240,19 @@ export default function SalesPOS() {
                       onClick={() => !isOutOfStock && addToCart(product)}
                     >
                       <CardContent className="p-4 space-y-2">
-                        {/* Placeholder for product image */}
-                        <div className="aspect-square bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center mb-2">
-                          <span className="text-4xl font-bold text-blue-600">
-                            {product.name.charAt(0).toUpperCase()}
-                          </span>
+                        {/* Product image or placeholder */}
+                        <div className="aspect-square bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center mb-2 overflow-hidden">
+                          {product.imageUrl ? (
+                            <img 
+                              src={product.imageUrl} 
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-4xl font-bold text-blue-600">
+                              {product.name.charAt(0).toUpperCase()}
+                            </span>
+                          )}
                         </div>
                         
                         <div>

@@ -76,6 +76,7 @@ export default function Inventory() {
       toast.success("Stock agregado exitosamente");
       utils.inventory.list.invalidate();
       utils.inventory.lowStock.invalidate();
+      utils.products.list.invalidate();
       resetAddStockForm();
       setAddStockDialogOpen(false);
     },
@@ -89,6 +90,7 @@ export default function Inventory() {
       toast.success("Stock reducido exitosamente");
       utils.inventory.list.invalidate();
       utils.inventory.lowStock.invalidate();
+      utils.products.list.invalidate();
       resetReduceStockForm();
       setReduceStockDialogOpen(false);
     },
@@ -102,6 +104,7 @@ export default function Inventory() {
       toast.success("Inventario ajustado exitosamente");
       utils.inventory.list.invalidate();
       utils.inventory.lowStock.invalidate();
+      utils.products.list.invalidate();
       resetAdjustStockForm();
       setAdjustStockDialogOpen(false);
     },
