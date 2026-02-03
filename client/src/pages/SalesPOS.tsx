@@ -68,7 +68,10 @@ export default function SalesPOS() {
     onSuccess: (data) => {
       toast.success("Cliente creado exitosamente");
       utils.customers.list.invalidate();
-      setCustomerId(data.id.toString());
+      // Validar que data tenga id antes de usarlo
+      if (data && data.id) {
+        setCustomerId(data.id.toString());
+      }
       setIsAddCustomerDialogOpen(false);
       setNewCustomerData({ name: "", email: "", phone: "", idNumber: "" });
     },
@@ -592,10 +595,10 @@ export default function SalesPOS() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="customer-id">Cédula/RUC</Label>
+                <Label htmlFor="customer-id">Cédula/NIT</Label>
                 <Input
                   id="customer-id"
-                  placeholder="Cédula o RUC"
+                  placeholder="Cédula o NIT"
                   value={newCustomerData.idNumber}
                   onChange={(e) => setNewCustomerData({ ...newCustomerData, idNumber: e.target.value })}
                 />
