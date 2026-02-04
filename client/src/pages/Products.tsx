@@ -149,18 +149,25 @@ export default function Products() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const payload = {
-      ...formData,
-      categoryId: undefined, // Explícitamente undefined para campos opcionales
-      barcode: formData.sku || undefined, // Usar sku como barcode si no hay barcode específico
+    // Construir payload solo con campos que tienen valores
+    const payload: any = {
+      name: formData.name,
+      price: formData.price,
       stockAlert: parseInt(formData.stockAlert),
       stock: parseInt(formData.stock),
-      promotionalPrice: formData.promotionalPrice || undefined,
-      price: formData.price,
-      cost: formData.cost || undefined,
-      description: formData.description || undefined,
-      imageUrl: formData.imageUrl || undefined,
+      sellBy: formData.sellBy,
+      hasVariations: formData.hasVariations || false,
+      stockControlEnabled: formData.stockControlEnabled || false,
+      featured: formData.featured || false,
     };
+
+    // Agregar campos opcionales solo si tienen valor
+    if (formData.description) payload.description = formData.description;
+    if (formData.sku) payload.sku = formData.sku;
+    if (formData.cost) payload.cost = formData.cost;
+    if (formData.imageUrl) payload.imageUrl = formData.imageUrl;
+    if (formData.promotionalPrice) payload.promotionalPrice = formData.promotionalPrice;
+    // NO agregar categoryId ni barcode si no tienen valor
 
     if (editingProduct) {
       updateMutation.mutate({
