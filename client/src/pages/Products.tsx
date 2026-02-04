@@ -151,11 +151,15 @@ export default function Products() {
     
     const payload = {
       ...formData,
+      categoryId: undefined, // Explícitamente undefined para campos opcionales
+      barcode: formData.sku || undefined, // Usar sku como barcode si no hay barcode específico
       stockAlert: parseInt(formData.stockAlert),
       stock: parseInt(formData.stock),
-      promotionalPrice: formData.promotionalPrice || "",
+      promotionalPrice: formData.promotionalPrice || undefined,
       price: formData.price,
-      cost: formData.cost || "",
+      cost: formData.cost || undefined,
+      description: formData.description || undefined,
+      imageUrl: formData.imageUrl || undefined,
     };
 
     if (editingProduct) {
