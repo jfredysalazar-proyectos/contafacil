@@ -47,14 +47,8 @@ export const rolesRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Solo el admin puede crear roles
-      const userPermissions = await roleQueries.getUserPermissions(ctx.user.id, 'owner');
-      if (!userPermissions.includes('manage_roles')) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "No tienes permisos para crear roles",
-        });
-      }
+      // El owner (administrador del sistema) siempre puede crear roles
+      // No se verifica permisos para owners
 
       const { permissionIds, ...roleData } = input;
       
@@ -92,14 +86,8 @@ export const rolesRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Solo el admin puede actualizar roles
-      const userPermissions = await roleQueries.getUserPermissions(ctx.user.id, 'owner');
-      if (!userPermissions.includes('manage_roles')) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "No tienes permisos para actualizar roles",
-        });
-      }
+      // El owner (administrador del sistema) siempre puede actualizar roles
+      // No se verifica permisos para owners
 
       const { id, permissionIds, ...updateData } = input;
 
@@ -143,14 +131,8 @@ export const rolesRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      // Solo el admin puede eliminar roles
-      const userPermissions = await roleQueries.getUserPermissions(ctx.user.id, 'owner');
-      if (!userPermissions.includes('manage_roles')) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "No tienes permisos para eliminar roles",
-        });
-      }
+      // El owner (administrador del sistema) siempre puede eliminar roles
+      // No se verifica permisos para owners
 
       // Verificar que no haya usuarios con este rol
       const users = await roleQueries.getBusinessUsersByOwnerId(ctx.user.id);
