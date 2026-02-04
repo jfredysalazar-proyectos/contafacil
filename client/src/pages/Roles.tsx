@@ -65,56 +65,35 @@ export default function Roles() {
   // Mutations
   const createMutation = trpc.roles.create.useMutation({
     onSuccess: () => {
-      toast({
-        title: "Rol creado",
-        description: "El rol se ha creado exitosamente.",
-      });
+      toast.success("El rol se ha creado exitosamente.");
       refetch();
       setIsCreateDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message || "Error al procesar la solicitud");
     },
   });
 
   const updateMutation = trpc.roles.update.useMutation({
     onSuccess: () => {
-      toast({
-        title: "Rol actualizado",
-        description: "El rol se ha actualizado exitosamente.",
-      });
+      toast.success("El rol se ha actualizado exitosamente.");
       refetch();
       setIsEditDialogOpen(false);
       setSelectedRole(null);
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message || "Error al procesar la solicitud");
     },
   });
 
   const deleteMutation = trpc.roles.delete.useMutation({
     onSuccess: () => {
-      toast({
-        title: "Rol eliminado",
-        description: "El rol se ha eliminado exitosamente.",
-      });
+      toast.success("El rol se ha eliminado exitosamente.");
       refetch();
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message || "Error al procesar la solicitud");
     },
   });
 
@@ -129,11 +108,7 @@ export default function Roles() {
 
   const handleCreate = () => {
     if (!formData.name || !formData.displayName) {
-      toast({
-        title: "Campos requeridos",
-        description: "Por favor completa el nombre y nombre para mostrar.",
-        variant: "destructive",
-      });
+      toast.error("Por favor completa el nombre y nombre para mostrar.");
       return;
     }
 
@@ -172,11 +147,7 @@ export default function Roles() {
 
   const handleDelete = (role: any) => {
     if (role.isSystem) {
-      toast({
-        title: "No permitido",
-        description: "No se pueden eliminar roles del sistema.",
-        variant: "destructive",
-      });
+      toast.error("No se pueden eliminar roles del sistema.");
       return;
     }
 
@@ -184,11 +155,7 @@ export default function Roles() {
     const usersWithRole = employees?.filter(emp => emp.roleId === role.id).length || 0;
     
     if (usersWithRole > 0) {
-      toast({
-        title: "No se puede eliminar",
-        description: `Hay ${usersWithRole} usuario(s) asignado(s) a este rol.`,
-        variant: "destructive",
-      });
+      toast.error(`Hay ${usersWithRole} usuario(s) asignado(s) a este rol.`);
       return;
     }
 
