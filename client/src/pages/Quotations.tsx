@@ -277,7 +277,8 @@ export default function Quotations() {
       toast.success("PDF descargado exitosamente");
     } catch (error) {
       console.error("Error al generar PDF:", error);
-      toast.error("Error al generar el PDF");
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+      toast.error(`Error al generar el PDF: ${errorMessage}`);
     }
   };
 
