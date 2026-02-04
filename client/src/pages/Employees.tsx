@@ -67,73 +67,45 @@ export default function Employees() {
   // Mutations
   const createMutation = trpc.businessUsers.create.useMutation({
     onSuccess: () => {
-      toast({
-        title: "Empleado creado",
-        description: "El empleado se ha creado exitosamente.",
-      });
+      toast.success("El empleado se ha creado exitosamente.");
       refetch();
       setIsCreateDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message || "Error al procesar la solicitud");
     },
   });
 
   const updateMutation = trpc.businessUsers.update.useMutation({
     onSuccess: () => {
-      toast({
-        title: "Empleado actualizado",
-        description: "El empleado se ha actualizado exitosamente.",
-      });
+      toast.success("El empleado se ha actualizado exitosamente.");
       refetch();
       setIsEditDialogOpen(false);
       setSelectedEmployee(null);
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message || "Error al procesar la solicitud");
     },
   });
 
   const deleteMutation = trpc.businessUsers.delete.useMutation({
     onSuccess: () => {
-      toast({
-        title: "Empleado eliminado",
-        description: "El empleado se ha eliminado exitosamente.",
-      });
+      toast.success("El empleado se ha eliminado exitosamente.");
       refetch();
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message || "Error al procesar la solicitud");
     },
   });
 
   const toggleStatusMutation = trpc.businessUsers.toggleStatus.useMutation({
     onSuccess: (data) => {
-      toast({
-        title: data.isActive ? "Empleado activado" : "Empleado desactivado",
-        description: `El empleado ha sido ${data.isActive ? "activado" : "desactivado"} exitosamente.`,
-      });
+      toast.success(`El empleado ha sido ${data.isActive ? "activado" : "desactivado"} exitosamente.`);
       refetch();
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message || "Error al procesar la solicitud");
     },
   });
 
@@ -149,11 +121,7 @@ export default function Employees() {
 
   const handleCreate = () => {
     if (!formData.email || !formData.password || !formData.name || !formData.roleId) {
-      toast({
-        title: "Campos requeridos",
-        description: "Por favor completa todos los campos obligatorios.",
-        variant: "destructive",
-      });
+      toast.error("Por favor completa todos los campos obligatorios.");
       return;
     }
 
