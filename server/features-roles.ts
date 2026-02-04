@@ -260,14 +260,8 @@ export const businessUsersRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Verificar permisos
-      const userPermissions = await roleQueries.getUserPermissions(ctx.user.id, 'owner');
-      if (!userPermissions.includes('create_users')) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "No tienes permisos para crear usuarios",
-        });
-      }
+      // El owner (administrador del sistema) siempre puede crear usuarios
+      // No se verifica permisos para owners
 
       // Verificar que el email no esté en uso
       const existingUser = await roleQueries.getBusinessUserByEmail(input.email);
@@ -325,14 +319,8 @@ export const businessUsersRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Verificar permisos
-      const userPermissions = await roleQueries.getUserPermissions(ctx.user.id, 'owner');
-      if (!userPermissions.includes('edit_users')) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "No tienes permisos para editar usuarios",
-        });
-      }
+      // El owner (administrador del sistema) siempre puede editar usuarios
+      // No se verifica permisos para owners
 
       const { id, password, ...updateData } = input;
 
@@ -371,14 +359,8 @@ export const businessUsersRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      // Verificar permisos
-      const userPermissions = await roleQueries.getUserPermissions(ctx.user.id, 'owner');
-      if (!userPermissions.includes('delete_users')) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "No tienes permisos para eliminar usuarios",
-        });
-      }
+      // El owner (administrador del sistema) siempre puede eliminar usuarios
+      // No se verifica permisos para owners
 
       // Verificar que el usuario existe y pertenece al owner
       const user = await roleQueries.getBusinessUserById(input.id);
@@ -412,14 +394,8 @@ export const businessUsersRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Verificar permisos
-      const userPermissions = await roleQueries.getUserPermissions(ctx.user.id, 'owner');
-      if (!userPermissions.includes('edit_users')) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "No tienes permisos para modificar usuarios",
-        });
-      }
+      // El owner (administrador del sistema) siempre puede modificar usuarios
+      // No se verifica permisos para owners
 
       // Verificar que el usuario existe y pertenece al owner
       const user = await roleQueries.getBusinessUserById(input.id);
