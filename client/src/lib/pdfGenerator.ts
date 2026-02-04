@@ -298,7 +298,7 @@ interface QuotationData {
   notes?: string;
   status?: string;
 }
-export async function createQuotationPDF(tion: QuotationData, user: UserData): string {
+export async function createQuotationPDF(quotation: QuotationData, user: UserData): string {
   const doc = new jsPDF();
   
   // Configuración
