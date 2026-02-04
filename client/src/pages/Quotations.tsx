@@ -14,7 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2, Plus, FileText, Trash2, Eye, CheckCircle, XCircle, ArrowRight, Calendar, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { generateQuotationPDF } from "@/lib/pdfGenerator";
+import { createQuotationPDF } from "@/lib/pdfGenerator";
 
 export default function Quotations() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -266,7 +266,7 @@ export default function Quotations() {
       };
 
       // Generar PDF
-      const pdfDataUrl = generateQuotationPDF(quotationData, userData);
+      const pdfDataUrl = createQuotationPDF(quotationData, userData);
 
       // Descargar PDF
       const link = document.createElement("a");
