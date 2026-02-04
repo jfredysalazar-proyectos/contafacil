@@ -23,36 +23,36 @@ import {
  */
 
 export async function getAllRoles(): Promise<Role[]> {
-  const db = getDb();
+  const db = await getDb();
   return db.select().from(roles);
 }
 
 export async function getRoleById(id: number): Promise<Role | undefined> {
-  const db = getDb();
+  const db = await getDb();
   const [role] = await db.select().from(roles).where(eq(roles.id, id));
   return role;
 }
 
 export async function getRoleByName(name: string): Promise<Role | undefined> {
-  const db = getDb();
+  const db = await getDb();
   const [role] = await db.select().from(roles).where(eq(roles.name, name));
   return role;
 }
 
 export async function createRole(data: InsertRole): Promise<Role> {
-  const db = getDb();
+  const db = await getDb();
   const [result] = await db.insert(roles).values(data);
   return getRoleById(Number(result.insertId)) as Promise<Role>;
 }
 
 export async function updateRole(id: number, data: Partial<InsertRole>): Promise<Role> {
-  const db = getDb();
+  const db = await getDb();
   await db.update(roles).set(data).where(eq(roles.id, id));
   return getRoleById(id) as Promise<Role>;
 }
 
 export async function deleteRole(id: number): Promise<void> {
-  const db = getDb();
+  const db = await getDb();
   // Verificar que no sea un rol del sistema
   const role = await getRoleById(id);
   if (role?.isSystem) {
@@ -68,17 +68,17 @@ export async function deleteRole(id: number): Promise<void> {
  */
 
 export async function getAllPermissions(): Promise<Permission[]> {
-  const db = getDb();
+  const db = await getDb();
   return db.select().from(permissions);
 }
 
 export async function getPermissionsByModule(module: string): Promise<Permission[]> {
-  const db = getDb();
+  const db = await getDb();
   return db.select().from(permissions).where(eq(permissions.module, module));
 }
 
 export async function getPermissionsByRoleId(roleId: number): Promise<Permission[]> {
-  const db = getDb();
+  const db = await getDb();
   const result = await db
     .select({
       id: permissions.id,
@@ -96,7 +96,7 @@ export async function getPermissionsByRoleId(roleId: number): Promise<Permission
 }
 
 export async function assignPermissionsToRole(roleId: number, permissionIds: number[]): Promise<void> {
-  const db = getDb();
+  const db = await getDb();
   
   // Eliminar permisos existentes
   await db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
@@ -118,36 +118,36 @@ export async function assignPermissionsToRole(roleId: number, permissionIds: num
  */
 
 export async function getBusinessUsersByOwnerId(ownerId: number): Promise<BusinessUser[]> {
-  const db = getDb();
+  const db = await getDb();
   return db.select().from(businessUsers).where(eq(businessUsers.ownerId, ownerId));
 }
 
 export async function getBusinessUserById(id: number): Promise<BusinessUser | undefined> {
-  const db = getDb();
+  const db = await getDb();
   const [user] = await db.select().from(businessUsers).where(eq(businessUsers.id, id));
   return user;
 }
 
 export async function getBusinessUserByEmail(email: string): Promise<BusinessUser | undefined> {
-  const db = getDb();
+  const db = await getDb();
   const [user] = await db.select().from(businessUsers).where(eq(businessUsers.email, email));
   return user;
 }
 
 export async function createBusinessUser(data: InsertBusinessUser): Promise<BusinessUser> {
-  const db = getDb();
+  const db = await getDb();
   const [result] = await db.insert(businessUsers).values(data);
   return getBusinessUserById(Number(result.insertId)) as Promise<BusinessUser>;
 }
 
 export async function updateBusinessUser(id: number, data: Partial<InsertBusinessUser>): Promise<BusinessUser> {
-  const db = getDb();
+  const db = await getDb();
   await db.update(businessUsers).set(data).where(eq(businessUsers.id, id));
   return getBusinessUserById(id) as Promise<BusinessUser>;
 }
 
 export async function deleteBusinessUser(id: number): Promise<void> {
-  const db = getDb();
+  const db = await getDb();
   await db.delete(businessUsers).where(eq(businessUsers.id, id));
 }
 
@@ -162,7 +162,7 @@ export async function toggleBusinessUserStatus(id: number, isActive: boolean): P
  */
 
 export async function createActivityLog(data: InsertUserActivityLog): Promise<void> {
-  const db = getDb();
+  const db = await getDb();
   await db.insert(userActivityLog).values(data);
 }
 
@@ -171,7 +171,7 @@ export async function getActivityLogByUserId(
   userType: string,
   limit: number = 100
 ): Promise<UserActivityLog[]> {
-  const db = getDb();
+  const db = await getDb();
   return db
     .select()
     .from(userActivityLog)
@@ -187,7 +187,7 @@ export async function getActivityLogByModule(
   module: string,
   limit: number = 100
 ): Promise<UserActivityLog[]> {
-  const db = getDb();
+  const db = await getDb();
   return db
     .select()
     .from(userActivityLog)
@@ -197,7 +197,7 @@ export async function getActivityLogByModule(
 }
 
 export async function getAllActivityLogs(limit: number = 100): Promise<UserActivityLog[]> {
-  const db = getDb();
+  const db = await getDb();
   return db
     .select()
     .from(userActivityLog)
@@ -212,7 +212,7 @@ export async function getAllActivityLogs(limit: number = 100): Promise<UserActiv
  */
 
 export async function getUserPermissions(userId: number, userType: 'owner' | 'employee'): Promise<string[]> {
-  const db = getDb();
+  const db = await getDb();
   
   if (userType === 'owner') {
     // Los dueños tienen todos los permisos
