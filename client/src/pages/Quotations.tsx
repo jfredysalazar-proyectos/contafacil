@@ -217,13 +217,19 @@ export default function Quotations() {
 
   const handleDownloadPDF = async (quotation: any) => {
     try {
+      console.log("Iniciando generación de PDF para cotización:", quotation);
+      
       // Obtener el cliente si existe
       const customer = quotation.customerId
         ? customers?.find((c: any) => c.id === quotation.customerId)
         : null;
+      
+      console.log("Cliente encontrado:", customer);
 
       // Obtener los items de la cotización
+      console.log("Obteniendo items de cotización...");
       const quotationItems = await trpc.quotations.getItems.query({ quotationId: quotation.id });
+      console.log("Items obtenidos:", quotationItems);
 
       // Preparar datos para el PDF
       const quotationData = {
