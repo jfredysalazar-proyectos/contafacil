@@ -441,36 +441,36 @@ export function generateQuotationPDF(quotation: QuotationData, user: UserData): 
     yPos += 7;
     
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    
     if (quotation.paymentTerms) {
       doc.text("Términos de Pago:", 20, yPos);
       yPos += 5;
-      const paymentLines = doc.splitTextToSize(quotation.paymentTerms, 170);
-      paymentLines.forEach((line: string) => {
-        doc.text(line, 20, yPos);
-        yPos += 5;
-      });
-      yPos += 3;
+      // Limitar texto a 150 caracteres para evitar problemas
+      doc.text(quotation.paymentTerms.substring(0, 150), 20, yPos);
+      yPos += 5;
     }
     
     if (quotation.deliveryTerms) {
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
       doc.text("Términos de Entrega:", 20, yPos);
       yPos += 5;
-      const deliveryLines = doc.splitTextToSize(quotation.deliveryTerms, 170);
-      deliveryLines.forEach((line: string) => {
-        doc.text(line, 20, yPos);
-        yPos += 5;
-      });
-      yPos += 3;
+      doc.text(quotation.deliveryTerms.substring(0, 150), 20, yPos);
+      yPos += 5;
     }
     
     if (quotation.notes) {
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
       doc.text("Notas:", 20, yPos);
       yPos += 5;
-      const notesLines = doc.splitTextToSize(quotation.notes, 170);
-      notesLines.forEach((line: string) => {
-        doc.text(line, 20, yPos);
-        yPos += 5;
-      });
+      doc.text(quotation.notes.substring(0, 150), 20, yPos);
+      yPos += 5;
     }
   }
   
