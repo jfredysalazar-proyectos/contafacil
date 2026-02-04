@@ -14,7 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2, Plus, FileText, Trash2, Eye, CheckCircle, XCircle, ArrowRight, Calendar, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { createQuotationPDF } from "@/lib/pdfGenerator";
+import jsPDF from "jspdf";
 
 export default function Quotations() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -265,10 +265,187 @@ export default function Quotations() {
         logoUrl: user?.logoUrl,
       };
 
-      // Generar PDF
-      const pdfDataUrl = createQuotationPDF(quotationData, userData);
+      // Generar PDF inline
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      let yPos = 20;
+
+      // Logo (si existe)
+      if (userData.logoUrl) {
+        try {
+          doc.addImage(userData.logoUrl, "PNG", pageWidth - 50, 10, 40, 40);
+        } catch (error) {
+          console.error("Error al agregar logo al PDF:", error);
+        }
+      }
+
+      // Título
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("COTIZACIÓN", pageWidth / 2, yPos, { align: "center" });
+      yPos += 15;
+
+      // Información del negocio
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text(userData.businessName || userData.name, 20, yPos);
+      yPos += 7;
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      if (userData.nit) {
+        doc.text(`NIT: ${userData.nit}`, 20, yPos);
+        yPos += 5;
+      }
+      if (userData.address) {
+        doc.text(`Dirección: ${userData.address}`, 20, yPos);
+        yPos += 5;
+      }
+      if (userData.phone) {
+        doc.text(`Teléfono: ${userData.phone}`, 20, yPos);
+        yPos += 5;
+      }
+      if (userData.email) {
+        doc.text(`Email: ${userData.email}`, 20, yPos);
+        yPos += 5;
+      }
+
+      yPos += 10;
+
+      // Información de la cotización
+      doc.setFont("helvetica", "bold");
+      doc.text(`N° de Cotización: ${quotationData.quotationNumber}`, 20, yPos);
+      yPos += 7;
+
+      doc.setFont("helvetica", "normal");
+      doc.text(`Fecha: ${new Date(quotationData.quotationDate).toLocaleDateString("es-CO")}`, 20, yPos);
+      yPos += 7;
+
+      doc.text(`Válida hasta: ${new Date(quotationData.validUntil).toLocaleDateString("es-CO")}`, 20, yPos);
+      yPos += 7;
+
+      if (quotationData.customerName) {
+        doc.text(`Cliente: ${quotationData.customerName}`, 20, yPos);
+        yPos += 7;
+      }
+
+      yPos += 10;
+
+      // Tabla de productos
+      doc.setFont("helvetica", "bold");
+      doc.text("Producto", 20, yPos);
+      doc.text("Cant.", 95, yPos);
+      doc.text("Precio", 115, yPos);
+      doc.text("Desc.", 150, yPos);
+      doc.text("Subtotal", 170, yPos);
+      yPos += 7;
+
+      // Línea separadora
+      doc.line(20, yPos, 190, yPos);
+      yPos += 7;
+
+      // Items
+      doc.setFont("helvetica", "normal");
+      quotationData.items.forEach((item: any) => {
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        doc.text(item.productName, 20, yPos);
+        doc.text(item.quantity.toString(), 95, yPos);
+        doc.text(`$${Number(item.unitPrice).toLocaleString("es-CO")}`, 115, yPos);
+        doc.text(`$${Number(item.discount || 0).toLocaleString("es-CO")}`, 150, yPos);
+        doc.text(`$${Number(item.subtotal).toLocaleString("es-CO")}`, 170, yPos);
+        yPos += 7;
+
+        // Descripción del producto (si existe)
+        if (item.description) {
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "italic");
+          doc.text(item.description.substring(0, 80), 20, yPos);
+          yPos += 5;
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "normal");
+        }
+      });
+
+      yPos += 5;
+      doc.line(20, yPos, 190, yPos);
+      yPos += 10;
+
+      // Totales
+      doc.setFont("helvetica", "normal");
+      doc.text("Subtotal:", 135, yPos);
+      doc.text(`$${Number(quotationData.subtotal).toLocaleString("es-CO")}`, 170, yPos);
+      yPos += 7;
+
+      if (quotationData.discount && Number(quotationData.discount) > 0) {
+        doc.text("Descuento:", 135, yPos);
+        doc.text(`-$${Number(quotationData.discount).toLocaleString("es-CO")}`, 170, yPos);
+        yPos += 7;
+      }
+
+      doc.text("IVA (19%):", 135, yPos);
+      doc.text(`$${Number(quotationData.tax || 0).toLocaleString("es-CO")}`, 170, yPos);
+      yPos += 7;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("TOTAL:", 135, yPos);
+      doc.text(`$${Number(quotationData.total).toLocaleString("es-CO")}`, 170, yPos);
+      yPos += 15;
+
+      // Términos y condiciones
+      if (quotationData.paymentTerms || quotationData.deliveryTerms || quotationData.notes) {
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text("TÉRMINOS Y CONDICIONES", 20, yPos);
+        yPos += 7;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+
+        if (quotationData.paymentTerms) {
+          doc.text("Términos de Pago:", 20, yPos);
+          yPos += 5;
+          doc.text(quotationData.paymentTerms.substring(0, 150), 20, yPos);
+          yPos += 5;
+        }
+
+        if (quotationData.deliveryTerms) {
+          if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+          }
+          doc.text("Términos de Entrega:", 20, yPos);
+          yPos += 5;
+          doc.text(quotationData.deliveryTerms.substring(0, 150), 20, yPos);
+          yPos += 5;
+        }
+
+        if (quotationData.notes) {
+          if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+          }
+          doc.text("Notas:", 20, yPos);
+          yPos += 5;
+          doc.text(quotationData.notes.substring(0, 150), 20, yPos);
+          yPos += 5;
+        }
+      }
+
+      // Pie de página
+      yPos = doc.internal.pageSize.getHeight() - 20;
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "italic");
+      doc.text("Esta cotización es válida hasta la fecha indicada", pageWidth / 2, yPos, { align: "center" });
+      yPos += 5;
+      doc.text("Documento generado por ContaFácil", pageWidth / 2, yPos, { align: "center" });
 
       // Descargar PDF
+      const pdfDataUrl = doc.output("datauristring");
       const link = document.createElement("a");
       link.href = pdfDataUrl;
       link.download = `Cotizacion-${quotation.quotationNumber}.pdf`;
