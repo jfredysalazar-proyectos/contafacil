@@ -445,23 +445,32 @@ export function generateQuotationPDF(quotation: QuotationData, user: UserData): 
       doc.text("Términos de Pago:", 20, yPos);
       yPos += 5;
       const paymentLines = doc.splitTextToSize(quotation.paymentTerms, 170);
-      doc.text(paymentLines, 20, yPos);
-      yPos += paymentLines.length * 5 + 3;
+      paymentLines.forEach((line: string) => {
+        doc.text(line, 20, yPos);
+        yPos += 5;
+      });
+      yPos += 3;
     }
     
     if (quotation.deliveryTerms) {
       doc.text("Términos de Entrega:", 20, yPos);
       yPos += 5;
       const deliveryLines = doc.splitTextToSize(quotation.deliveryTerms, 170);
-      doc.text(deliveryLines, 20, yPos);
-      yPos += deliveryLines.length * 5 + 3;
+      deliveryLines.forEach((line: string) => {
+        doc.text(line, 20, yPos);
+        yPos += 5;
+      });
+      yPos += 3;
     }
     
     if (quotation.notes) {
       doc.text("Notas:", 20, yPos);
       yPos += 5;
       const notesLines = doc.splitTextToSize(quotation.notes, 170);
-      doc.text(notesLines, 20, yPos);
+      notesLines.forEach((line: string) => {
+        doc.text(line, 20, yPos);
+        yPos += 5;
+      });
     }
   }
   
