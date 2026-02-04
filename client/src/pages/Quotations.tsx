@@ -288,7 +288,7 @@ export default function Quotations() {
       // Información del negocio
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.text(userData.businessName || userData.name, 20, yPos);
+      doc.text(String(userData.businessName || userData.name || "Negocio"), 20, yPos);
       yPos += 7;
 
       doc.setFontSize(10);
@@ -314,7 +314,7 @@ export default function Quotations() {
 
       // Información de la cotización
       doc.setFont("helvetica", "bold");
-      doc.text(`N° de Cotización: ${quotationData.quotationNumber}`, 20, yPos);
+      doc.text(`N° de Cotización: ${String(quotationData.quotationNumber || "N/A")}`, 20, yPos);
       yPos += 7;
 
       doc.setFont("helvetica", "normal");
@@ -352,11 +352,11 @@ export default function Quotations() {
           yPos = 20;
         }
 
-        doc.text(item.productName, 20, yPos);
-        doc.text(item.quantity.toString(), 95, yPos);
-        doc.text(`$${Number(item.unitPrice).toLocaleString("es-CO")}`, 115, yPos);
+        doc.text(String(item.productName || "Sin nombre"), 20, yPos);
+        doc.text(String(item.quantity || 0), 95, yPos);
+        doc.text(`$${Number(item.unitPrice || 0).toLocaleString("es-CO")}`, 115, yPos);
         doc.text(`$${Number(item.discount || 0).toLocaleString("es-CO")}`, 150, yPos);
-        doc.text(`$${Number(item.subtotal).toLocaleString("es-CO")}`, 170, yPos);
+        doc.text(`$${Number(item.subtotal || 0).toLocaleString("es-CO")}`, 170, yPos);
         yPos += 7;
 
         // Descripción del producto (si existe)
