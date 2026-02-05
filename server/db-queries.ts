@@ -40,15 +40,38 @@ export async function createProduct(data: InsertProduct) {
   if (!db) throw new Error("Database not available");
   
   // Función auxiliar para convertir strings vacías y undefined a null
-  const toNull = (value: any) => (value === '' || value === undefined || value === null) ? null : value;
+  const toNull = (value: any) => {
+    if (value === '' || value === undefined || value === null) {
+      return null;
+    }
+    return value;
+  };
+  
+  // Convertir todos los campos opcionales antes del INSERT
+  const categoryId = toNull(data.categoryId);
+  const description = toNull(data.description);
+  const sku = toNull(data.sku);
+  const barcode = toNull(data.barcode);
+  const cost = toNull(data.cost);
+  const imageUrl = toNull(data.imageUrl);
+  const promotionalPrice = toNull(data.promotionalPrice);
+  
+  console.log('DEBUG createProduct:', {
+    categoryId,
+    barcode,
+    description,
+    sku,
+    cost,
+    promotionalPrice
+  });
   
   // Generar QR code si hay SKU o después de insertar con el ID
-  let qrCode: string | undefined;
+  let qrCode: string | null = null;
   
   // Si hay SKU, generar QR antes de insertar
-  if (data.sku) {
+  if (sku) {
     const { generateProductQRCode } = await import('./qr-generator');
-    qrCode = await generateProductQRCode(data.sku, 0, data.name);
+    qrCode = await generateProductQRCode(sku, 0, data.name);
   }
   
   // Usar SQL raw para tener control total del INSERT y evitar que Drizzle incluya 'id'
@@ -61,21 +84,21 @@ export async function createProduct(data: InsertProduct) {
       sellBy, promotionalPrice, featured
     ) VALUES (
       ${data.userId},
-      ${toNull(data.categoryId)},
+      ${categoryId},
       ${data.name},
-      ${toNull(data.description)},
-      ${toNull(data.sku)},
-      ${toNull(data.barcode)},
+      ${description},
+      ${sku},
+      ${barcode},
       ${data.price},
-      ${toNull(data.cost)},
+      ${cost},
       ${data.hasVariations},
-      ${toNull(data.imageUrl)},
-      ${toNull(qrCode)},
+      ${imageUrl},
+      ${qrCode},
       ${data.stockControlEnabled},
       ${data.stock},
       ${data.stockAlert},
       ${data.sellBy},
-      ${toNull(data.promotionalPrice)},
+      ${promotionalPrice},
       ${data.featured}
     )
   `);
