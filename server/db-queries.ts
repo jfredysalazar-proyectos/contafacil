@@ -77,31 +77,40 @@ export async function createProduct(data: InsertProduct) {
   // Usar SQL raw para tener control total del INSERT y evitar que Drizzle incluya 'id'
   const { sql } = await import('drizzle-orm');
   
-  const result = await db.execute(sql`
-    INSERT INTO products (
-      userId, categoryId, name, description, sku, barcode, price, cost,
-      hasVariations, imageUrl, qrCode, stockControlEnabled, stock, stockAlert,
-      sellBy, promotionalPrice, featured
-    ) VALUES (
-      ${data.userId},
-      ${categoryId},
-      ${data.name},
-      ${description},
-      ${sku},
-      ${barcode},
-      ${data.price},
-      ${cost},
-      ${data.hasVariations},
-      ${imageUrl},
-      ${qrCode},
-      ${data.stockControlEnabled},
-      ${data.stock},
-      ${data.stockAlert},
-      ${data.sellBy},
-      ${promotionalPrice},
-      ${data.featured}
-    )
-  `);
+  let result;
+  try {
+    console.log('DEBUG: Ejecutando INSERT...');
+    result = await db.execute(sql`
+      INSERT INTO products (
+        userId, categoryId, name, description, sku, barcode, price, cost,
+        hasVariations, imageUrl, qrCode, stockControlEnabled, stock, stockAlert,
+        sellBy, promotionalPrice, featured
+      ) VALUES (
+        ${data.userId},
+        ${categoryId},
+        ${data.name},
+        ${description},
+        ${sku},
+        ${barcode},
+        ${data.price},
+        ${cost},
+        ${data.hasVariations},
+        ${imageUrl},
+        ${qrCode},
+        ${data.stockControlEnabled},
+        ${data.stock},
+        ${data.stockAlert},
+        ${data.sellBy},
+        ${promotionalPrice},
+        ${data.featured}
+      )
+    `);
+    console.log('DEBUG: INSERT exitoso, insertId:', result.insertId);
+  } catch (error) {
+    console.error('ERROR en INSERT:', error);
+    console.error('ERROR details:', JSON.stringify(error, null, 2));
+    throw error;
+  }
   
   // Si no había SKU, generar QR con el ID del producto
   if (!qrCode && result.insertId) {
