@@ -57,11 +57,11 @@ export default function ProductQRCodes() {
   };
 
   const handlePrint = () => {
-    const productsToP rint = selectedProducts.length > 0
+    const productsToPrint = selectedProducts.length > 0
       ? filteredProducts.filter((p: any) => selectedProducts.includes(p.id))
       : filteredProducts;
 
-    if (productsToP rint.length === 0) {
+    if (productsToPrint.length === 0) {
       toast.error("No hay productos seleccionados para imprimir");
       return;
     }
@@ -138,7 +138,7 @@ export default function ProductQRCodes() {
         <body>
           <h1>Códigos QR de Productos - ${user?.businessName || ''}</h1>
           <div class="qr-grid">
-            ${productsToP rint.map((product: any) => `
+            ${productsToPrint.map((product: any) => `
               <div class="qr-item">
                 <img src="${product.qrCode}" alt="QR ${product.name}" />
                 <div class="product-name">${product.name}</div>
