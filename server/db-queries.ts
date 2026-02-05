@@ -48,10 +48,30 @@ export async function createProduct(data: InsertProduct) {
     qrCode = await generateProductQRCode(data.sku, 0, data.name);
   }
   
-  const result = await db.insert(products).values({
-    ...data,
+  // Construir objeto sin id para el INSERT
+  const insertData: any = {
+    userId: data.userId,
+    name: data.name,
+    price: data.price,
+    hasVariations: data.hasVariations,
+    stockControlEnabled: data.stockControlEnabled,
+    stock: data.stock,
+    stockAlert: data.stockAlert,
+    sellBy: data.sellBy,
+    featured: data.featured,
     qrCode: qrCode || null,
-  });
+  };
+  
+  // Agregar campos opcionales solo si existen
+  if (data.categoryId !== undefined) insertData.categoryId = data.categoryId;
+  if (data.description !== undefined) insertData.description = data.description;
+  if (data.sku !== undefined) insertData.sku = data.sku;
+  if (data.barcode !== undefined) insertData.barcode = data.barcode;
+  if (data.cost !== undefined) insertData.cost = data.cost;
+  if (data.imageUrl !== undefined) insertData.imageUrl = data.imageUrl;
+  if (data.promotionalPrice !== undefined) insertData.promotionalPrice = data.promotionalPrice;
+  
+  const result = await db.insert(products).values(insertData);
   
   // Si no había SKU, generar QR con el ID del producto
   if (!qrCode && result[0].insertId) {
