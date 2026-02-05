@@ -49,7 +49,10 @@ export async function createProduct(data: InsertProduct) {
   }
   
   // Construir objeto sin id para el INSERT
+  // NOTA: Pasamos id: null explícitamente para evitar bug de Drizzle ORM
+  // Ver: https://github.com/drizzle-team/drizzle-orm/issues/2554
   const insertData: any = {
+    id: null,
     userId: data.userId,
     name: data.name,
     price: data.price,
