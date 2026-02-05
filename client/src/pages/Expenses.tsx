@@ -138,9 +138,9 @@ export default function Expenses() {
       <div className="container py-8 space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-foreground">Gastos</h1>
+            <h1 className="text-4xl font-bold text-foreground">Gastos y Compras</h1>
             <p className="text-muted-foreground mt-2">
-              Registra y controla tus gastos
+              Registra y controla tus gastos y compras
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -275,9 +275,9 @@ export default function Expenses() {
 
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle>Historial de Gastos</CardTitle>
+            <CardTitle>Historial de Gastos y Compras</CardTitle>
             <CardDescription>
-              {expenses?.length || 0} gastos registrados
+              {expenses?.length || 0} registros
             </CardDescription>
           </CardHeader>
           <CardContent>

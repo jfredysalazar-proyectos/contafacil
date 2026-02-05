@@ -232,7 +232,7 @@ export default function Roles() {
     proveedores: "Proveedores",
     ventas: "Ventas",
     cotizaciones: "Cotizaciones",
-    gastos: "Gastos",
+    gastos: "Gastos y Compras",
     deudas: "Deudas",
     reportes: "Reportes",
     configuracion: "Configuración",
