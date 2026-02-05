@@ -34,24 +34,26 @@ export async function generateReceiptPDF(sale: SaleData, user: UserData): Promis
   const pageWidth = doc.internal.pageSize.getWidth();
   let yPos = 20;
   
-  // Logo (si existe)
+  // Título (siempre arriba)
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  doc.text("COMPROBANTE DE VENTA", pageWidth / 2, yPos, { align: "center" });
+  yPos += 15;
+  
+  // Logo (debajo del título, a la izquierda)
   if (user.logoUrl) {
     try {
       // Convertir URL a base64 para evitar problemas de CORS
       const logoBase64 = await imageUrlToBase64(user.logoUrl);
-      // Agregar logo en la esquina superior izquierda
-      doc.addImage(logoBase64, "PNG", 20, 10, 40, 40);
-      yPos = 55; // Ajustar posición inicial después del logo
+      // Agregar logo con tamaño fijo de 30x30
+      doc.addImage(logoBase64, "PNG", 20, yPos, 30, 30);
     } catch (error) {
       console.error("Error al agregar logo al PDF:", error);
     }
   }
   
-  // Título
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.text("COMPROBANTE DE VENTA", pageWidth / 2, yPos, { align: "center" });
-  yPos += 15;
+  // Ajustar posición para el contenido (debajo del logo)
+  yPos += 35;
   
   // Información del negocio
   doc.setFontSize(12);
@@ -169,20 +171,7 @@ export async function generateReportPDF(
   const pageWidth = doc.internal.pageSize.getWidth();
   let yPos = 20;
   
-  // Logo (si existe)
-  if (user.logoUrl) {
-    try {
-      // Convertir URL a base64 para evitar problemas de CORS
-      const logoBase64 = await imageUrlToBase64(user.logoUrl);
-      // Agregar logo en la esquina superior izquierda
-      doc.addImage(logoBase64, "PNG", 20, 10, 40, 40);
-      yPos = 55; // Ajustar posición inicial después del logo
-    } catch (error) {
-      console.error("Error al agregar logo al PDF:", error);
-    }
-  }
-  
-  // Título
+  // Título (siempre arriba)
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
   const titles: Record<string, string> = {
@@ -193,6 +182,21 @@ export async function generateReportPDF(
   };
   doc.text(titles[type] || "REPORTE", pageWidth / 2, yPos, { align: "center" });
   yPos += 15;
+  
+  // Logo (debajo del título, a la izquierda)
+  if (user.logoUrl) {
+    try {
+      // Convertir URL a base64 para evitar problemas de CORS
+      const logoBase64 = await imageUrlToBase64(user.logoUrl);
+      // Agregar logo con tamaño fijo de 30x30
+      doc.addImage(logoBase64, "PNG", 20, yPos, 30, 30);
+    } catch (error) {
+      console.error("Error al agregar logo al PDF:", error);
+    }
+  }
+  
+  // Ajustar posición para el contenido (debajo del logo)
+  yPos += 35;
   
   // Información del negocio
   doc.setFontSize(10);
@@ -313,24 +317,26 @@ export async function createQuotationPDF(quotation: QuotationData, user: UserDat
   const pageWidth = doc.internal.pageSize.getWidth();
   let yPos = 20;
   
-  // Logo (si existe)
+  // Título (siempre arriba)
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  doc.text("COTIZACIÓN", pageWidth / 2, yPos, { align: "center" });
+  yPos += 15;
+  
+  // Logo (debajo del título, a la izquierda)
   if (user.logoUrl) {
     try {
       // Convertir URL a base64 para evitar problemas de CORS
       const logoBase64 = await imageUrlToBase64(user.logoUrl);
-      // Agregar logo en la esquina superior izquierda
-      doc.addImage(logoBase64, "PNG", 20, 10, 40, 40);
-      yPos = 55; // Ajustar posición inicial después del logo
+      // Agregar logo con tamaño fijo de 30x30
+      doc.addImage(logoBase64, "PNG", 20, yPos, 30, 30);
     } catch (error) {
       console.error("Error al agregar logo al PDF:", error);
     }
   }
   
-  // Título
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.text("COTIZACIÓN", pageWidth / 2, yPos, { align: "center" });
-  yPos += 15;
+  // Ajustar posición para el contenido (debajo del logo)
+  yPos += 35;
   
   // Información del negocio
   doc.setFontSize(12);

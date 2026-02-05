@@ -271,22 +271,25 @@ export default function Quotations() {
       const pageWidth = doc.internal.pageSize.getWidth();
       let yPos = 20;
 
-      // Logo (si existe)
+      // Título (siempre arriba)
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("COTIZACIÓN", pageWidth / 2, yPos, { align: "center" });
+      yPos += 15;
+
+      // Logo (debajo del título, a la izquierda)
       if (userData.logoUrl) {
         try {
           const logoBase64 = await imageUrlToBase64(userData.logoUrl);
-          doc.addImage(logoBase64, "PNG", 20, 10, 40, 40);
-          yPos = 55; // Ajustar posición después del logo
+          // Agregar logo con tamaño fijo de 30x30
+          doc.addImage(logoBase64, "PNG", 20, yPos, 30, 30);
         } catch (error) {
           console.error("Error al agregar logo al PDF:", error);
         }
       }
 
-      // Título
-      doc.setFontSize(20);
-      doc.setFont("helvetica", "bold");
-      doc.text("COTIZACIÓN", pageWidth / 2, yPos, { align: "center" });
-      yPos += 15;
+      // Ajustar posición para el contenido (debajo del logo)
+      yPos += 35;
 
       // Información del negocio
       doc.setFontSize(12);
