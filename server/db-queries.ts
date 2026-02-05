@@ -48,36 +48,39 @@ export async function createProduct(data: InsertProduct) {
     qrCode = await generateProductQRCode(data.sku, 0, data.name);
   }
   
-  // Construir objeto sin id para el INSERT
-  // NO incluir id en absoluto - Drizzle debe omitirlo del query
-  const insertData: any = {
-    userId: data.userId,
-    name: data.name,
-    price: data.price,
-    hasVariations: data.hasVariations,
-    stockControlEnabled: data.stockControlEnabled,
-    stock: data.stock,
-    stockAlert: data.stockAlert,
-    sellBy: data.sellBy,
-    featured: data.featured,
-    qrCode: qrCode || null,
-  };
+  // Usar SQL raw para tener control total del INSERT y evitar que Drizzle incluya 'id'
+  const { sql } = await import('drizzle-orm');
   
-  // Agregar campos opcionales solo si existen
-  if (data.categoryId !== undefined) insertData.categoryId = data.categoryId;
-  if (data.description !== undefined) insertData.description = data.description;
-  if (data.sku !== undefined) insertData.sku = data.sku;
-  if (data.barcode !== undefined) insertData.barcode = data.barcode;
-  if (data.cost !== undefined) insertData.cost = data.cost;
-  if (data.imageUrl !== undefined) insertData.imageUrl = data.imageUrl;
-  if (data.promotionalPrice !== undefined) insertData.promotionalPrice = data.promotionalPrice;
-  
-  const result = await db.insert(products).values(insertData);
+  const result = await db.execute(sql`
+    INSERT INTO products (
+      userId, categoryId, name, description, sku, barcode, price, cost,
+      hasVariations, imageUrl, qrCode, stockControlEnabled, stock, stockAlert,
+      sellBy, promotionalPrice, featured
+    ) VALUES (
+      ${data.userId},
+      ${data.categoryId || null},
+      ${data.name},
+      ${data.description || null},
+      ${data.sku || null},
+      ${data.barcode || null},
+      ${data.price},
+      ${data.cost || null},
+      ${data.hasVariations},
+      ${data.imageUrl || null},
+      ${qrCode || null},
+      ${data.stockControlEnabled},
+      ${data.stock},
+      ${data.stockAlert},
+      ${data.sellBy},
+      ${data.promotionalPrice || null},
+      ${data.featured}
+    )
+  `);
   
   // Si no había SKU, generar QR con el ID del producto
-  if (!qrCode && result[0].insertId) {
+  if (!qrCode && result.insertId) {
     const { generateProductQRCode } = await import('./qr-generator');
-    const productId = Number(result[0].insertId);
+    const productId = Number(result.insertId);
     qrCode = await generateProductQRCode(null, productId, data.name);
     
     // Actualizar el producto con el QR
