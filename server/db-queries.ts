@@ -58,21 +58,21 @@ export async function createProduct(data: InsertProduct) {
       sellBy, promotionalPrice, featured
     ) VALUES (
       ${data.userId},
-      ${data.categoryId || null},
+      ${data.categoryId ?? null},
       ${data.name},
-      ${data.description || null},
-      ${data.sku || null},
-      ${data.barcode || null},
+      ${data.description ?? null},
+      ${data.sku ?? null},
+      ${data.barcode ?? null},
       ${data.price},
-      ${data.cost || null},
+      ${data.cost ?? null},
       ${data.hasVariations},
-      ${data.imageUrl || null},
-      ${qrCode || null},
+      ${data.imageUrl ?? null},
+      ${qrCode ?? null},
       ${data.stockControlEnabled},
       ${data.stock},
       ${data.stockAlert},
       ${data.sellBy},
-      ${data.promotionalPrice || null},
+      ${data.promotionalPrice ?? null},
       ${data.featured}
     )
   `);
