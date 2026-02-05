@@ -5,8 +5,7 @@ import { getDb } from "./db";
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { storagePut } from "./storage";
-import { nanoid } from "nanoid";
+// Cloudinary se importa dinámicamente en uploadLogo
 
 export const profileRouter = router({
   /**
@@ -172,17 +171,12 @@ export const profileRouter = router({
         });
       }
 
-      // Convertir base64 a buffer
-      const base64Data = input.base64Image.replace(/^data:image\/\w+;base64,/, "");
-      const buffer = Buffer.from(base64Data, "base64");
-
-      // Determinar extensión
-      const ext = input.mimeType.split("/")[1];
-      const fileName = `logo-${ctx.user.id}-${nanoid()}.${ext}`;
-      const fileKey = `logos/${fileName}`;
-
-      // Subir a S3
-      const { url } = await storagePut(fileKey, buffer, input.mimeType);
+      // Subir a Cloudinary
+      const { uploadImageToCloudinary } = await import("./cloudinary-service");
+      const { url } = await uploadImageToCloudinary(
+        input.base64Image,
+        `contafacil/logos/${ctx.user.id}`
+      );
 
       // Actualizar en base de datos
       await db.update(users).set({ logoUrl: url }).where(eq(users.id, ctx.user.id));
