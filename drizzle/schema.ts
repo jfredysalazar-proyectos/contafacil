@@ -131,7 +131,7 @@ export const products = mysqlTable("products", {
 }));
 
 export type Product = typeof products.$inferSelect;
-export type InsertProduct = typeof products.$inferInsert;
+export type InsertProduct = Omit<typeof products.$inferInsert, 'id'>;
 
 /**
  * Tabla de variaciones de productos (tallas, colores, etc.)
