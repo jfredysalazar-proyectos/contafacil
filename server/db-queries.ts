@@ -39,6 +39,9 @@ export async function createProduct(data: InsertProduct) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
+  // Función auxiliar para convertir strings vacías y undefined a null
+  const toNull = (value: any) => (value === '' || value === undefined || value === null) ? null : value;
+  
   // Generar QR code si hay SKU o después de insertar con el ID
   let qrCode: string | undefined;
   
@@ -58,21 +61,21 @@ export async function createProduct(data: InsertProduct) {
       sellBy, promotionalPrice, featured
     ) VALUES (
       ${data.userId},
-      ${data.categoryId ?? null},
+      ${toNull(data.categoryId)},
       ${data.name},
-      ${data.description ?? null},
-      ${data.sku ?? null},
-      ${data.barcode ?? null},
+      ${toNull(data.description)},
+      ${toNull(data.sku)},
+      ${toNull(data.barcode)},
       ${data.price},
-      ${data.cost ?? null},
+      ${toNull(data.cost)},
       ${data.hasVariations},
-      ${data.imageUrl ?? null},
-      ${qrCode ?? null},
+      ${toNull(data.imageUrl)},
+      ${toNull(qrCode)},
       ${data.stockControlEnabled},
       ${data.stock},
       ${data.stockAlert},
       ${data.sellBy},
-      ${data.promotionalPrice ?? null},
+      ${toNull(data.promotionalPrice)},
       ${data.featured}
     )
   `);
