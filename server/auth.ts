@@ -186,6 +186,7 @@ export const authRouter = router({
       nit: user.nit,
       phone: user.phone,
       address: user.address,
+      logoUrl: user.logoUrl,
     };
   }),
 
