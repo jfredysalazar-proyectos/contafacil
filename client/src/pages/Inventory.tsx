@@ -174,7 +174,7 @@ export default function Inventory() {
     }
 
     addStockMutation.mutate({
-      productId: selectedProduct.productId,
+      productId: selectedProduct.productId || selectedProduct.id,
       quantity: parseInt(addQuantity),
       supplierId: selectedSupplierId ? parseInt(selectedSupplierId) : undefined,
       unitCost: unitCost ? parseFloat(unitCost) : undefined,
@@ -187,7 +187,7 @@ export default function Inventory() {
     if (!selectedProduct) return;
 
     reduceStockMutation.mutate({
-      productId: selectedProduct.productId,
+      productId: selectedProduct.productId || selectedProduct.id,
       quantity: parseInt(reduceQuantity),
       reason: reduceReason || undefined,
       notes: reduceNotes || undefined,
@@ -199,7 +199,7 @@ export default function Inventory() {
     if (!selectedProduct) return;
 
     adjustStockMutation.mutate({
-      productId: selectedProduct.productId,
+      productId: selectedProduct.productId || selectedProduct.id,
       newStock: parseInt(adjustStock),
       reason: adjustReason || undefined,
       notes: adjustNotes || undefined,
