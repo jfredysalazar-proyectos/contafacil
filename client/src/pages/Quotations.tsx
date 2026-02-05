@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Loader2, Plus, FileText, Trash2, Eye, CheckCircle, XCircle, ArrowRight, Calendar, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import jsPDF from "jspdf";
+import { imageUrlToBase64 } from "@/lib/imageUtils";
 
 export default function Quotations() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -273,7 +274,9 @@ export default function Quotations() {
       // Logo (si existe)
       if (userData.logoUrl) {
         try {
-          doc.addImage(userData.logoUrl, "PNG", pageWidth - 50, 10, 40, 40);
+          const logoBase64 = await imageUrlToBase64(userData.logoUrl);
+          doc.addImage(logoBase64, "PNG", 20, 10, 40, 40);
+          yPos = 55; // Ajustar posición después del logo
         } catch (error) {
           console.error("Error al agregar logo al PDF:", error);
         }

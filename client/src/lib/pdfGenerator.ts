@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import { imageUrlToBase64 } from "./imageUtils";
 
 interface SaleData {
   saleNumber: string;
@@ -26,7 +27,7 @@ interface UserData {
   logoUrl?: string;
 }
 
-export function generateReceiptPDF(sale: SaleData, user: UserData): string {
+export async function generateReceiptPDF(sale: SaleData, user: UserData): Promise<string> {
   const doc = new jsPDF();
   
   // Configuración
@@ -36,8 +37,11 @@ export function generateReceiptPDF(sale: SaleData, user: UserData): string {
   // Logo (si existe)
   if (user.logoUrl) {
     try {
-      // Agregar logo en la esquina superior derecha
-      doc.addImage(user.logoUrl, "PNG", pageWidth - 50, 10, 40, 40);
+      // Convertir URL a base64 para evitar problemas de CORS
+      const logoBase64 = await imageUrlToBase64(user.logoUrl);
+      // Agregar logo en la esquina superior izquierda
+      doc.addImage(logoBase64, "PNG", 20, 10, 40, 40);
+      yPos = 55; // Ajustar posición inicial después del logo
     } catch (error) {
       console.error("Error al agregar logo al PDF:", error);
     }
@@ -154,13 +158,13 @@ export function generateReceiptPDF(sale: SaleData, user: UserData): string {
   return doc.output("datauristring");
 }
 
-export function generateReportPDF(
+export async function generateReportPDF(
   type: string,
   data: any,
   user: UserData,
   startDate?: Date,
   endDate?: Date
-): string {
+): Promise<string> {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   let yPos = 20;
@@ -168,8 +172,11 @@ export function generateReportPDF(
   // Logo (si existe)
   if (user.logoUrl) {
     try {
-      // Agregar logo en la esquina superior derecha
-      doc.addImage(user.logoUrl, "PNG", pageWidth - 50, 10, 40, 40);
+      // Convertir URL a base64 para evitar problemas de CORS
+      const logoBase64 = await imageUrlToBase64(user.logoUrl);
+      // Agregar logo en la esquina superior izquierda
+      doc.addImage(logoBase64, "PNG", 20, 10, 40, 40);
+      yPos = 55; // Ajustar posición inicial después del logo
     } catch (error) {
       console.error("Error al agregar logo al PDF:", error);
     }
@@ -298,7 +305,8 @@ interface QuotationData {
   notes?: string;
   status?: string;
 }
-export async function createQuotationPDF(quotation: QuotationData, user: UserData): string {
+
+export async function createQuotationPDF(quotation: QuotationData, user: UserData): Promise<string> {
   const doc = new jsPDF();
   
   // Configuración
@@ -308,8 +316,11 @@ export async function createQuotationPDF(quotation: QuotationData, user: UserDat
   // Logo (si existe)
   if (user.logoUrl) {
     try {
-      // Agregar logo en la esquina superior derecha
-      doc.addImage(user.logoUrl, "PNG", pageWidth - 50, 10, 40, 40);
+      // Convertir URL a base64 para evitar problemas de CORS
+      const logoBase64 = await imageUrlToBase64(user.logoUrl);
+      // Agregar logo en la esquina superior izquierda
+      doc.addImage(logoBase64, "PNG", 20, 10, 40, 40);
+      yPos = 55; // Ajustar posición inicial después del logo
     } catch (error) {
       console.error("Error al agregar logo al PDF:", error);
     }
@@ -370,10 +381,9 @@ export async function createQuotationPDF(quotation: QuotationData, user: UserDat
   // Tabla de productos
   doc.setFont("helvetica", "bold");
   doc.text("Producto", 20, yPos);
-  doc.text("Cant.", 95, yPos);
-  doc.text("Precio Unit.", 115, yPos);
-  doc.text("Desc.", 150, yPos);
-  doc.text("Subtotal", 170, yPos);
+  doc.text("Cant.", 100, yPos);
+  doc.text("Precio Unit.", 125, yPos);
+  doc.text("Subtotal", 165, yPos);
   yPos += 7;
   
   // Línea separadora
@@ -383,26 +393,22 @@ export async function createQuotationPDF(quotation: QuotationData, user: UserDat
   // Items
   doc.setFont("helvetica", "normal");
   quotation.items.forEach((item) => {
-    if (yPos > 250) {
+    if (yPos > 270) {
       doc.addPage();
       yPos = 20;
     }
     
     doc.text(item.productName, 20, yPos);
-    doc.text(item.quantity.toString(), 95, yPos);
-    doc.text(`$${Number(item.unitPrice).toLocaleString("es-CO")}`, 115, yPos);
-    doc.text(`$${Number(item.discount || 0).toLocaleString("es-CO")}`, 150, yPos);
-    doc.text(`$${Number(item.subtotal).toLocaleString("es-CO")}`, 170, yPos);
+    doc.text(item.quantity.toString(), 100, yPos);
+    doc.text(`$${Number(item.unitPrice).toLocaleString("es-CO")}`, 125, yPos);
+    doc.text(`$${Number(item.subtotal).toLocaleString("es-CO")}`, 165, yPos);
     yPos += 7;
     
-    // Descripción del producto (si existe)
     if (item.description) {
       doc.setFontSize(8);
-      doc.setFont("helvetica", "italic");
-      doc.text(item.description.substring(0, 80), 20, yPos);
-      yPos += 5;
+      doc.text(item.description.substring(0, 60), 20, yPos);
       doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
+      yPos += 5;
     }
   });
   
@@ -412,65 +418,48 @@ export async function createQuotationPDF(quotation: QuotationData, user: UserDat
   
   // Totales
   doc.setFont("helvetica", "normal");
-  doc.text("Subtotal:", 135, yPos);
-  doc.text(`$${Number(quotation.subtotal).toLocaleString("es-CO")}`, 170, yPos);
+  doc.text("Subtotal:", 125, yPos);
+  doc.text(`$${Number(quotation.subtotal).toLocaleString("es-CO")}`, 165, yPos);
   yPos += 7;
   
   if (quotation.discount && Number(quotation.discount) > 0) {
-    doc.text("Descuento:", 135, yPos);
-    doc.text(`-$${Number(quotation.discount).toLocaleString("es-CO")}`, 170, yPos);
+    doc.text("Descuento:", 125, yPos);
+    doc.text(`-$${Number(quotation.discount).toLocaleString("es-CO")}`, 165, yPos);
     yPos += 7;
   }
   
-  doc.text("IVA (19%):", 135, yPos);
-  doc.text(`$${Number(quotation.tax || 0).toLocaleString("es-CO")}`, 170, yPos);
+  doc.text("IVA (19%):", 125, yPos);
+  doc.text(`$${Number(quotation.tax).toLocaleString("es-CO")}`, 165, yPos);
   yPos += 7;
   
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.text("TOTAL:", 135, yPos);
-  doc.text(`$${Number(quotation.total).toLocaleString("es-CO")}`, 170, yPos);
+  doc.text("TOTAL:", 125, yPos);
+  doc.text(`$${Number(quotation.total).toLocaleString("es-CO")}`, 165, yPos);
   yPos += 15;
   
   // Términos y condiciones
-  if (quotation.paymentTerms || quotation.deliveryTerms || quotation.notes) {
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.text("TÉRMINOS Y CONDICIONES", 20, yPos);
-    yPos += 7;
-    
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    
-    if (quotation.paymentTerms) {
-      doc.text("Términos de Pago:", 20, yPos);
-      yPos += 5;
-      // Limitar texto a 150 caracteres para evitar problemas
-      doc.text(quotation.paymentTerms.substring(0, 150), 20, yPos);
-      yPos += 5;
-    }
-    
-    if (quotation.deliveryTerms) {
-      if (yPos > 250) {
-        doc.addPage();
-        yPos = 20;
-      }
-      doc.text("Términos de Entrega:", 20, yPos);
-      yPos += 5;
-      doc.text(quotation.deliveryTerms.substring(0, 150), 20, yPos);
-      yPos += 5;
-    }
-    
-    if (quotation.notes) {
-      if (yPos > 250) {
-        doc.addPage();
-        yPos = 20;
-      }
-      doc.text("Notas:", 20, yPos);
-      yPos += 5;
-      doc.text(quotation.notes.substring(0, 150), 20, yPos);
-      yPos += 5;
-    }
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  
+  if (quotation.paymentTerms) {
+    doc.text("Términos de pago:", 20, yPos);
+    yPos += 5;
+    doc.text(quotation.paymentTerms, 20, yPos);
+    yPos += 10;
+  }
+  
+  if (quotation.deliveryTerms) {
+    doc.text("Términos de entrega:", 20, yPos);
+    yPos += 5;
+    doc.text(quotation.deliveryTerms, 20, yPos);
+    yPos += 10;
+  }
+  
+  if (quotation.notes) {
+    doc.text("Notas:", 20, yPos);
+    yPos += 5;
+    doc.text(quotation.notes, 20, yPos);
   }
   
   // Pie de página
@@ -481,6 +470,5 @@ export async function createQuotationPDF(quotation: QuotationData, user: UserDat
   yPos += 5;
   doc.text("Documento generado por ContaFácil", pageWidth / 2, yPos, { align: "center" });
   
-  // Retornar PDF como data URI completo
   return doc.output("datauristring");
 }

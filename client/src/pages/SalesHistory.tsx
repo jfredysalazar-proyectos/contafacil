@@ -35,7 +35,7 @@ export default function SalesHistory() {
     try {
       const items = await utils.sales.getItems.fetch({ saleId: sale.id });
       
-      const pdfDataUrl = generateReceiptPDF(
+      const pdfDataUrl = await generateReceiptPDF(
         {
           saleNumber: sale.saleNumber || "N/A",
           saleDate: new Date(sale.saleDate),
@@ -76,7 +76,7 @@ export default function SalesHistory() {
     try {
       const items = await utils.sales.getItems.fetch({ saleId: sale.id });
       
-      const pdfDataUrl = generateReceiptPDF(
+      const pdfDataUrl = await generateReceiptPDF(
         {
           saleNumber: sale.saleNumber || "N/A",
           saleDate: new Date(sale.saleDate),

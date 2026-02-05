@@ -113,7 +113,7 @@ export default function Sales() {
       // Cargar items de la venta desde la base de datos
       const items = await utils.sales.getItems.fetch({ saleId: sale.id });
       
-      const pdfDataUrl = generateReceiptPDF(
+      const pdfDataUrl = await generateReceiptPDF(
         {
           saleNumber: sale.saleNumber || "N/A",
           saleDate: new Date(sale.saleDate),
@@ -162,7 +162,7 @@ export default function Sales() {
       // Cargar items de la venta desde la base de datos
       const items = await utils.sales.getItems.fetch({ saleId: sale.id });
       
-      const pdfDataUrl = generateReceiptPDF(
+      const pdfDataUrl = await generateReceiptPDF(
         {
           saleNumber: sale.saleNumber || "N/A",
           saleDate: new Date(sale.saleDate),
