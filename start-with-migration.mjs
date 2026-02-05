@@ -31,6 +31,7 @@ async function runMigrationIfNeeded() {
       
       // Ejecutar las migraciones
       const statements = [
+        "ALTER TABLE `products` MODIFY COLUMN `id` SERIAL",
         "ALTER TABLE `products` MODIFY COLUMN `categoryId` int DEFAULT NULL",
         "ALTER TABLE `products` MODIFY COLUMN `description` text DEFAULT NULL",
         "ALTER TABLE `products` MODIFY COLUMN `sku` varchar(100) DEFAULT NULL",
