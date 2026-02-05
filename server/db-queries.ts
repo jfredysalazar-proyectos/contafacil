@@ -39,7 +39,33 @@ export async function createProduct(data: InsertProduct) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(products).values(data);
+  // Generar QR code si hay SKU o después de insertar con el ID
+  let qrCode: string | undefined;
+  
+  // Si hay SKU, generar QR antes de insertar
+  if (data.sku) {
+    const { generateProductQRCode } = await import('./qr-generator');
+    qrCode = await generateProductQRCode(data.sku, 0, data.name);
+  }
+  
+  const result = await db.insert(products).values({
+    ...data,
+    qrCode: qrCode || null,
+  });
+  
+  // Si no había SKU, generar QR con el ID del producto
+  if (!qrCode && result[0].insertId) {
+    const { generateProductQRCode } = await import('./qr-generator');
+    const productId = Number(result[0].insertId);
+    qrCode = await generateProductQRCode(null, productId, data.name);
+    
+    // Actualizar el producto con el QR
+    await db
+      .update(products)
+      .set({ qrCode })
+      .where(eq(products.id, productId));
+  }
+  
   return result;
 }
 
@@ -71,9 +97,22 @@ export async function updateProduct(id: number, userId: number, data: Partial<In
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
+  // Si se actualiza el SKU o el nombre, regenerar QR
+  let updateData = { ...data };
+  if (data.sku !== undefined || data.name !== undefined) {
+    const product = await getProductById(id, userId);
+    if (product) {
+      const { generateProductQRCode } = await import('./qr-generator');
+      const newSku = data.sku !== undefined ? data.sku : product.sku;
+      const newName = data.name !== undefined ? data.name : product.name;
+      const qrCode = await generateProductQRCode(newSku, id, newName);
+      updateData = { ...updateData, qrCode };
+    }
+  }
+  
   await db
     .update(products)
-    .set(data)
+    .set(updateData)
     .where(and(eq(products.id, id), eq(products.userId, userId)));
 }
 

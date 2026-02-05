@@ -23,6 +23,7 @@ import Profile from "./pages/Profile";
 import Quotations from "./pages/Quotations";
 import Employees from "./pages/Employees";
 import Roles from "./pages/Roles";
+import ProductQRCodes from "./pages/ProductQRCodes";
 import Unauthorized from "./pages/Unauthorized";
 
 function Router() {
@@ -77,6 +78,9 @@ function Router() {
       </Route>
       <Route path="/roles">
         <AppLayout><Roles /></AppLayout>
+      </Route>
+      <Route path="/product-qr-codes">
+        <AppLayout><ProductQRCodes /></AppLayout>
       </Route>
       
       <Route path="/unauthorized" component={Unauthorized} />

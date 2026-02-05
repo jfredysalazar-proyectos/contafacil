@@ -19,6 +19,7 @@ import {
   FileText,
   UserCog,
   Shield,
+  QrCode,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -39,11 +40,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Ventas", href: "/sales", icon: ShoppingCart },
     { name: "Productos", href: "/products", icon: Package },
+    { name: "Códigos QR", href: "/product-qr-codes", icon: QrCode },
     { name: "Inventario", href: "/inventory", icon: Warehouse },
     { name: "Clientes", href: "/customers", icon: Users },
     { name: "Proveedores", href: "/suppliers", icon: Building2 },
-    { name: "Ventas", href: "/sales", icon: ShoppingCart },
     { name: "Cotizaciones", href: "/quotations", icon: FileText },
     { name: "Gastos", href: "/expenses", icon: Receipt },
     { name: "Deudas", href: "/debts", icon: DollarSign },

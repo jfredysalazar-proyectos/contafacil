@@ -116,6 +116,7 @@ export const products = mysqlTable("products", {
   cost: decimal("cost", { precision: 15, scale: 2 }),
   hasVariations: boolean("hasVariations").default(false).notNull(),
   imageUrl: text("imageUrl"),
+  qrCode: text("qrCode"),
   stockControlEnabled: boolean("stockControlEnabled").default(false).notNull(),
   stock: int("stock").default(0).notNull(),
   stockAlert: int("stockAlert").default(10),
