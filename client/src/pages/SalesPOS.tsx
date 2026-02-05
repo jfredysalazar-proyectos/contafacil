@@ -86,7 +86,8 @@ export default function SalesPOS() {
     
     return products.filter(product => {
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (product.code && product.code.toLowerCase().includes(searchTerm.toLowerCase()));
+                           (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                           (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesCategory = selectedCategory === "all" || product.categoryId?.toString() === selectedCategory;
       
       return matchesSearch && matchesCategory;
@@ -263,7 +264,7 @@ export default function SalesPOS() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <Input
                 type="text"
-                placeholder="Buscar por nombre o código..."
+                placeholder="Buscar por nombre, SKU o código de barras..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 h-12 text-lg"
