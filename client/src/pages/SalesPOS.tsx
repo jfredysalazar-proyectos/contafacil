@@ -208,6 +208,12 @@ export default function SalesPOS() {
       return;
     }
     
+    // Validar que se seleccione un cliente para ventas a crédito
+    if (paymentMethod === "credit" && (!customerId || customerId === "none")) {
+      toast.error("Debe seleccionar un cliente para ventas a crédito");
+      return;
+    }
+    
     try {
       await createSaleMutation.mutateAsync({
         customerId: customerId && customerId !== "none" ? parseInt(customerId) : undefined,
