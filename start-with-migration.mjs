@@ -14,16 +14,16 @@ async function runMigrationIfNeeded() {
   try {
     const connection = await mysql.createConnection(databaseUrl);
     
-    // Verificar si la columna categoryId tiene DEFAULT NULL
+    // Verificar si la columna id es SERIAL (BIGINT UNSIGNED)
     const [rows] = await connection.execute(`
-      SELECT COLUMN_DEFAULT 
+      SELECT COLUMN_TYPE 
       FROM INFORMATION_SCHEMA.COLUMNS 
       WHERE TABLE_SCHEMA = DATABASE()
         AND TABLE_NAME = 'products' 
-        AND COLUMN_NAME = 'categoryId'
+        AND COLUMN_NAME = 'id'
     `);
     
-    if (rows.length > 0 && rows[0].COLUMN_DEFAULT === null) {
+    if (rows.length > 0 && rows[0].COLUMN_TYPE.includes('bigint unsigned')) {
       console.log('✅ Esquema ya está actualizado');
       await connection.end();
     } else {
