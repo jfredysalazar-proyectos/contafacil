@@ -105,7 +105,7 @@ export type InsertProductCategory = typeof productCategories.$inferInsert;
  * Tabla de productos
  */
 export const products = mysqlTable("products", {
-  id: int("id").autoincrement().primaryKey(),
+  id: int("id").primaryKey().autoincrement().$defaultFn(() => undefined),
   userId: int("userId").notNull(),
   categoryId: int("categoryId").default(null),
   name: text("name").notNull(),
