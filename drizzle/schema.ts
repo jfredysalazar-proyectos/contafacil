@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, index, uniqueIndex } from "drizzle-orm/mysql-core";
+import { int, serial, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, index, uniqueIndex } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
 /**
@@ -105,7 +105,7 @@ export type InsertProductCategory = typeof productCategories.$inferInsert;
  * Tabla de productos
  */
 export const products = mysqlTable("products", {
-  id: int("id").primaryKey().autoincrement().$defaultFn(() => undefined),
+  id: serial("id").primaryKey(),
   userId: int("userId").notNull(),
   categoryId: int("categoryId").default(null),
   name: text("name").notNull(),
