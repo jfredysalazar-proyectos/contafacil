@@ -48,8 +48,11 @@ export async function createProduct(data: InsertProduct) {
     qrCode = await generateProductQRCode(data.sku, 0, data.name);
   }
   
+  // Excluir el campo id del insert (es auto-incremental)
+  const { id, ...dataWithoutId } = data as any;
+  
   const result = await db.insert(products).values({
-    ...data,
+    ...dataWithoutId,
     qrCode: qrCode || null,
   });
   
