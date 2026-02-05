@@ -14,6 +14,17 @@ async function runMigrationIfNeeded() {
   try {
     const connection = await mysql.createConnection(databaseUrl);
     
+    // Verificar si la columna qrCode existe
+    const [qrCodeRows] = await connection.execute(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'products' 
+        AND COLUMN_NAME = 'qrCode'
+    `);
+    
+    const qrCodeExists = qrCodeRows.length > 0;
+    
     // Verificar si la columna id es SERIAL (BIGINT UNSIGNED)
     const [rows] = await connection.execute(`
       SELECT COLUMN_TYPE 
@@ -23,24 +34,35 @@ async function runMigrationIfNeeded() {
         AND COLUMN_NAME = 'id'
     `);
     
-    if (rows.length > 0 && rows[0].COLUMN_TYPE.includes('bigint unsigned')) {
+    const idIsSerial = rows.length > 0 && rows[0].COLUMN_TYPE.includes('bigint unsigned');
+    
+    if (idIsSerial && qrCodeExists) {
       console.log('✅ Esquema ya está actualizado');
       await connection.end();
     } else {
       console.log('🔧 Aplicando migración...');
       
       // Ejecutar las migraciones
-      const statements = [
-        "ALTER TABLE `products` MODIFY COLUMN `id` SERIAL",
+      const statements = [];
+      
+      if (!idIsSerial) {
+        statements.push("ALTER TABLE `products` MODIFY COLUMN `id` SERIAL");
+      }
+      
+      if (!qrCodeExists) {
+        statements.push("ALTER TABLE `products` ADD COLUMN `qrCode` text DEFAULT NULL");
+      }
+      
+      // Agregar otras migraciones de DEFAULT NULL
+      statements.push(
         "ALTER TABLE `products` MODIFY COLUMN `categoryId` int DEFAULT NULL",
         "ALTER TABLE `products` MODIFY COLUMN `description` text DEFAULT NULL",
         "ALTER TABLE `products` MODIFY COLUMN `sku` varchar(100) DEFAULT NULL",
         "ALTER TABLE `products` MODIFY COLUMN `barcode` varchar(100) DEFAULT NULL",
         "ALTER TABLE `products` MODIFY COLUMN `cost` decimal(15,2) DEFAULT NULL",
         "ALTER TABLE `products` MODIFY COLUMN `imageUrl` text DEFAULT NULL",
-        "ALTER TABLE `products` MODIFY COLUMN `qrCode` text DEFAULT NULL",
         "ALTER TABLE `products` MODIFY COLUMN `promotionalPrice` decimal(15,2) DEFAULT NULL"
-      ];
+      );
       
       for (const statement of statements) {
         try {
