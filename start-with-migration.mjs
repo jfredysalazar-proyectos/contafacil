@@ -36,6 +36,16 @@ async function runMigrationIfNeeded() {
     
     const taxTypeExists = taxTypeRows.length > 0;
     
+    // Verificar si la tabla serial_numbers existe
+    const [serialTableRows] = await connection.execute(`
+      SELECT TABLE_NAME 
+      FROM INFORMATION_SCHEMA.TABLES 
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'serial_numbers'
+    `);
+    
+    const serialTableExists = serialTableRows.length > 0;
+    
     // Verificar si la columna id es SERIAL (BIGINT UNSIGNED)
     const [rows] = await connection.execute(`
       SELECT COLUMN_TYPE 
@@ -47,7 +57,7 @@ async function runMigrationIfNeeded() {
     
     const idIsSerial = rows.length > 0 && rows[0].COLUMN_TYPE.includes('bigint unsigned');
     
-    if (idIsSerial && qrCodeExists && taxTypeExists) {
+    if (idIsSerial && qrCodeExists && taxTypeExists && serialTableExists) {
       console.log('✅ Esquema ya está actualizado');
       await connection.end();
     } else {
@@ -66,6 +76,29 @@ async function runMigrationIfNeeded() {
       
       if (!taxTypeExists) {
         statements.push("ALTER TABLE `products` ADD COLUMN `taxType` ENUM('excluded', 'exempt', 'iva_5', 'iva_19') NOT NULL DEFAULT 'iva_19' AFTER `sellBy`");
+      }
+      
+      if (!serialTableExists) {
+        statements.push(`
+          CREATE TABLE IF NOT EXISTS \`serial_numbers\` (
+            \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+            \`userId\` INT NOT NULL,
+            \`serialNumber\` VARCHAR(255) NOT NULL,
+            \`productId\` INT NOT NULL,
+            \`productName\` TEXT NOT NULL,
+            \`saleId\` INT NOT NULL,
+            \`saleNumber\` VARCHAR(50) NOT NULL,
+            \`customerId\` INT,
+            \`customerName\` TEXT,
+            \`saleDate\` TIMESTAMP NOT NULL,
+            \`createdAt\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX \`serialNumbers_userId_idx\` (\`userId\`),
+            INDEX \`serialNumbers_serialNumber_idx\` (\`serialNumber\`),
+            INDEX \`serialNumbers_productId_idx\` (\`productId\`),
+            INDEX \`serialNumbers_saleId_idx\` (\`saleId\`),
+            INDEX \`serialNumbers_saleDate_idx\` (\`saleDate\`)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
       }
       
       // Agregar otras migraciones de DEFAULT NULL

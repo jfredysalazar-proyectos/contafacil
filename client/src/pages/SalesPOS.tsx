@@ -210,6 +210,8 @@ export default function SalesPOS() {
         quantity: 1,
         unitPrice: Number(product.price),
         subtotal: Number(product.price),
+        hasSerial: false,
+        serialNumbers: "",
       }]);
     }
     
@@ -616,6 +618,55 @@ export default function SalesPOS() {
                       <p className="font-bold">
                         ${(item.quantity * Number(item.unitPrice)).toLocaleString("es-CO")}
                       </p>
+                    </div>
+                    
+                    {/* Campo de número de serie */}
+                    <div className="mt-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`serial-${item.productId}`} className="text-xs">Serial:</Label>
+                        <Select
+                          value={item.hasSerial ? "yes" : "no"}
+                          onValueChange={(value) => {
+                            setCartItems(cartItems.map(i =>
+                              i.productId === item.productId
+                                ? { ...i, hasSerial: value === "yes", serialNumbers: value === "no" ? "" : i.serialNumbers }
+                                : i
+                            ));
+                          }}
+                        >
+                          <SelectTrigger className="h-8 w-20">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="no">No</SelectItem>
+                            <SelectItem value="yes">Sí</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {item.hasSerial && (
+                        <div>
+                          <Input
+                            id={`serial-${item.productId}`}
+                            type="text"
+                            placeholder={item.quantity > 1 ? `Ingrese ${item.quantity} seriales separados por coma` : "Ingrese el número de serie"}
+                            value={item.serialNumbers}
+                            onChange={(e) => {
+                              setCartItems(cartItems.map(i =>
+                                i.productId === item.productId
+                                  ? { ...i, serialNumbers: e.target.value }
+                                  : i
+                              ));
+                            }}
+                            className="text-xs"
+                          />
+                          {item.quantity > 1 && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {item.serialNumbers.split(',').filter(s => s.trim()).length} de {item.quantity} seriales ingresados
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </Card>
                 ))}

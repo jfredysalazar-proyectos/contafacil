@@ -581,3 +581,30 @@ export const userActivityLog = mysqlTable("userActivityLog", {
 
 export type UserActivityLog = typeof userActivityLog.$inferSelect;
 export type InsertUserActivityLog = typeof userActivityLog.$inferInsert;
+
+/**
+ * Tabla de números de serie
+ * Almacena los seriales de productos vendidos para control de garantías
+ */
+export const serialNumbers = mysqlTable("serial_numbers", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  serialNumber: varchar("serialNumber", { length: 255 }).notNull(),
+  productId: int("productId").notNull(),
+  productName: text("productName").notNull(), // Desnormalizado para histórico
+  saleId: int("saleId").notNull(),
+  saleNumber: varchar("saleNumber", { length: 50 }).notNull(),
+  customerId: int("customerId"),
+  customerName: text("customerName"), // Desnormalizado para histórico
+  saleDate: timestamp("saleDate").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("serialNumbers_userId_idx").on(table.userId),
+  serialNumberIdx: index("serialNumbers_serialNumber_idx").on(table.serialNumber),
+  productIdIdx: index("serialNumbers_productId_idx").on(table.productId),
+  saleIdIdx: index("serialNumbers_saleId_idx").on(table.saleId),
+  saleDateIdx: index("serialNumbers_saleDate_idx").on(table.saleDate),
+}));
+
+export type SerialNumber = typeof serialNumbers.$inferSelect;
+export type InsertSerialNumber = typeof serialNumbers.$inferInsert;
