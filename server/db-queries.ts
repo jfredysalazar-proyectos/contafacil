@@ -532,7 +532,25 @@ export async function getSaleById(id: number, userId: number) {
     .from(saleItems)
     .where(eq(saleItems.saleId, id));
   
-  return { ...sale[0], items };
+  // Obtener seriales para cada item
+  const serials = await getSerialNumbersBySaleId(id, userId);
+  
+  // Agrupar seriales por productId
+  const serialsByProduct = serials.reduce((acc: any, serial: any) => {
+    if (!acc[serial.productId]) {
+      acc[serial.productId] = [];
+    }
+    acc[serial.productId].push(serial.serialNumber);
+    return acc;
+  }, {});
+  
+  // Agregar seriales a los items
+  const itemsWithSerials = items.map((item: any) => ({
+    ...item,
+    serialNumbers: serialsByProduct[item.productId]?.join(', ') || undefined,
+  }));
+  
+  return { ...sale[0], items: itemsWithSerials };
 }
 
 export async function updateSale(
@@ -1324,4 +1342,81 @@ export async function convertQuotationToSale(
   });
   
   return saleId;
+}
+
+// ==================== NÚMEROS DE SERIE ====================
+
+export async function createSerialNumber(data: {
+  userId: number;
+  serialNumber: string;
+  productId: number;
+  productName: string;
+  saleId: number;
+  saleNumber: string;
+  customerId?: number;
+  customerName?: string;
+  saleDate: Date;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [result] = await db.execute(
+    `INSERT INTO serial_numbers 
+    (userId, serialNumber, productId, productName, saleId, saleNumber, customerId, customerName, saleDate) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      data.userId,
+      data.serialNumber,
+      data.productId,
+      data.productName,
+      data.saleId,
+      data.saleNumber,
+      data.customerId || null,
+      data.customerName || null,
+      data.saleDate,
+    ]
+  );
+  
+  return (result as any).insertId;
+}
+
+export async function getSerialNumbersByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [rows] = await db.execute(
+    `SELECT * FROM serial_numbers 
+    WHERE userId = ? 
+    ORDER BY saleDate DESC`,
+    [userId]
+  );
+  
+  return rows as any[];
+}
+
+export async function searchSerialNumber(userId: number, serialNumber: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [rows] = await db.execute(
+    `SELECT * FROM serial_numbers 
+    WHERE userId = ? AND serialNumber LIKE ? 
+    ORDER BY saleDate DESC`,
+    [userId, `%${serialNumber}%`]
+  );
+  
+  return rows as any[];
+}
+
+export async function getSerialNumbersBySaleId(saleId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [rows] = await db.execute(
+    `SELECT * FROM serial_numbers 
+    WHERE userId = ? AND saleId = ?`,
+    [userId, saleId]
+  );
+  
+  return rows as any[];
 }

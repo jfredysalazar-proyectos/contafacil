@@ -12,6 +12,7 @@ import {
   statsRouter,
   categoriesRouter,
   quotationsRouter,
+  serialNumbersRouter,
 } from "./features";
 import { pdfRouter } from "./pdf";
 import { passwordResetRouter } from "./password-reset-router";
@@ -37,6 +38,7 @@ export const appRouter = router({
   stats: statsRouter,
   categories: categoriesRouter,
   quotations: quotationsRouter,
+  serialNumbers: serialNumbersRouter,
   pdf: pdfRouter,
   passwordReset: passwordResetRouter,
   profile: profileRouter,

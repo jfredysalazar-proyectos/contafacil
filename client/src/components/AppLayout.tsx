@@ -47,6 +47,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     { name: "Clientes", href: "/customers", icon: Users },
     { name: "Proveedores", href: "/suppliers", icon: Building2 },
     { name: "Cotizaciones", href: "/quotations", icon: FileText },
+    { name: "Números de Serie", href: "/serial-numbers", icon: Package },
     { name: "Gastos y Compras", href: "/expenses", icon: Receipt },
     { name: "Deudas", href: "/debts", icon: DollarSign },
     { name: "Empleados", href: "/employees", icon: UserCog },

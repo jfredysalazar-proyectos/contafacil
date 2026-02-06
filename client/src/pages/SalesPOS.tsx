@@ -335,6 +335,8 @@ export default function SalesPOS() {
           quantity: item.quantity,
           unitPrice: item.unitPrice.toString(),
           subtotal: item.subtotal.toString(),
+          hasSerial: item.hasSerial,
+          serialNumbers: item.serialNumbers,
         })),
         subtotal: cartTotals.subtotal.toString(),
         tax: cartTotals.tax.toString(),

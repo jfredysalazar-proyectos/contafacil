@@ -328,6 +328,8 @@ export const salesRouter = router({
             quantity: z.number(),
             unitPrice: z.string(),
             subtotal: z.string(),
+            hasSerial: z.boolean().optional(),
+            serialNumbers: z.string().optional(),
           })
         ),
         subtotal: z.string(),
@@ -375,6 +377,43 @@ export const salesRouter = router({
           reason: "Venta registrada",
           notes: `Venta ${input.saleNumber}`,
         });
+      }
+      
+      // Guardar números de serie
+      for (const item of items) {
+        if (item.hasSerial && item.serialNumbers) {
+          const serials = item.serialNumbers.split(',').map(s => s.trim()).filter(s => s);
+          
+          // Validar que la cantidad de seriales coincida con la cantidad de productos
+          if (serials.length !== item.quantity) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Debe ingresar ${item.quantity} números de serie para ${item.productName}. Ingresados: ${serials.length}`,
+            });
+          }
+          
+          // Obtener nombre del cliente si existe
+          let customerName: string | undefined;
+          if (input.customerId) {
+            const customer = await dbQueries.getCustomerById(input.customerId, ctx.user.id);
+            customerName = customer?.name;
+          }
+          
+          // Guardar cada serial
+          for (const serial of serials) {
+            await dbQueries.createSerialNumber({
+              userId: ctx.user.id,
+              serialNumber: serial,
+              productId: item.productId,
+              productName: item.productName,
+              saleId,
+              saleNumber: input.saleNumber,
+              customerId: input.customerId,
+              customerName,
+              saleDate: input.saleDate,
+            });
+          }
+        }
       }
       
       // Si es venta a crédito, crear deuda por cobrar
@@ -815,5 +854,25 @@ export const quotationsRouter = router({
           message: error instanceof Error ? error.message : "Error al convertir cotización a venta",
         });
       }
+    }),
+});
+
+// ==================== NÚMEROS DE SERIE ====================
+
+export const serialNumbersRouter = router({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    return await dbQueries.getSerialNumbersByUserId(ctx.user.id);
+  }),
+
+  search: protectedProcedure
+    .input(z.object({ serialNumber: z.string() }))
+    .query(async ({ input, ctx }) => {
+      return await dbQueries.searchSerialNumber(ctx.user.id, input.serialNumber);
+    }),
+
+  getBySaleId: protectedProcedure
+    .input(z.object({ saleId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      return await dbQueries.getSerialNumbersBySaleId(input.saleId, ctx.user.id);
     }),
 });

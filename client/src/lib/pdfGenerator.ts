@@ -14,6 +14,7 @@ interface SaleData {
     quantity: number;
     unitPrice: string;
     subtotal: string;
+    serialNumbers?: string;
   }>;
   subtotal: string;
   tax?: string;
@@ -164,6 +165,16 @@ export async function generateReceiptPDF(sale: SaleData, user: UserData): Promis
     doc.text(`$${Number(item.unitPrice).toLocaleString("es-CO")}`, 125, yPos);
     doc.text(`$${Number(item.subtotal).toLocaleString("es-CO")}`, 165, yPos);
     yPos += 6;
+    
+    // Mostrar números de serie si existen
+    if (item.serialNumbers) {
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`SN/ ${item.serialNumbers}`, 25, yPos);
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      yPos += 5;
+    }
   });
   
   yPos += 5;
@@ -308,6 +319,7 @@ interface QuotationData {
     quantity: number;
     unitPrice: string;
     subtotal: string;
+    serialNumbers?: string;
   }>;
   subtotal: string;
   tax: string;
@@ -457,6 +469,16 @@ export async function createQuotationPDF(quotation: QuotationData, user: UserDat
     doc.text(`$${Number(item.unitPrice).toLocaleString("es-CO")}`, 125, yPos);
     doc.text(`$${Number(item.subtotal).toLocaleString("es-CO")}`, 165, yPos);
     yPos += 6;
+    
+    // Mostrar números de serie si existen
+    if (item.serialNumbers) {
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`SN/ ${item.serialNumbers}`, 25, yPos);
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      yPos += 5;
+    }
   });
   
   yPos += 5;

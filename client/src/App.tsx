@@ -22,6 +22,7 @@ import Expenses from "./pages/Expenses";
 import Debts from "./pages/Debts";
 import Profile from "./pages/Profile";
 import Quotations from "./pages/Quotations";
+import SerialNumbers from "./pages/SerialNumbers";
 import Employees from "./pages/Employees";
 import Roles from "./pages/Roles";
 import ProductQRCodes from "./pages/ProductQRCodes";
@@ -64,6 +65,9 @@ function Router() {
       </Route>
       <Route path="/quotations">
         <AppLayout><Quotations /></AppLayout>
+      </Route>
+      <Route path="/serial-numbers">
+        <AppLayout><SerialNumbers /></AppLayout>
       </Route>
       <Route path="/expenses">
         <AppLayout><Expenses /></AppLayout>
