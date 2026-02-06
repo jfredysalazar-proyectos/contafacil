@@ -1370,20 +1370,8 @@ export async function createSerialNumber(data: {
   if (!data.saleNumber) throw new Error("saleNumber is required");
   if (!data.saleDate) throw new Error("saleDate is required");
   
-  // Convertir saleDate a formato MySQL (YYYY-MM-DD)
-  let saleDateStr: string;
-  try {
-    if (data.saleDate instanceof Date) {
-      saleDateStr = data.saleDate.toISOString().split('T')[0];
-    } else if (typeof data.saleDate === 'string') {
-      saleDateStr = new Date(data.saleDate).toISOString().split('T')[0];
-    } else {
-      saleDateStr = new Date(data.saleDate).toISOString().split('T')[0];
-    }
-  } catch (error) {
-    console.error('❌ Error al convertir saleDate:', error);
-    throw new Error(`Invalid saleDate: ${data.saleDate}`);
-  }
+  // Convertir saleDate a Date si no lo es
+  const saleDateObj = data.saleDate instanceof Date ? data.saleDate : new Date(data.saleDate);
   
   // DEBUG: Log de todos los valores antes del INSERT
   console.log('🔍 DEBUG createSerialNumber - Datos recibidos:', {
@@ -1396,7 +1384,7 @@ export async function createSerialNumber(data: {
     customerId: data.customerId,
     customerName: data.customerName,
     saleDate: data.saleDate,
-    saleDateStr,
+    saleDateObj,
   });
   
   // Usar Drizzle ORM en lugar de db.execute para manejar correctamente los valores null
@@ -1410,7 +1398,7 @@ export async function createSerialNumber(data: {
       saleNumber: data.saleNumber,
       customerId: data.customerId || null,
       customerName: data.customerName || null,
-      saleDate: new Date(saleDateStr),
+      saleDate: saleDateObj,
     });
     
     console.log('✅ Serial number insertado exitosamente con Drizzle ORM');
