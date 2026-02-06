@@ -1360,10 +1360,29 @@ export async function createSerialNumber(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
+  // Validar campos requeridos
+  if (!data.userId) throw new Error("userId is required");
+  if (!data.serialNumber) throw new Error("serialNumber is required");
+  if (!data.productId) throw new Error("productId is required");
+  if (!data.productName) throw new Error("productName is required");
+  if (!data.saleId) throw new Error("saleId is required");
+  if (!data.saleNumber) throw new Error("saleNumber is required");
+  if (!data.saleDate) throw new Error("saleDate is required");
+  
   // Convertir saleDate a formato MySQL (YYYY-MM-DD)
-  const saleDateStr = data.saleDate instanceof Date 
-    ? data.saleDate.toISOString().split('T')[0]
-    : new Date(data.saleDate).toISOString().split('T')[0];
+  let saleDateStr: string;
+  try {
+    if (data.saleDate instanceof Date) {
+      saleDateStr = data.saleDate.toISOString().split('T')[0];
+    } else if (typeof data.saleDate === 'string') {
+      saleDateStr = new Date(data.saleDate).toISOString().split('T')[0];
+    } else {
+      saleDateStr = new Date(data.saleDate).toISOString().split('T')[0];
+    }
+  } catch (error) {
+    console.error('❌ Error al convertir saleDate:', error);
+    throw new Error(`Invalid saleDate: ${data.saleDate}`);
+  }
   
   // DEBUG: Log de todos los valores antes del INSERT
   console.log('🔍 DEBUG createSerialNumber - Datos recibidos:', {
@@ -1392,15 +1411,26 @@ export async function createSerialNumber(data: {
   ];
   
   console.log('🔍 DEBUG createSerialNumber - Parámetros para INSERT:', params);
+  console.log('🔍 DEBUG createSerialNumber - Tipos de parámetros:', params.map(p => typeof p));
   
-  const [result] = await db.execute(
-    `INSERT INTO serial_numbers 
-    (userId, serialNumber, productId, productName, saleId, saleNumber, customerId, customerName, saleDate) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    params
-  );
-  
-  return (result as any).insertId;
+  try {
+    const [result] = await db.execute(
+      `INSERT INTO serial_numbers 
+      (userId, serialNumber, productId, productName, saleId, saleNumber, customerId, customerName, saleDate) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      params
+    );
+    
+    console.log('✅ Serial number insertado exitosamente. ID:', (result as any).insertId);
+    return (result as any).insertId;
+  } catch (error: any) {
+    console.error('❌ ERROR al insertar serial number:');
+    console.error('  Mensaje:', error.message);
+    console.error('  Código:', error.code);
+    console.error('  SQL:', error.sql);
+    console.error('  Parámetros:', params);
+    throw error;
+  }
 }
 
 export async function getSerialNumbersByUserId(userId: number) {
