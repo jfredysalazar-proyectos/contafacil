@@ -44,18 +44,20 @@ async function runMigrationIfNeeded() {
         AND TABLE_NAME = 'serial_numbers'
     `);
     
-    const serialTableExists = serialTableRows.length > 0;
+    let serialTableExists = serialTableRows.length > 0;
     
-    // Si existe pero con estructura incorrecta, eliminarla y marcar para recrear
+    // Siempre eliminar y recrear la tabla serial_numbers para asegurar estructura correcta
     if (serialTableExists) {
       try {
         await connection.execute('DROP TABLE IF EXISTS `serial_numbers`');
-        console.log('🔧 Eliminando tabla serial_numbers antigua...');
-        serialTableExists = false; // Marcar como no existente para que se recree
+        console.log('🔧 Eliminando tabla serial_numbers antigua para recrearla...');
       } catch (e) {
         console.log('⚠️  No se pudo eliminar tabla antigua');
       }
     }
+    
+    // Marcar como no existente para forzar recreación
+    serialTableExists = false;
     
     // Verificar si la columna id es SERIAL (BIGINT UNSIGNED)
     const [rows] = await connection.execute(`
