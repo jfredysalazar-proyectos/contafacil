@@ -492,10 +492,30 @@ export async function getSaleItemsBySaleId(saleId: number, userId: number) {
     throw new Error("Sale not found or unauthorized");
   }
   
-  return await db
+  const items = await db
     .select()
     .from(saleItems)
     .where(eq(saleItems.saleId, saleId));
+  
+  // Obtener seriales para cada item
+  const serials = await getSerialNumbersBySaleId(saleId, userId);
+  
+  // Agrupar seriales por productId
+  const serialsByProduct = serials.reduce((acc: any, serial: any) => {
+    if (!acc[serial.productId]) {
+      acc[serial.productId] = [];
+    }
+    acc[serial.productId].push(serial.serialNumber);
+    return acc;
+  }, {});
+  
+  // Agregar seriales a los items
+  const itemsWithSerials = items.map((item: any) => ({
+    ...item,
+    serialNumbers: serialsByProduct[item.productId]?.join(', ') || undefined,
+  }));
+  
+  return itemsWithSerials;
 }
 
 export async function getSalesByUserId(userId: number, startDate?: Date, endDate?: Date) {
@@ -1453,11 +1473,16 @@ export async function getSerialNumbersBySaleId(saleId: number, userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [rows] = await db.execute(
-    `SELECT * FROM serial_numbers 
-    WHERE userId = ? AND saleId = ?`,
-    [userId, saleId]
-  );
+  // Usar Drizzle ORM en lugar de db.execute
+  const rows = await db
+    .select()
+    .from(serialNumbers)
+    .where(
+      and(
+        eq(serialNumbers.userId, userId),
+        eq(serialNumbers.saleId, saleId)
+      )
+    );
   
-  return rows as any[];
+  return rows;
 }
