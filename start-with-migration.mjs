@@ -46,6 +46,16 @@ async function runMigrationIfNeeded() {
     
     const serialTableExists = serialTableRows.length > 0;
     
+    // Si existe pero con estructura incorrecta, eliminarla
+    if (serialTableExists) {
+      try {
+        await connection.execute('DROP TABLE IF EXISTS `serial_numbers`');
+        console.log('🔧 Eliminando tabla serial_numbers antigua...');
+      } catch (e) {
+        console.log('⚠️  No se pudo eliminar tabla antigua');
+      }
+    }
+    
     // Verificar si la columna id es SERIAL (BIGINT UNSIGNED)
     const [rows] = await connection.execute(`
       SELECT COLUMN_TYPE 
@@ -57,7 +67,7 @@ async function runMigrationIfNeeded() {
     
     const idIsSerial = rows.length > 0 && rows[0].COLUMN_TYPE.includes('bigint unsigned');
     
-    if (idIsSerial && qrCodeExists && taxTypeExists && serialTableExists) {
+    if (idIsSerial && qrCodeExists && taxTypeExists && false) { // Siempre recrear serial_numbers
       console.log('✅ Esquema ya está actualizado');
       await connection.end();
     } else {
@@ -90,7 +100,7 @@ async function runMigrationIfNeeded() {
             \`saleNumber\` VARCHAR(50) NOT NULL,
             \`customerId\` INT,
             \`customerName\` TEXT,
-            \`saleDate\` TIMESTAMP NOT NULL,
+            \`saleDate\` DATE NOT NULL,
             \`createdAt\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             INDEX \`serialNumbers_userId_idx\` (\`userId\`),
             INDEX \`serialNumbers_serialNumber_idx\` (\`serialNumber\`),
