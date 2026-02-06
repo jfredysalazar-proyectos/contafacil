@@ -5,6 +5,10 @@ interface SaleData {
   saleNumber: string;
   saleDate: Date;
   customerName?: string;
+  customerIdNumber?: string;
+  customerAddress?: string;
+  customerPhone?: string;
+  customerEmail?: string;
   items: Array<{
     productName: string;
     quantity: number;

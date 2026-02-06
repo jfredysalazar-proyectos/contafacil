@@ -24,6 +24,7 @@ export default function SalesPOS() {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [customerId, setCustomerId] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "transfer" | "credit">("cash");
+  const [notes, setNotes] = useState<string>("");
   
   // Estados de búsqueda y filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -168,6 +169,7 @@ export default function SalesPOS() {
     setCartItems([]);
     setCustomerId("");
     setPaymentMethod("cash");
+    setNotes("");
   };
   
   const handleCreateCustomer = async (e: React.FormEvent) => {
@@ -220,6 +222,7 @@ export default function SalesPOS() {
         saleNumber: `VTA-${Date.now()}`,
         saleDate: new Date(),
         paymentMethod,
+        notes: notes.trim() || undefined,
         items: cartItems.map(item => ({
           productId: item.productId,
           productName: item.productName,
@@ -523,6 +526,17 @@ export default function SalesPOS() {
                     <SelectItem value="credit">Crédito</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Notes */}
+              <div className="space-y-2">
+                <Label>Notas (opcional)</Label>
+                <Input
+                  placeholder="Agregar notas sobre la venta..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="h-9"
+                />
               </div>
 
               {/* Totals */}
