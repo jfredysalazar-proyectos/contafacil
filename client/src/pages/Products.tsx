@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Loader2, Plus, Edit, Trash2, Package, Upload, Image as ImageIcon } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Package, Upload, Image as ImageIcon, QrCode } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
 export default function Products() {
@@ -239,15 +239,30 @@ export default function Products() {
               Gestiona tu catálogo de productos
             </p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Nuevo Producto
-              </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setLocation("/serial-numbers")}
+            >
+              <Package className="mr-2 h-4 w-4" />
+              Números de Serie
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setLocation("/product-qr-codes")}
+            >
+              <QrCode className="mr-2 h-4 w-4" />
+              Códigos QR
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nuevo Producto
+                </Button>
             </DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <form onSubmit={handleSubmit}>

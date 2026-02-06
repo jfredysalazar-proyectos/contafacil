@@ -20,6 +20,8 @@ import {
   UserCog,
   Shield,
   QrCode,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -32,6 +34,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { user } = useAuth();
   const { data: profile } = trpc.profile.getProfile.useQuery();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [productosSubmenuOpen, setProductosSubmenuOpen] = useState(false);
+  
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
       window.location.href = "/login";
@@ -41,13 +45,19 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Ventas", href: "/sales", icon: ShoppingCart },
-    { name: "Productos", href: "/products", icon: Package },
-    { name: "Códigos QR", href: "/product-qr-codes", icon: QrCode },
+    { 
+      name: "Productos", 
+      href: "/products", 
+      icon: Package,
+      submenu: [
+        { name: "Números de Serie", href: "/serial-numbers", icon: Package },
+        { name: "Códigos QR", href: "/product-qr-codes", icon: QrCode },
+      ]
+    },
     { name: "Inventario", href: "/inventory", icon: Warehouse },
     { name: "Clientes", href: "/customers", icon: Users },
     { name: "Proveedores", href: "/suppliers", icon: Building2 },
     { name: "Cotizaciones", href: "/quotations", icon: FileText },
-    { name: "Números de Serie", href: "/serial-numbers", icon: Package },
     { name: "Gastos y Compras", href: "/expenses", icon: Receipt },
     { name: "Deudas", href: "/debts", icon: DollarSign },
     { name: "Empleados", href: "/employees", icon: UserCog },
@@ -108,21 +118,91 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             {navigation.map((item) => {
               const isActive = location === item.href;
+              const hasSubmenu = item.submenu && item.submenu.length > 0;
+              const isSubmenuActive = hasSubmenu && item.submenu.some(sub => location === sub.href);
+              
               return (
-                <Link key={item.name} href={item.href}>
-                  <a
-                    className={cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-                      isActive
-                        ? "bg-primary text-primary-foreground font-semibold"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    )}
-                    onClick={() => setSidebarOpen(false)}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    <span>{item.name}</span>
-                  </a>
-                </Link>
+                <div key={item.name}>
+                  {/* Item principal */}
+                  {hasSubmenu ? (
+                    <button
+                      className={cn(
+                        "w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-colors",
+                        isActive || isSubmenuActive
+                          ? "bg-primary text-primary-foreground font-semibold"
+                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      )}
+                      onClick={() => setProductosSubmenuOpen(!productosSubmenuOpen)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.name}</span>
+                      </div>
+                      {productosSubmenuOpen ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </button>
+                  ) : (
+                    <Link href={item.href}>
+                      <a
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                          isActive
+                            ? "bg-primary text-primary-foreground font-semibold"
+                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        )}
+                        onClick={() => setSidebarOpen(false)}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.name}</span>
+                      </a>
+                    </Link>
+                  )}
+                  
+                  {/* Submenú */}
+                  {hasSubmenu && productosSubmenuOpen && (
+                    <div className="ml-4 mt-1 space-y-1">
+                      {/* Link a Productos principal */}
+                      <Link href={item.href}>
+                        <a
+                          className={cn(
+                            "flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-sm",
+                            isActive
+                              ? "bg-primary/10 text-primary font-semibold"
+                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                          )}
+                          onClick={() => setSidebarOpen(false)}
+                        >
+                          <Package className="h-4 w-4" />
+                          <span>Ver Productos</span>
+                        </a>
+                      </Link>
+                      
+                      {/* Items del submenú */}
+                      {item.submenu.map((subItem) => {
+                        const isSubActive = location === subItem.href;
+                        return (
+                          <Link key={subItem.name} href={subItem.href}>
+                            <a
+                              className={cn(
+                                "flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-sm",
+                                isSubActive
+                                  ? "bg-primary/10 text-primary font-semibold"
+                                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                              )}
+                              onClick={() => setSidebarOpen(false)}
+                            >
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.name}</span>
+                            </a>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>
