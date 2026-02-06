@@ -96,13 +96,35 @@ export default function SalesPOS() {
   }, [products, searchTerm, selectedCategory]);
 
   // Calcular totales del carrito
+  const getTaxRate = (taxType: string): number => {
+    switch(taxType) {
+      case 'excluded': return 0;
+      case 'exempt': return 0;
+      case 'iva_5': return 0.05;
+      case 'iva_19': return 0.19;
+      default: return 0.19;
+    }
+  };
+
   const cartTotals = useMemo(() => {
-    const subtotal = cartItems.reduce((sum, item) => sum + (item.quantity * Number(item.unitPrice)), 0);
-    const tax = subtotal * 0.19; // IVA 19%
-    const total = subtotal + tax;
+    let subtotal = 0;
+    let tax = 0;
     
+    cartItems.forEach(item => {
+      const itemSubtotal = item.quantity * Number(item.unitPrice);
+      subtotal += itemSubtotal;
+      
+      // Obtener el producto para ver su taxType
+      const product = products?.find(p => p.id === item.productId);
+      if (product) {
+        const taxRate = getTaxRate((product as any).taxType || 'iva_19');
+        tax += itemSubtotal * taxRate;
+      }
+    });
+    
+    const total = subtotal + tax;
     return { subtotal, tax, total };
-  }, [cartItems]);
+  }, [cartItems, products]);
 
   const addToCart = (product: any) => {
     // Verificar stock disponible
