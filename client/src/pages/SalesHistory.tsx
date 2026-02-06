@@ -35,11 +35,17 @@ export default function SalesHistory() {
     try {
       const items = await utils.sales.getItems.fetch({ saleId: sale.id });
       
+      const customer = sale.customerId ? customers?.find(c => c.id === sale.customerId) : undefined;
+      
       const pdfDataUrl = await generateReceiptPDF(
         {
           saleNumber: sale.saleNumber || "N/A",
           saleDate: new Date(sale.saleDate),
-          customerName: sale.customerId ? customers?.find(c => c.id === sale.customerId)?.name : undefined,
+          customerName: customer?.name,
+          customerIdNumber: customer?.idNumber || undefined,
+          customerAddress: customer?.address || undefined,
+          customerPhone: customer?.phone || undefined,
+          customerEmail: customer?.email || undefined,
           items: items.map((item: any) => ({
             productName: item.productName,
             quantity: item.quantity,
@@ -76,11 +82,17 @@ export default function SalesHistory() {
     try {
       const items = await utils.sales.getItems.fetch({ saleId: sale.id });
       
+      const customer = sale.customerId ? customers?.find(c => c.id === sale.customerId) : undefined;
+      
       const pdfDataUrl = await generateReceiptPDF(
         {
           saleNumber: sale.saleNumber || "N/A",
           saleDate: new Date(sale.saleDate),
-          customerName: sale.customerId ? customers?.find(c => c.id === sale.customerId)?.name : undefined,
+          customerName: customer?.name,
+          customerIdNumber: customer?.idNumber || undefined,
+          customerAddress: customer?.address || undefined,
+          customerPhone: customer?.phone || undefined,
+          customerEmail: customer?.email || undefined,
           items: items.map((item: any) => ({
             productName: item.productName,
             quantity: item.quantity,
