@@ -1429,29 +1429,34 @@ export async function getSerialNumbersByUserId(userId: number) {
   
   console.log('🔍 getSerialNumbersByUserId - userId:', userId);
   
-  const [rows] = await db.execute(
-    `SELECT * FROM serial_numbers 
-    WHERE userId = ? 
-    ORDER BY saleDate DESC`,
-    [userId]
-  );
+  // Usar Drizzle ORM en lugar de db.execute
+  const rows = await db
+    .select()
+    .from(serialNumbers)
+    .where(eq(serialNumbers.userId, userId))
+    .orderBy(desc(serialNumbers.saleDate));
   
   console.log('🔍 getSerialNumbersByUserId - rows encontrados:', rows.length);
   console.log('🔍 getSerialNumbersByUserId - primeros 2 rows:', JSON.stringify(rows.slice(0, 2)));
   
-  return rows as any[];
+  return rows;
 }
 
 export async function searchSerialNumber(userId: number, serialNumber: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [rows] = await db.execute(
-    `SELECT * FROM serial_numbers 
-    WHERE userId = ? AND serialNumber LIKE ? 
-    ORDER BY saleDate DESC`,
-    [userId, `%${serialNumber}%`]
-  );
+  // Usar Drizzle ORM en lugar de db.execute
+  const rows = await db
+    .select()
+    .from(serialNumbers)
+    .where(
+      and(
+        eq(serialNumbers.userId, userId),
+        like(serialNumbers.serialNumber, `%${serialNumber}%`)
+      )
+    )
+    .orderBy(desc(serialNumbers.saleDate));
   
   return rows as any[];
 }
