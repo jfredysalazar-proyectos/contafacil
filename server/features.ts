@@ -400,8 +400,29 @@ export const salesRouter = router({
           }
           
           // Guardar cada serial
+          console.log('📦 ANTES de guardar seriales - item:', {
+            productId: item.productId,
+            productName: item.productName,
+            hasSerial: item.hasSerial,
+            serialNumbers: item.serialNumbers,
+            serials,
+            quantity: item.quantity,
+          });
+          
+          console.log('📦 Datos de la venta:', {
+            saleId,
+            saleNumber: input.saleNumber,
+            customerId: input.customerId,
+            customerName,
+            saleDate: input.saleDate,
+            saleDateType: typeof input.saleDate,
+            userId: ctx.user.id,
+          });
+          
           for (const serial of serials) {
-            await dbQueries.createSerialNumber({
+            console.log('🔹 Intentando guardar serial:', serial);
+            
+            const dataToInsert = {
               userId: ctx.user.id,
               serialNumber: serial,
               productId: item.productId,
@@ -411,8 +432,23 @@ export const salesRouter = router({
               customerId: input.customerId,
               customerName,
               saleDate: input.saleDate,
-            });
+            };
+            
+            console.log('🔹 Datos a insertar:', dataToInsert);
+            
+            try {
+              await dbQueries.createSerialNumber(dataToInsert);
+              console.log('✅ Serial guardado exitosamente:', serial);
+            } catch (error: any) {
+              console.error('❌ ERROR al guardar serial:', serial);
+              console.error('  Error completo:', error);
+              console.error('  Mensaje:', error.message);
+              console.error('  Stack:', error.stack);
+              throw error;
+            }
           }
+          
+          console.log('✅ Todos los seriales guardados para', item.productName);
         }
       }
       
