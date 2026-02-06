@@ -1427,12 +1427,17 @@ export async function getSerialNumbersByUserId(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
+  console.log('🔍 getSerialNumbersByUserId - userId:', userId);
+  
   const [rows] = await db.execute(
     `SELECT * FROM serial_numbers 
     WHERE userId = ? 
     ORDER BY saleDate DESC`,
     [userId]
   );
+  
+  console.log('🔍 getSerialNumbersByUserId - rows encontrados:', rows.length);
+  console.log('🔍 getSerialNumbersByUserId - primeros 2 rows:', JSON.stringify(rows.slice(0, 2)));
   
   return rows as any[];
 }
