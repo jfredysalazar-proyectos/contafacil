@@ -1,0 +1,19 @@
+  const handleEditQuotation = async (quotationId: number) => {
+    const quotation = quotations?.find((q: any) => q.id === quotationId);
+    if (!quotation) return;
+
+    // Obtener los items de la cotización
+    const items = await utils.quotations.getItems.fetch({ quotationId });
+    
+    // Cargar datos en el formulario
+    setEditingQuotation(quotation);
+    setCustomerId(quotation.customerId?.toString() || "");
+    setValidUntil(new Date(quotation.validUntil).toISOString().split('T')[0]);
+    setPaymentTerms(quotation.paymentTerms || "");
+    setDeliveryTerms(quotation.deliveryTerms || "");
+    setNotes(quotation.notes || "");
+    setQuotationItems(items || []);
+    
+    // Abrir el diálogo
+    setIsDialogOpen(true);
+  };

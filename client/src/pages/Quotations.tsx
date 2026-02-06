@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Loader2, Plus, FileText, Trash2, Eye, CheckCircle, XCircle, ArrowRight, Calendar, Download } from "lucide-react";
+import { Loader2, Plus, FileText, Trash2, Eye, CheckCircle, XCircle, ArrowRight, Calendar, Download, Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import jsPDF from "jspdf";
 import { imageUrlToBase64 } from "@/lib/imageUtils";
@@ -25,6 +25,7 @@ export default function Quotations() {
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
   const [viewingQuotation, setViewingQuotation] = useState<any>(null);
   const [convertingQuotation, setConvertingQuotation] = useState<any>(null);
+  const [editingQuotation, setEditingQuotation] = useState<any>(null);
   const [quotationItems, setQuotationItems] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState("");
   const [quantity, setQuantity] = useState("1");
@@ -75,6 +76,19 @@ export default function Quotations() {
     },
   });
 
+  const updateMutation = trpc.quotations.update.useMutation({
+    onSuccess: () => {
+      toast.success("Cotización actualizada exitosamente");
+      utils.quotations.list.invalidate();
+      setIsDialogOpen(false);
+      setEditingQuotation(null);
+      resetForm();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error al actualizar cotización");
+    },
+  });
+
   const updateStatusMutation = trpc.quotations.update.useMutation({
     onSuccess: () => {
       toast.success("Estado actualizado exitosamente");
@@ -109,6 +123,7 @@ export default function Quotations() {
     setPaymentTerms("");
     setDeliveryTerms("");
     setNotes("");
+    setEditingQuotation(null);
   };
 
   const addItem = () => {
@@ -168,23 +183,41 @@ export default function Quotations() {
     }
 
     const { subtotal, tax, total } = calculateTotals();
-    const quotationNumber = `COT-${Date.now()}`;
 
-    createMutation.mutate({
-      customerId: customerId && customerId !== "0" ? parseInt(customerId) : undefined,
-      quotationNumber,
-      quotationDate: new Date(),
-      validUntil: new Date(validUntil),
-      items: quotationItems,
-      subtotal: subtotal.toFixed(2),
-      tax: tax.toFixed(2),
-      discount: "0",
-      total: total.toFixed(2),
-      status: "draft",
-      paymentTerms,
-      deliveryTerms,
-      notes,
-    });
+    if (editingQuotation) {
+      // Actualizar cotización existente
+      updateMutation.mutate({
+        id: editingQuotation.id,
+        customerId: customerId && customerId !== "0" ? parseInt(customerId) : undefined,
+        validUntil: new Date(validUntil),
+        items: quotationItems,
+        subtotal: subtotal.toFixed(2),
+        tax: tax.toFixed(2),
+        discount: "0",
+        total: total.toFixed(2),
+        paymentTerms,
+        deliveryTerms,
+        notes,
+      });
+    } else {
+      // Crear nueva cotización
+      const quotationNumber = `COT-${Date.now()}`;
+      createMutation.mutate({
+        customerId: customerId && customerId !== "0" ? parseInt(customerId) : undefined,
+        quotationNumber,
+        quotationDate: new Date(),
+        validUntil: new Date(validUntil),
+        items: quotationItems,
+        subtotal: subtotal.toFixed(2),
+        tax: tax.toFixed(2),
+        discount: "0",
+        total: total.toFixed(2),
+        status: "draft",
+        paymentTerms,
+        deliveryTerms,
+        notes,
+      });
+    }
   };
 
   const handleViewQuotation = async (quotationId: number) => {
@@ -193,6 +226,26 @@ export default function Quotations() {
       setViewingQuotation(quotation);
       setIsViewDialogOpen(true);
     }
+  };
+
+  const handleEditQuotation = async (quotationId: number) => {
+    const quotation = quotations?.find((q: any) => q.id === quotationId);
+    if (!quotation) return;
+
+    // Obtener los items de la cotización
+    const items = await utils.quotations.getItems.fetch({ quotationId });
+    
+    // Cargar datos en el formulario
+    setEditingQuotation(quotation);
+    setCustomerId(quotation.customerId?.toString() || "");
+    setValidUntil(new Date(quotation.validUntil).toISOString().split('T')[0]);
+    setPaymentTerms(quotation.paymentTerms || "");
+    setDeliveryTerms(quotation.deliveryTerms || "");
+    setNotes(quotation.notes || "");
+    setQuotationItems(items || []);
+    
+    // Abrir el diálogo
+    setIsDialogOpen(true);
   };
 
   const handleConvertToSale = (quotation: any) => {
@@ -505,9 +558,9 @@ export default function Quotations() {
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Nueva Cotización</DialogTitle>
+              <DialogTitle>{editingQuotation ? "Editar Cotización" : "Nueva Cotización"}</DialogTitle>
               <DialogDescription>
-                Crea una nueva cotización para tus clientes
+                {editingQuotation ? "Modifica los datos de la cotización" : "Crea una nueva cotización para tus clientes"}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit}>
@@ -672,9 +725,9 @@ export default function Quotations() {
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Crear Cotización
+                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                  {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {editingQuotation ? "Actualizar Cotización" : "Crear Cotización"}
                 </Button>
               </DialogFooter>
             </form>
@@ -759,6 +812,16 @@ export default function Quotations() {
                         >
                           <Download className="h-4 w-4" />
                         </Button>
+                        {(quotation.status === "draft" || quotation.status === "sent") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditQuotation(quotation.id)}
+                            title="Editar cotización"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
                         {quotation.status === "accepted" && (
                           <Button
                             variant="ghost"
