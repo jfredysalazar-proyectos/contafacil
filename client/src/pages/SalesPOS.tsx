@@ -40,6 +40,21 @@ export default function SalesPOS() {
     phone: "",
     idNumber: "",
   });
+  
+  // Estados para crear producto rápido
+  const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
+  const [newProductData, setNewProductData] = useState({
+    name: "",
+    sku: "",
+    barcode: "",
+    category: "",
+    salePrice: "",
+    cost: "",
+    promotionalPrice: "",
+    sellBy: "unit" as "unit" | "weight",
+    taxType: "iva_19" as "excluded" | "exempt" | "iva_5" | "iva_19",
+    initialStock: "",
+  });
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -78,6 +93,30 @@ export default function SalesPOS() {
     },
     onError: (error) => {
       toast.error(error.message || "Error al crear cliente");
+    },
+  });
+  
+  const createProductMutation = trpc.products.create.useMutation({
+    onSuccess: () => {
+      toast.success("Producto creado exitosamente");
+      utils.products.list.invalidate();
+      utils.inventory.list.invalidate();
+      setIsAddProductDialogOpen(false);
+      setNewProductData({
+        name: "",
+        sku: "",
+        barcode: "",
+        category: "",
+        salePrice: "",
+        cost: "",
+        promotionalPrice: "",
+        sellBy: "unit",
+        taxType: "iva_19",
+        initialStock: "",
+      });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error al crear producto");
     },
   });
 
@@ -226,6 +265,33 @@ export default function SalesPOS() {
     });
   };
   
+  const handleCreateProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newProductData.name.trim()) {
+      toast.error("El nombre del producto es requerido");
+      return;
+    }
+    
+    if (!newProductData.salePrice || Number(newProductData.salePrice) <= 0) {
+      toast.error("El precio de venta es requerido y debe ser mayor a 0");
+      return;
+    }
+    
+    await createProductMutation.mutateAsync({
+      name: newProductData.name,
+      sku: newProductData.sku || undefined,
+      barcode: newProductData.barcode || undefined,
+      category: newProductData.category || undefined,
+      salePrice: Number(newProductData.salePrice),
+      cost: newProductData.cost ? Number(newProductData.cost) : undefined,
+      promotionalPrice: newProductData.promotionalPrice ? Number(newProductData.promotionalPrice) : undefined,
+      sellBy: newProductData.sellBy,
+      taxType: newProductData.taxType,
+      initialStock: newProductData.initialStock ? Number(newProductData.initialStock) : undefined,
+    });
+  };
+  
   // Filtrar clientes por búsqueda
   const filteredCustomers = useMemo(() => {
     if (!customers) return [];
@@ -319,7 +385,7 @@ export default function SalesPOS() {
                 />
               </div>
               <Button
-                onClick={() => setLocation("/products?action=create")}
+                onClick={() => setIsAddProductDialogOpen(true)}
                 size="lg"
                 className="h-12 px-4"
               >
@@ -697,6 +763,182 @@ export default function SalesPOS() {
                   <>
                     <UserPlus className="mr-2 h-4 w-4" />
                     Crear Cliente
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Diálogo para crear producto rápido */}
+      <Dialog open={isAddProductDialogOpen} onOpenChange={setIsAddProductDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Crear Nuevo Producto</DialogTitle>
+            <DialogDescription>
+              Crea un producto rápido sin salir de la pantalla de ventas
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateProduct} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label htmlFor="product-name">Nombre del Producto *</Label>
+                <Input
+                  id="product-name"
+                  value={newProductData.name}
+                  onChange={(e) => setNewProductData({ ...newProductData, name: e.target.value })}
+                  placeholder="Ej: Memoria USB 32GB"
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="product-sku">SKU</Label>
+                <Input
+                  id="product-sku"
+                  value={newProductData.sku}
+                  onChange={(e) => setNewProductData({ ...newProductData, sku: e.target.value })}
+                  placeholder="Ej: MEM-USB-32"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="product-barcode">Código de Barras</Label>
+                <Input
+                  id="product-barcode"
+                  value={newProductData.barcode}
+                  onChange={(e) => setNewProductData({ ...newProductData, barcode: e.target.value })}
+                  placeholder="Ej: 1234567890123"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="product-category">Categoría</Label>
+                <Input
+                  id="product-category"
+                  value={newProductData.category}
+                  onChange={(e) => setNewProductData({ ...newProductData, category: e.target.value })}
+                  placeholder="Ej: Tecnología"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="product-sellBy">Vender por</Label>
+                <Select
+                  value={newProductData.sellBy}
+                  onValueChange={(value: "unit" | "weight") => setNewProductData({ ...newProductData, sellBy: value })}
+                >
+                  <SelectTrigger id="product-sellBy">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unit">Unidad</SelectItem>
+                    <SelectItem value="weight">Peso</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="product-taxType">Tipo de Impuesto</Label>
+                <Select
+                  value={newProductData.taxType}
+                  onValueChange={(value: "excluded" | "exempt" | "iva_5" | "iva_19") => setNewProductData({ ...newProductData, taxType: value })}
+                >
+                  <SelectTrigger id="product-taxType">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="excluded">Excluido</SelectItem>
+                    <SelectItem value="exempt">IVA 0% (Exento)</SelectItem>
+                    <SelectItem value="iva_5">IVA 5%</SelectItem>
+                    <SelectItem value="iva_19">IVA 19%</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="product-salePrice">Precio de Venta (con IVA) *</Label>
+                <Input
+                  id="product-salePrice"
+                  type="number"
+                  step="0.01"
+                  value={newProductData.salePrice}
+                  onChange={(e) => setNewProductData({ ...newProductData, salePrice: e.target.value })}
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="product-cost">Costo (con IVA)</Label>
+                <Input
+                  id="product-cost"
+                  type="number"
+                  step="0.01"
+                  value={newProductData.cost}
+                  onChange={(e) => setNewProductData({ ...newProductData, cost: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="product-promotionalPrice">Precio Promocional (con IVA)</Label>
+                <Input
+                  id="product-promotionalPrice"
+                  type="number"
+                  step="0.01"
+                  value={newProductData.promotionalPrice}
+                  onChange={(e) => setNewProductData({ ...newProductData, promotionalPrice: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="product-initialStock">Stock Inicial</Label>
+                <Input
+                  id="product-initialStock"
+                  type="number"
+                  step="0.01"
+                  value={newProductData.initialStock}
+                  onChange={(e) => setNewProductData({ ...newProductData, initialStock: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsAddProductDialogOpen(false);
+                  setNewProductData({
+                    name: "",
+                    sku: "",
+                    barcode: "",
+                    category: "",
+                    salePrice: "",
+                    cost: "",
+                    promotionalPrice: "",
+                    sellBy: "unit",
+                    taxType: "iva_19",
+                    initialStock: "",
+                  });
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={createProductMutation.isPending}>
+                {createProductMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creando...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Crear Producto
                   </>
                 )}
               </Button>
