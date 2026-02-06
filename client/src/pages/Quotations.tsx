@@ -291,6 +291,10 @@ export default function Quotations() {
         quotationDate: quotation.quotationDate,
         validUntil: quotation.validUntil,
         customerName: customer?.name,
+        customerIdNumber: customer?.idNumber || undefined,
+        customerAddress: customer?.address || undefined,
+        customerPhone: customer?.phone || undefined,
+        customerEmail: customer?.email || undefined,
         items: quotationItems.map((item: any) => ({
           productName: item.productName,
           description: item.description,
@@ -322,72 +326,107 @@ export default function Quotations() {
       // Generar PDF inline
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
+      const leftColX = 20;
+      const rightColX = pageWidth / 2 + 5;
       let yPos = 20;
 
-      // Título (siempre arriba)
+      // Título (centrado, arriba)
       doc.setFontSize(20);
       doc.setFont("helvetica", "bold");
       doc.text("COTIZACIÓN", pageWidth / 2, yPos, { align: "center" });
       yPos += 15;
 
-      // Logo (debajo del título, a la izquierda)
+      // === COLUMNA IZQUIERDA ===
+      let leftY = yPos;
+
+      // Logo (si existe)
       if (userData.logoUrl) {
         try {
           const logoBase64 = await imageUrlToBase64(userData.logoUrl);
-          // Agregar logo con tamaño fijo de 30x30
-          doc.addImage(logoBase64, "PNG", 20, yPos, 30, 30);
+          doc.addImage(logoBase64, "PNG", leftColX, leftY, 30, 30);
+          leftY += 35;
         } catch (error) {
           console.error("Error al agregar logo al PDF:", error);
         }
       }
 
-      // Ajustar posición para el contenido (debajo del logo)
-      yPos += 35;
-
       // Información del negocio
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.text(String(userData.businessName || userData.name || "Negocio"), 20, yPos);
-      yPos += 7;
+      doc.text(String(userData.businessName || userData.name || "Negocio"), leftColX, leftY);
+      leftY += 7;
 
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       if (userData.nit) {
-        doc.text(`NIT: ${userData.nit}`, 20, yPos);
-        yPos += 5;
+        doc.text(`NIT: ${userData.nit}`, leftColX, leftY);
+        leftY += 5;
       }
       if (userData.address) {
-        doc.text(`Dirección: ${userData.address}`, 20, yPos);
-        yPos += 5;
+        const addressLines = doc.splitTextToSize(userData.address, 80);
+        doc.text(addressLines, leftColX, leftY);
+        leftY += 5 * addressLines.length;
       }
       if (userData.phone) {
-        doc.text(`Teléfono: ${userData.phone}`, 20, yPos);
-        yPos += 5;
+        doc.text(`Tel: ${userData.phone}`, leftColX, leftY);
+        leftY += 5;
       }
       if (userData.email) {
-        doc.text(`Email: ${userData.email}`, 20, yPos);
-        yPos += 5;
+        doc.text(userData.email, leftColX, leftY);
+        leftY += 5;
       }
 
-      yPos += 10;
+      // === COLUMNA DERECHA ===
+      let rightY = yPos;
 
-      // Información de la cotización
+      doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text(`N° de Cotización: ${String(quotationData.quotationNumber || "N/A")}`, 20, yPos);
-      yPos += 7;
+      doc.text(`N° ${String(quotationData.quotationNumber || "N/A")}`, rightColX, rightY);
+      rightY += 7;
 
       doc.setFont("helvetica", "normal");
-      doc.text(`Fecha: ${new Date(quotationData.quotationDate).toLocaleDateString("es-CO")}`, 20, yPos);
-      yPos += 7;
+      doc.text(`Fecha: ${new Date(quotationData.quotationDate).toLocaleDateString("es-CO")}`, rightColX, rightY);
+      rightY += 7;
 
-      doc.text(`Válida hasta: ${new Date(quotationData.validUntil).toLocaleDateString("es-CO")}`, 20, yPos);
-      yPos += 7;
+      doc.text(`Válida hasta: ${new Date(quotationData.validUntil).toLocaleDateString("es-CO")}`, rightColX, rightY);
+      rightY += 10;
 
+      // Información del cliente
       if (quotationData.customerName) {
-        doc.text(`Cliente: ${quotationData.customerName}`, 20, yPos);
-        yPos += 7;
+        doc.setFont("helvetica", "bold");
+        doc.text("CLIENTE", rightColX, rightY);
+        rightY += 6;
+
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text(quotationData.customerName, rightColX, rightY);
+        rightY += 5;
+
+        if (quotationData.customerIdNumber) {
+          doc.text(`CC/NIT: ${quotationData.customerIdNumber}`, rightColX, rightY);
+          rightY += 5;
+        }
+        if (quotationData.customerAddress) {
+          const addressLines = doc.splitTextToSize(quotationData.customerAddress, 80);
+          doc.text(addressLines, rightColX, rightY);
+          rightY += 5 * addressLines.length;
+        }
+        if (quotationData.customerPhone) {
+          doc.text(`Tel: ${quotationData.customerPhone}`, rightColX, rightY);
+          rightY += 5;
+        }
+        if (quotationData.customerEmail) {
+          doc.text(quotationData.customerEmail, rightColX, rightY);
+          rightY += 5;
+        }
       }
 
+      // Ajustar yPos al máximo de ambas columnas
+      yPos = Math.max(leftY, rightY) + 10;
+
+      // Línea separadora
+      doc.setLineWidth(0.5);
+      doc.line(20, yPos, pageWidth - 20, yPos);
       yPos += 10;
 
       // Tabla de productos
