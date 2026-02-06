@@ -1,4 +1,4 @@
-import { int, serial, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, index, uniqueIndex } from "drizzle-orm/mysql-core";
+import { int, serial, mysqlEnum, mysqlTable, text, timestamp, datetime, varchar, decimal, boolean, index, uniqueIndex } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
 /**
@@ -182,7 +182,7 @@ export const sales = mysqlTable("sales", {
   userId: int("userId").notNull(),
   customerId: int("customerId"),
   saleNumber: varchar("saleNumber", { length: 50 }).notNull(),
-  saleDate: timestamp("saleDate").notNull(),
+  saleDate: datetime("saleDate").notNull(),
   subtotal: decimal("subtotal", { precision: 15, scale: 2 }).notNull(),
   tax: decimal("tax", { precision: 15, scale: 2 }).default("0").notNull(),
   discount: decimal("discount", { precision: 15, scale: 2 }).default("0").notNull(),
@@ -596,7 +596,7 @@ export const serialNumbers = mysqlTable("serial_numbers", {
   saleNumber: varchar("saleNumber", { length: 50 }).notNull(),
   customerId: int("customerId"),
   customerName: text("customerName"), // Desnormalizado para histórico
-  saleDate: timestamp("saleDate").notNull(),
+  saleDate: datetime("saleDate").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   userIdIdx: index("serialNumbers_userId_idx").on(table.userId),

@@ -101,7 +101,7 @@ async function runMigrationIfNeeded() {
             \`saleNumber\` VARCHAR(50) NOT NULL,
             \`customerId\` INT,
             \`customerName\` TEXT,
-            \`saleDate\` DATE NOT NULL,
+            \`saleDate\` DATETIME NOT NULL,
             \`createdAt\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             INDEX \`serialNumbers_userId_idx\` (\`userId\`),
             INDEX \`serialNumbers_serialNumber_idx\` (\`serialNumber\`),
@@ -110,6 +110,24 @@ async function runMigrationIfNeeded() {
             INDEX \`serialNumbers_saleDate_idx\` (\`saleDate\`)
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
+      }
+      
+      // Migrar saleDate de DATE a DATETIME si la tabla ya existe
+      try {
+        const [saleDateTypeRows] = await connection.execute(`
+          SELECT DATA_TYPE 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'serial_numbers' 
+            AND COLUMN_NAME = 'saleDate'
+        `);
+        
+        if (saleDateTypeRows.length > 0 && saleDateTypeRows[0].DATA_TYPE === 'date') {
+          statements.push("ALTER TABLE \`serial_numbers\` MODIFY COLUMN \`saleDate\` DATETIME NOT NULL");
+          console.log('🔧 Convirtiendo saleDate de DATE a DATETIME...');
+        }
+      } catch (e) {
+        // Ignorar si la tabla no existe
       }
       
       // Agregar otras migraciones de DEFAULT NULL
