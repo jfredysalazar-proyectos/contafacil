@@ -1410,8 +1410,17 @@ export async function createSerialNumber(data: {
     saleDateStr,
   ];
   
-  console.log('🔍 DEBUG createSerialNumber - Parámetros para INSERT:', params);
-  console.log('🔍 DEBUG createSerialNumber - Tipos de parámetros:', params.map(p => typeof p));
+  console.log('🔍 DEBUG createSerialNumber - Parámetros para INSERT (JSON):', JSON.stringify(params));
+  console.log('🔍 Param[0] userId:', params[0], 'tipo:', typeof params[0]);
+  console.log('🔍 Param[1] serialNumber:', params[1], 'tipo:', typeof params[1]);
+  console.log('🔍 Param[2] productId:', params[2], 'tipo:', typeof params[2]);
+  console.log('🔍 Param[3] productName:', params[3], 'tipo:', typeof params[3]);
+  console.log('🔍 Param[4] saleId:', params[4], 'tipo:', typeof params[4]);
+  console.log('🔍 Param[5] saleNumber:', params[5], 'tipo:', typeof params[5]);
+  console.log('🔍 Param[6] customerId:', params[6], 'tipo:', typeof params[6]);
+  console.log('🔍 Param[7] customerName:', params[7], 'tipo:', typeof params[7]);
+  console.log('🔍 Param[8] saleDate:', params[8], 'tipo:', typeof params[8]);
+  console.log('🔍 Total params length:', params.length);
   
   try {
     const [result] = await db.execute(
