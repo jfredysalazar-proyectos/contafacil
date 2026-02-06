@@ -46,11 +46,12 @@ async function runMigrationIfNeeded() {
     
     const serialTableExists = serialTableRows.length > 0;
     
-    // Si existe pero con estructura incorrecta, eliminarla
+    // Si existe pero con estructura incorrecta, eliminarla y marcar para recrear
     if (serialTableExists) {
       try {
         await connection.execute('DROP TABLE IF EXISTS `serial_numbers`');
         console.log('🔧 Eliminando tabla serial_numbers antigua...');
+        serialTableExists = false; // Marcar como no existente para que se recree
       } catch (e) {
         console.log('⚠️  No se pudo eliminar tabla antigua');
       }
