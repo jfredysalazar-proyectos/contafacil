@@ -43,6 +43,16 @@ export default function Products() {
     }
   }, [loading, isAuthenticated, setLocation]);
 
+  // Detectar si se debe abrir el diálogo de crear producto
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'create') {
+      setIsDialogOpen(true);
+      // Limpiar el parámetro de la URL
+      window.history.replaceState({}, '', '/products');
+    }
+  }, []);
+
   const utils = trpc.useUtils();
   const { data: products, isLoading } = trpc.products.list.useQuery();
 

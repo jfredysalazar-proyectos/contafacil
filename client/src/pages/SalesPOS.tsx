@@ -291,15 +291,25 @@ export default function SalesPOS() {
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Search and Filters */}
           <div className="bg-white border-b px-6 py-4 space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <Input
-                type="text"
-                placeholder="Buscar por nombre, SKU o código de barras..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-12 text-lg"
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Input
+                  type="text"
+                  placeholder="Buscar por nombre, SKU o código de barras..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-12 text-lg"
+                />
+              </div>
+              <Button
+                onClick={() => setLocation("/products?action=create")}
+                size="lg"
+                className="h-12 px-4"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Nuevo Producto
+              </Button>
             </div>
             
             <div className="flex gap-2">
