@@ -16,6 +16,8 @@ export default function Profile() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [businessName, setBusinessName] = useState("");
+  const [nit, setNit] = useState("");
+  const [address, setAddress] = useState("");
 
   // Estado para cambio de contraseña
   const [currentPassword, setCurrentPassword] = useState("");
@@ -31,6 +33,8 @@ export default function Profile() {
       setName(profile.name || "");
       setPhone(profile.phone || "");
       setBusinessName(profile.businessName || "");
+      setNit(profile.nit || "");
+      setAddress(profile.address || "");
     }
   });
 
@@ -83,6 +87,8 @@ export default function Profile() {
       name,
       phone,
       businessName,
+      nit,
+      address,
     });
   };
 
@@ -307,6 +313,34 @@ export default function Profile() {
                   placeholder="Nombre de tu negocio"
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
+                  disabled={updateProfileMutation.isPending}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="nit">
+                  Cédula o NIT
+                </Label>
+                <Input
+                  id="nit"
+                  type="text"
+                  placeholder="Número de identificación"
+                  value={nit}
+                  onChange={(e) => setNit(e.target.value)}
+                  disabled={updateProfileMutation.isPending}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address">
+                  Dirección
+                </Label>
+                <Input
+                  id="address"
+                  type="text"
+                  placeholder="Dirección del negocio"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
                   disabled={updateProfileMutation.isPending}
                 />
               </div>

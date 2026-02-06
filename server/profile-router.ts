@@ -27,6 +27,8 @@ export const profileRouter = router({
         name: users.name,
         phone: users.phone,
         businessName: users.businessName,
+        nit: users.nit,
+        address: users.address,
         logoUrl: users.logoUrl,
         createdAt: users.createdAt,
       })
@@ -53,6 +55,8 @@ export const profileRouter = router({
         name: z.string().min(1, "El nombre es requerido").optional(),
         phone: z.string().optional(),
         businessName: z.string().optional(),
+        nit: z.string().optional(),
+        address: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -69,6 +73,8 @@ export const profileRouter = router({
       if (input.name !== undefined) updateData.name = input.name;
       if (input.phone !== undefined) updateData.phone = input.phone || null;
       if (input.businessName !== undefined) updateData.businessName = input.businessName || null;
+      if (input.nit !== undefined) updateData.nit = input.nit || null;
+      if (input.address !== undefined) updateData.address = input.address || null;
 
       if (Object.keys(updateData).length === 0) {
         throw new TRPCError({
