@@ -25,6 +25,17 @@ async function runMigrationIfNeeded() {
     
     const qrCodeExists = qrCodeRows.length > 0;
     
+    // Verificar si la columna taxType existe
+    const [taxTypeRows] = await connection.execute(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'products' 
+        AND COLUMN_NAME = 'taxType'
+    `);
+    
+    const taxTypeExists = taxTypeRows.length > 0;
+    
     // Verificar si la columna id es SERIAL (BIGINT UNSIGNED)
     const [rows] = await connection.execute(`
       SELECT COLUMN_TYPE 
@@ -36,7 +47,7 @@ async function runMigrationIfNeeded() {
     
     const idIsSerial = rows.length > 0 && rows[0].COLUMN_TYPE.includes('bigint unsigned');
     
-    if (idIsSerial && qrCodeExists) {
+    if (idIsSerial && qrCodeExists && taxTypeExists) {
       console.log('✅ Esquema ya está actualizado');
       await connection.end();
     } else {
@@ -51,6 +62,10 @@ async function runMigrationIfNeeded() {
       
       if (!qrCodeExists) {
         statements.push("ALTER TABLE `products` ADD COLUMN `qrCode` text DEFAULT NULL");
+      }
+      
+      if (!taxTypeExists) {
+        statements.push("ALTER TABLE `products` ADD COLUMN `taxType` ENUM('excluded', 'exempt', 'iva_5', 'iva_19') NOT NULL DEFAULT 'iva_19' AFTER `sellBy`");
       }
       
       // Agregar otras migraciones de DEFAULT NULL
