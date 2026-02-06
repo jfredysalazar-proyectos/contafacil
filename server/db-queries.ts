@@ -1360,6 +1360,11 @@ export async function createSerialNumber(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
+  // Convertir saleDate a formato MySQL (YYYY-MM-DD)
+  const saleDateStr = data.saleDate instanceof Date 
+    ? data.saleDate.toISOString().split('T')[0]
+    : new Date(data.saleDate).toISOString().split('T')[0];
+  
   const [result] = await db.execute(
     `INSERT INTO serial_numbers 
     (userId, serialNumber, productId, productName, saleId, saleNumber, customerId, customerName, saleDate) 
@@ -1373,7 +1378,7 @@ export async function createSerialNumber(data: {
       data.saleNumber,
       data.customerId || null,
       data.customerName || null,
-      data.saleDate,
+      saleDateStr,
     ]
   );
   
