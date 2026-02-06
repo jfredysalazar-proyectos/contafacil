@@ -1391,7 +1391,17 @@ export async function createSerialNumber(data: {
   if (!data.saleDate) throw new Error("saleDate is required");
   
   // Convertir saleDate a Date si no lo es
-  const saleDateObj = data.saleDate instanceof Date ? data.saleDate : new Date(data.saleDate);
+  let saleDateObj: Date;
+  if (data.saleDate instanceof Date) {
+    saleDateObj = data.saleDate;
+  } else {
+    saleDateObj = new Date(data.saleDate);
+  }
+  
+  // Validar que sea una fecha válida
+  if (!saleDateObj || isNaN(saleDateObj.getTime())) {
+    throw new Error(`Invalid saleDate: ${data.saleDate}`);
+  }
   
   // Convertir a formato MySQL DATETIME (YYYY-MM-DD HH:MM:SS)
   // timestamp() en Drizzle tiene problemas con objetos Date, necesita string
