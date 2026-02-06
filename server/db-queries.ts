@@ -1403,10 +1403,6 @@ export async function createSerialNumber(data: {
     throw new Error(`Invalid saleDate: ${data.saleDate}`);
   }
   
-  // Convertir a formato MySQL DATETIME (YYYY-MM-DD HH:MM:SS)
-  // timestamp() en Drizzle tiene problemas con objetos Date, necesita string
-  const saleDateStr = saleDateObj.toISOString().slice(0, 19).replace('T', ' ');
-  
   // DEBUG: Log de todos los valores antes del INSERT
   console.log('🔍 DEBUG createSerialNumber - Datos recibidos:', {
     userId: data.userId,
@@ -1419,10 +1415,12 @@ export async function createSerialNumber(data: {
     customerName: data.customerName,
     saleDate: data.saleDate,
     saleDateObj,
-    saleDateStr,
+    saleDateObjType: typeof saleDateObj,
+    isValidDate: !isNaN(saleDateObj.getTime()),
   });
   
   // Usar Drizzle ORM en lugar de db.execute para manejar correctamente los valores null
+  // timestamp() en Drizzle requiere un objeto Date, NO un string
   try {
     const [result] = await db.insert(serialNumbers).values({
       userId: data.userId,
@@ -1433,7 +1431,7 @@ export async function createSerialNumber(data: {
       saleNumber: data.saleNumber,
       customerId: data.customerId || null,
       customerName: data.customerName || null,
-      saleDate: saleDateStr as any,
+      saleDate: saleDateObj,
     });
     
     console.log('✅ Serial number insertado exitosamente con Drizzle ORM');
