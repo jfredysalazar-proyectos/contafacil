@@ -121,6 +121,7 @@ export const products = mysqlTable("products", {
   stock: int("stock").default(0).notNull(),
   stockAlert: int("stockAlert").default(10),
   sellBy: mysqlEnum("sellBy", ["unit", "fraction"]).default("unit").notNull(),
+  taxType: mysqlEnum("taxType", ["excluded", "exempt", "iva_5", "iva_19"]).default("iva_19").notNull(),
   promotionalPrice: decimal("promotionalPrice", { precision: 15, scale: 2 }).default(null),
   featured: boolean("featured").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

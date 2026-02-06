@@ -32,6 +32,7 @@ export default function Products() {
     stock: "0",
     stockAlert: "10",
     sellBy: "unit" as "unit" | "fraction",
+    taxType: "iva_19" as "excluded" | "exempt" | "iva_5" | "iva_19",
     promotionalPrice: "",
     featured: false,
   });
@@ -91,6 +92,7 @@ export default function Products() {
       stock: "0",
       stockAlert: "10",
       sellBy: "unit",
+      taxType: "iva_19",
       promotionalPrice: "",
       featured: false,
     });
@@ -156,6 +158,7 @@ export default function Products() {
       stockAlert: parseInt(formData.stockAlert),
       stock: parseInt(formData.stock),
       sellBy: formData.sellBy,
+      taxType: formData.taxType,
       hasVariations: formData.hasVariations || false,
       stockControlEnabled: formData.stockControlEnabled || false,
       featured: formData.featured || false,
@@ -192,6 +195,7 @@ export default function Products() {
       stock: product.stock?.toString() || "0",
       stockAlert: product.stockAlert?.toString() || "10",
       sellBy: product.sellBy || "unit",
+      taxType: (product as any).taxType || "iva_19",
       promotionalPrice: product.promotionalPrice || "",
       featured: product.featured || false,
     });
@@ -375,6 +379,33 @@ export default function Products() {
                       {formData.sellBy === "unit" 
                         ? "Se venderá en cantidades enteras (1, 2, 3...)" 
                         : "Se puede vender en cantidades decimales (1.5 kg, 2.75 litros...)"}
+                    </p>
+                  </div>
+
+                  {/* Tipo de Impuesto */}
+                  <div className="space-y-2">
+                    <Label htmlFor="taxType">Tipo de Impuesto</Label>
+                    <Select
+                      value={formData.taxType}
+                      onValueChange={(value: "excluded" | "exempt" | "iva_5" | "iva_19") => 
+                        setFormData({ ...formData, taxType: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="excluded">Excluido</SelectItem>
+                        <SelectItem value="exempt">IVA 0% (Exento)</SelectItem>
+                        <SelectItem value="iva_5">IVA 5%</SelectItem>
+                        <SelectItem value="iva_19">IVA 19%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm text-muted-foreground">
+                      {formData.taxType === "excluded" && "Producto excluido de IVA"}
+                      {formData.taxType === "exempt" && "Producto exento de IVA (0%)"}
+                      {formData.taxType === "iva_5" && "Se aplicará IVA del 5%"}
+                      {formData.taxType === "iva_19" && "Se aplicará IVA del 19%"}
                     </p>
                   </div>
 
