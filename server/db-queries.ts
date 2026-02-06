@@ -1365,21 +1365,39 @@ export async function createSerialNumber(data: {
     ? data.saleDate.toISOString().split('T')[0]
     : new Date(data.saleDate).toISOString().split('T')[0];
   
+  // DEBUG: Log de todos los valores antes del INSERT
+  console.log('🔍 DEBUG createSerialNumber - Datos recibidos:', {
+    userId: data.userId,
+    serialNumber: data.serialNumber,
+    productId: data.productId,
+    productName: data.productName,
+    saleId: data.saleId,
+    saleNumber: data.saleNumber,
+    customerId: data.customerId,
+    customerName: data.customerName,
+    saleDate: data.saleDate,
+    saleDateStr,
+  });
+  
+  const params = [
+    data.userId,
+    data.serialNumber,
+    data.productId,
+    data.productName,
+    data.saleId,
+    data.saleNumber,
+    data.customerId || null,
+    data.customerName || null,
+    saleDateStr,
+  ];
+  
+  console.log('🔍 DEBUG createSerialNumber - Parámetros para INSERT:', params);
+  
   const [result] = await db.execute(
     `INSERT INTO serial_numbers 
     (userId, serialNumber, productId, productName, saleId, saleNumber, customerId, customerName, saleDate) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      data.userId,
-      data.serialNumber,
-      data.productId,
-      data.productName,
-      data.saleId,
-      data.saleNumber,
-      data.customerId || null,
-      data.customerName || null,
-      saleDateStr,
-    ]
+    params
   );
   
   return (result as any).insertId;
