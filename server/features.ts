@@ -26,6 +26,7 @@ export const productsRouter = router({
         stock: z.number().default(0),
         stockAlert: z.number().default(10),
         sellBy: z.enum(["unit", "fraction"]).default("unit"),
+        taxType: z.enum(["excluded", "exempt", "iva_5", "iva_19"]).default("iva_19"),
         promotionalPrice: z.string().optional(),
         featured: z.boolean().default(false),
       })
@@ -53,6 +54,7 @@ export const productsRouter = router({
         stock: z.number().optional(),
         stockAlert: z.number().optional(),
         sellBy: z.enum(["unit", "fraction"]).optional(),
+        taxType: z.enum(["excluded", "exempt", "iva_5", "iva_19"]).optional(),
         promotionalPrice: z.string().optional(),
         featured: z.boolean().optional(),
       })
