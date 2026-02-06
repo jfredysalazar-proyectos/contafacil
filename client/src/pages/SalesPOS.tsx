@@ -109,20 +109,36 @@ export default function SalesPOS() {
   const cartTotals = useMemo(() => {
     let subtotal = 0;
     let tax = 0;
+    let total = 0;
     
     cartItems.forEach(item => {
-      const itemSubtotal = item.quantity * Number(item.unitPrice);
-      subtotal += itemSubtotal;
+      // El precio del producto YA incluye IVA
+      const priceWithTax = item.quantity * Number(item.unitPrice);
+      total += priceWithTax;
       
       // Obtener el producto para ver su taxType
       const product = products?.find(p => p.id === item.productId);
       if (product) {
         const taxRate = getTaxRate((product as any).taxType || 'iva_19');
-        tax += itemSubtotal * taxRate;
+        
+        // Discriminar el IVA del precio con IVA incluido
+        // Fórmula: Precio sin IVA = Precio con IVA / (1 + tasa de IVA)
+        // IVA = Precio con IVA - Precio sin IVA
+        if (taxRate > 0) {
+          const priceWithoutTax = priceWithTax / (1 + taxRate);
+          const itemTax = priceWithTax - priceWithoutTax;
+          subtotal += priceWithoutTax;
+          tax += itemTax;
+        } else {
+          // Si no tiene IVA, el subtotal es igual al total
+          subtotal += priceWithTax;
+        }
+      } else {
+        // Si no se encuentra el producto, asumir que no tiene IVA
+        subtotal += priceWithTax;
       }
     });
     
-    const total = subtotal + tax;
     return { subtotal, tax, total };
   }, [cartItems, products]);
 
