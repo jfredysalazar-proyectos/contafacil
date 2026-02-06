@@ -16,6 +16,7 @@ import {
   expenseCategories,
   quotations,
   quotationItems,
+  serialNumbers,
   type InsertProduct,
   type InsertProductVariation,
   type InsertInventory,
@@ -1398,46 +1399,26 @@ export async function createSerialNumber(data: {
     saleDateStr,
   });
   
-  const params = [
-    data.userId,
-    data.serialNumber,
-    data.productId,
-    data.productName,
-    data.saleId,
-    data.saleNumber,
-    data.customerId || null,
-    data.customerName || null,
-    saleDateStr,
-  ];
-  
-  console.log('🔍 DEBUG createSerialNumber - Parámetros para INSERT (JSON):', JSON.stringify(params));
-  console.log('🔍 Param[0] userId:', params[0], 'tipo:', typeof params[0]);
-  console.log('🔍 Param[1] serialNumber:', params[1], 'tipo:', typeof params[1]);
-  console.log('🔍 Param[2] productId:', params[2], 'tipo:', typeof params[2]);
-  console.log('🔍 Param[3] productName:', params[3], 'tipo:', typeof params[3]);
-  console.log('🔍 Param[4] saleId:', params[4], 'tipo:', typeof params[4]);
-  console.log('🔍 Param[5] saleNumber:', params[5], 'tipo:', typeof params[5]);
-  console.log('🔍 Param[6] customerId:', params[6], 'tipo:', typeof params[6]);
-  console.log('🔍 Param[7] customerName:', params[7], 'tipo:', typeof params[7]);
-  console.log('🔍 Param[8] saleDate:', params[8], 'tipo:', typeof params[8]);
-  console.log('🔍 Total params length:', params.length);
-  
+  // Usar Drizzle ORM en lugar de db.execute para manejar correctamente los valores null
   try {
-    const [result] = await db.execute(
-      `INSERT INTO serial_numbers 
-      (userId, serialNumber, productId, productName, saleId, saleNumber, customerId, customerName, saleDate) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      params
-    );
+    const [result] = await db.insert(serialNumbers).values({
+      userId: data.userId,
+      serialNumber: data.serialNumber,
+      productId: data.productId,
+      productName: data.productName,
+      saleId: data.saleId,
+      saleNumber: data.saleNumber,
+      customerId: data.customerId || null,
+      customerName: data.customerName || null,
+      saleDate: new Date(saleDateStr),
+    });
     
-    console.log('✅ Serial number insertado exitosamente. ID:', (result as any).insertId);
+    console.log('✅ Serial number insertado exitosamente con Drizzle ORM');
     return (result as any).insertId;
   } catch (error: any) {
-    console.error('❌ ERROR al insertar serial number:');
+    console.error('❌ ERROR al insertar serial number con Drizzle:');
     console.error('  Mensaje:', error.message);
-    console.error('  Código:', error.code);
-    console.error('  SQL:', error.sql);
-    console.error('  Parámetros:', params);
+    console.error('  Error completo:', error);
     throw error;
   }
 }
