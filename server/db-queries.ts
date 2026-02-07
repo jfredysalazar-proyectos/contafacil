@@ -825,8 +825,23 @@ export async function getPayablesByUserId(userId: number) {
   if (!db) throw new Error("Database not available");
   
   return await db
-    .select()
+    .select({
+      id: payables.id,
+      userId: payables.userId,
+      supplierId: payables.supplierId,
+      supplierName: suppliers.name,
+      expenseId: payables.expenseId,
+      amount: payables.amount,
+      paidAmount: payables.paidAmount,
+      remainingAmount: payables.remainingAmount,
+      dueDate: payables.dueDate,
+      status: payables.status,
+      notes: payables.notes,
+      createdAt: payables.createdAt,
+      updatedAt: payables.updatedAt,
+    })
     .from(payables)
+    .leftJoin(suppliers, eq(payables.supplierId, suppliers.id))
     .where(eq(payables.userId, userId))
     .orderBy(desc(payables.createdAt));
 }

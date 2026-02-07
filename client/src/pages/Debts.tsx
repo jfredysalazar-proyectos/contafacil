@@ -238,7 +238,7 @@ export default function Debts() {
                         const isOverdue = debt.dueDate && new Date(debt.dueDate) < new Date() && debt.status === "pending";
                         return (
                           <TableRow key={debt.id} className={isOverdue ? "bg-red-50" : ""}>
-                            <TableCell className="font-medium">Proveedor</TableCell>
+                            <TableCell className="font-medium">{debt.supplierName || "Sin proveedor"}</TableCell>
                             <TableCell>${Number(debt.amount).toLocaleString("es-CO")}</TableCell>
                             <TableCell>${Number(debt.paidAmount).toLocaleString("es-CO")}</TableCell>
                             <TableCell className="font-semibold text-red-600">
