@@ -330,6 +330,7 @@ export const salesRouter = router({
             subtotal: z.string(),
             hasSerial: z.boolean().optional(),
             serialNumbers: z.string().optional(),
+            warrantyDays: z.number().optional().default(90), // Días de garantía
           })
         ),
         subtotal: z.string(),
@@ -433,6 +434,7 @@ export const salesRouter = router({
               customerId: input.customerId,
               customerName,
               saleDate: input.saleDate,
+              warrantyDays: item.warrantyDays || 90, // Días de garantía
             };
             
             console.log('🔹 Datos a insertar:', dataToInsert);

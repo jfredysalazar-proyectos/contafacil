@@ -597,6 +597,7 @@ export const serialNumbers = mysqlTable("serial_numbers", {
   customerId: int("customerId"),
   customerName: text("customerName"), // Desnormalizado para histórico
   saleDate: datetime("saleDate").notNull(),
+  warrantyDays: int("warrantyDays").default(90).notNull(), // Días de garantía (90, 180, 365, 1095)
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   userIdIdx: index("serialNumbers_userId_idx").on(table.userId),

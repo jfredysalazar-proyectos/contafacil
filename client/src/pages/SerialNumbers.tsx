@@ -73,9 +73,13 @@ export default function SerialNumbers() {
         <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">En garantía (90 días)</p>
+              <p className="text-sm text-gray-600">En garantía</p>
               <p className="text-2xl font-bold text-gray-900">
-                {allSerials?.filter((s: any) => getDaysSinceSale(s.saleDate) <= 90).length || 0}
+                {allSerials?.filter((s: any) => {
+                  const daysSinceSale = getDaysSinceSale(s.saleDate);
+                  const warrantyDays = s.warrantyDays || 90;
+                  return daysSinceSale <= warrantyDays;
+                }).length || 0}
               </p>
             </div>
             <FileText className="w-10 h-10 text-purple-500" />
@@ -119,7 +123,8 @@ export default function SerialNumbers() {
               ) : filteredSerials && filteredSerials.length > 0 ? (
                 filteredSerials.map((serial: any) => {
                   const daysSinceSale = getDaysSinceSale(serial.saleDate);
-                  const daysRemaining = 90 - daysSinceSale;
+                  const warrantyDays = serial.warrantyDays || 90; // Usar warrantyDays de la BD
+                  const daysRemaining = warrantyDays - daysSinceSale;
                   const isInWarranty = daysRemaining > 0;
                   
                   return (

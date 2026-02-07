@@ -270,6 +270,7 @@ export default function SalesPOS() {
         subtotal: Number(product.price),
         hasSerial: false,
         serialNumbers: "",
+        warrantyDays: 90, // Por defecto 3 meses
       }]);
     }
     
@@ -401,6 +402,7 @@ export default function SalesPOS() {
           subtotal: item.subtotal.toString(),
           hasSerial: item.hasSerial,
           serialNumbers: item.serialNumbers,
+          warrantyDays: item.warrantyDays || 90, // Días de garantía
         })),
         subtotal: cartTotals.subtotal.toString(),
         tax: cartTotals.tax.toString(),
@@ -711,26 +713,53 @@ export default function SalesPOS() {
                       </div>
                       
                       {item.hasSerial && (
-                        <div>
-                          <Input
-                            id={`serial-${item.productId}`}
-                            type="text"
-                            placeholder={item.quantity > 1 ? `Ingrese ${item.quantity} seriales separados por coma` : "Ingrese el número de serie"}
-                            value={item.serialNumbers}
-                            onChange={(e) => {
-                              setCartItems(cartItems.map(i =>
-                                i.productId === item.productId
-                                  ? { ...i, serialNumbers: e.target.value }
-                                  : i
-                              ));
-                            }}
-                            className="text-xs"
-                          />
-                          {item.quantity > 1 && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              {item.serialNumbers.split(',').filter(s => s.trim()).length} de {item.quantity} seriales ingresados
-                            </p>
-                          )}
+                        <div className="space-y-2">
+                          <div>
+                            <Input
+                              id={`serial-${item.productId}`}
+                              type="text"
+                              placeholder={item.quantity > 1 ? `Ingrese ${item.quantity} seriales separados por coma` : "Ingrese el número de serie"}
+                              value={item.serialNumbers}
+                              onChange={(e) => {
+                                setCartItems(cartItems.map(i =>
+                                  i.productId === item.productId
+                                    ? { ...i, serialNumbers: e.target.value }
+                                    : i
+                                ));
+                              }}
+                              className="text-xs"
+                            />
+                            {item.quantity > 1 && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                {item.serialNumbers.split(',').filter(s => s.trim()).length} de {item.quantity} seriales ingresados
+                              </p>
+                            )}
+                          </div>
+                          
+                          {/* Campo de Garantía */}
+                          <div>
+                            <Label htmlFor={`warranty-${item.productId}`} className="text-xs">Garantía:</Label>
+                            <Select
+                              value={item.warrantyDays?.toString() || "90"}
+                              onValueChange={(value) => {
+                                setCartItems(cartItems.map(i =>
+                                  i.productId === item.productId
+                                    ? { ...i, warrantyDays: parseInt(value) }
+                                    : i
+                                ));
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="90">3 meses (90 días)</SelectItem>
+                                <SelectItem value="180">6 meses (180 días)</SelectItem>
+                                <SelectItem value="365">1 año (365 días)</SelectItem>
+                                <SelectItem value="1095">3 años (1095 días)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       )}
                     </div>
