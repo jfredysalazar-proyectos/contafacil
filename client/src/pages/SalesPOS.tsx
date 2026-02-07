@@ -24,6 +24,7 @@ export default function SalesPOS() {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [customerId, setCustomerId] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "transfer" | "credit">("cash");
+  const [creditDays, setCreditDays] = useState<string>("30");
   const [notes, setNotes] = useState<string>("");
   
   // Estados de búsqueda y filtros
@@ -248,6 +249,7 @@ export default function SalesPOS() {
     setCartItems([]);
     setCustomerId("");
     setPaymentMethod("cash");
+    setCreditDays("30");
     setNotes("");
   };
   
@@ -322,12 +324,19 @@ export default function SalesPOS() {
       return;
     }
     
+    // Validar días de crédito
+    if (paymentMethod === "credit" && (!creditDays || parseInt(creditDays) <= 0)) {
+      toast.error("Ingresa los días de crédito");
+      return;
+    }
+    
     try {
       await createSaleMutation.mutateAsync({
         customerId: customerId && customerId !== "none" ? parseInt(customerId) : undefined,
         saleNumber: `VTA-${Date.now()}`,
         saleDate: new Date(),
         paymentMethod,
+        creditDays: paymentMethod === "credit" ? parseInt(creditDays) : undefined,
         notes: notes.trim() || undefined,
         items: cartItems.map(item => ({
           productId: item.productId,
@@ -694,6 +703,21 @@ export default function SalesPOS() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Credit Days - Only show when payment method is credit */}
+              {paymentMethod === "credit" && (
+                <div className="space-y-2">
+                  <Label htmlFor="creditDays">Días de crédito *</Label>
+                  <Input
+                    id="creditDays"
+                    type="number"
+                    min="1"
+                    value={creditDays}
+                    onChange={(e) => setCreditDays(e.target.value)}
+                    placeholder="Ej: 30, 60, 90"
+                  />
+                </div>
+              )}
 
               {/* Notes */}
               <div className="space-y-2">
