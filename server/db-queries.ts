@@ -787,8 +787,25 @@ export async function getReceivablesByUserId(userId: number) {
   if (!db) throw new Error("Database not available");
   
   return await db
-    .select()
+    .select({
+      id: receivables.id,
+      userId: receivables.userId,
+      customerId: receivables.customerId,
+      customerName: customers.name,
+      saleId: receivables.saleId,
+      saleNumber: sales.saleNumber,
+      amount: receivables.amount,
+      paidAmount: receivables.paidAmount,
+      remainingAmount: receivables.remainingAmount,
+      dueDate: receivables.dueDate,
+      status: receivables.status,
+      notes: receivables.notes,
+      createdAt: receivables.createdAt,
+      updatedAt: receivables.updatedAt,
+    })
     .from(receivables)
+    .leftJoin(customers, eq(receivables.customerId, customers.id))
+    .leftJoin(sales, eq(receivables.saleId, sales.id))
     .where(eq(receivables.userId, userId))
     .orderBy(desc(receivables.createdAt));
 }

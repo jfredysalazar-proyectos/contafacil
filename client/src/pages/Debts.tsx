@@ -151,7 +151,8 @@ export default function Debts() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Cliente</TableHead>
-                        <TableHead>Monto Original</TableHead>
+                        <TableHead>Número de Factura</TableHead>
+                        <TableHead>Monto</TableHead>
                         <TableHead>Pagado</TableHead>
                         <TableHead>Pendiente</TableHead>
                         <TableHead>Vencimiento</TableHead>
@@ -164,7 +165,8 @@ export default function Debts() {
                         const isOverdue = debt.dueDate && new Date(debt.dueDate) < new Date() && debt.status === "pending";
                         return (
                           <TableRow key={debt.id} className={isOverdue ? "bg-red-50" : ""}>
-                            <TableCell className="font-medium">Cliente</TableCell>
+                            <TableCell className="font-medium">{debt.customerName || "Sin cliente"}</TableCell>
+                            <TableCell>{debt.saleNumber || "-"}</TableCell>
                             <TableCell>${Number(debt.amount).toLocaleString("es-CO")}</TableCell>
                             <TableCell>${Number(debt.paidAmount).toLocaleString("es-CO")}</TableCell>
                             <TableCell className="font-semibold text-green-600">
