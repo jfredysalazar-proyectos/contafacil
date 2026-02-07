@@ -25,6 +25,7 @@ export default function Expenses() {
     expenseDate: new Date().toISOString().split("T")[0],
     supplierId: "",
     paymentMethod: "cash" as "cash" | "card" | "transfer" | "credit",
+    creditDays: "30",
     receiptNumber: "",
     notes: "",
   });
@@ -80,6 +81,7 @@ export default function Expenses() {
       expenseDate: new Date().toISOString().split("T")[0],
       supplierId: "",
       paymentMethod: "cash",
+      creditDays: "30",
       receiptNumber: "",
       notes: "",
     });
@@ -89,10 +91,17 @@ export default function Expenses() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validar días de crédito
+    if (formData.paymentMethod === "credit" && (!formData.creditDays || parseInt(formData.creditDays) <= 0)) {
+      toast.error("Ingresa los días de crédito");
+      return;
+    }
+    
     const data = {
       ...formData,
       expenseDate: new Date(formData.expenseDate),
       supplierId: formData.supplierId ? parseInt(formData.supplierId) : undefined,
+      creditDays: formData.paymentMethod === "credit" ? parseInt(formData.creditDays) : undefined,
     };
 
     if (editingExpense) {
@@ -113,6 +122,7 @@ export default function Expenses() {
       expenseDate: new Date(expense.expenseDate).toISOString().split("T")[0],
       supplierId: expense.supplierId?.toString() || "",
       paymentMethod: expense.paymentMethod,
+      creditDays: "30",
       receiptNumber: expense.receiptNumber || "",
       notes: expense.notes || "",
     });
@@ -227,6 +237,19 @@ export default function Expenses() {
                         </SelectContent>
                       </Select>
                     </div>
+                    {formData.paymentMethod === "credit" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="creditDays">Días de crédito *</Label>
+                        <Input
+                          id="creditDays"
+                          type="number"
+                          min="1"
+                          value={formData.creditDays}
+                          onChange={(e) => setFormData({ ...formData, creditDays: e.target.value })}
+                          placeholder="Ej: 30, 60, 90"
+                        />
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="receiptNumber">N° de recibo/factura</Label>

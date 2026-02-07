@@ -577,6 +577,7 @@ export const expensesRouter = router({
         amount: z.string(),
         expenseDate: z.date(),
         paymentMethod: z.enum(["cash", "card", "transfer", "credit"]),
+        creditDays: z.number().optional(),
         receiptNumber: z.string().optional(),
         notes: z.string().optional(),
       })
@@ -589,12 +590,20 @@ export const expensesRouter = router({
       
       // Si es gasto a crédito, crear deuda por pagar
       if (input.paymentMethod === "credit" && input.supplierId) {
+        // Calcular fecha de vencimiento: expenseDate + creditDays
+        let dueDate: Date | undefined = undefined;
+        if (input.creditDays && input.creditDays > 0) {
+          dueDate = new Date(input.expenseDate);
+          dueDate.setDate(dueDate.getDate() + input.creditDays);
+        }
+        
         await dbQueries.createPayable({
           userId: ctx.user.id,
           supplierId: input.supplierId,
           amount: input.amount,
           paidAmount: "0",
           remainingAmount: input.amount,
+          dueDate,
           status: "pending",
         });
       }
