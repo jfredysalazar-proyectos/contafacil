@@ -1409,6 +1409,7 @@ export async function createSerialNumber(data: {
   customerId?: number;
   customerName?: string;
   saleDate: Date;
+  warrantyDays?: number; // Días de garantía
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -1446,6 +1447,7 @@ export async function createSerialNumber(data: {
     customerId: data.customerId,
     customerName: data.customerName,
     saleDate: data.saleDate,
+    warrantyDays: data.warrantyDays, // ✅ NUEVO
     saleDateObj,
     saleDateObjType: typeof saleDateObj,
     isValidDate: !isNaN(saleDateObj.getTime()),
@@ -1464,6 +1466,7 @@ export async function createSerialNumber(data: {
       customerId: data.customerId || null,
       customerName: data.customerName || null,
       saleDate: saleDateObj,
+      warrantyDays: data.warrantyDays || 90, // Días de garantía (por defecto 90)
     });
     
     console.log('✅ Serial number insertado exitosamente con Drizzle ORM');
