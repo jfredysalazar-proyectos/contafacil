@@ -1467,6 +1467,7 @@ export async function createSerialNumber(data: {
       customerName: data.customerName || null,
       saleDate: saleDateObj,
       warrantyDays: data.warrantyDays || 90, // Días de garantía (por defecto 90)
+      createdAt: new Date(), // Especificar explícitamente para evitar error de 'default'
     });
     
     console.log('✅ Serial number insertado exitosamente con Drizzle ORM');
