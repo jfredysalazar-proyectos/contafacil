@@ -28,6 +28,7 @@ export default function Sales() {
   const [quantity, setQuantity] = useState("1");
   const [customerId, setCustomerId] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "transfer" | "credit">("cash");
+  const [creditDays, setCreditDays] = useState("30");
   
   // Estados para creación rápida de producto
   const [quickProductName, setQuickProductName] = useState("");
@@ -248,6 +249,7 @@ export default function Sales() {
     setQuantity("1");
     setCustomerId("");
     setPaymentMethod("cash");
+    setCreditDays("30");
     setEditingSale(null);
   };
 
@@ -316,6 +318,11 @@ export default function Sales() {
       return;
     }
 
+    if (paymentMethod === "credit" && (!creditDays || parseInt(creditDays) <= 0)) {
+      toast.error("Ingresa los días de crédito");
+      return;
+    }
+
     if (editingSale) {
       // Modo edición
       updateMutation.mutate({
@@ -343,6 +350,7 @@ export default function Sales() {
         discount: "0",
         total: totals.total.toString(),
         paymentMethod,
+        creditDays: paymentMethod === "credit" ? parseInt(creditDays) : undefined,
         status: "completed",
       });
     }
@@ -428,6 +436,19 @@ export default function Sales() {
                         </SelectContent>
                       </Select>
                     </div>
+                    {paymentMethod === "credit" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="creditDays">Días de crédito *</Label>
+                        <Input
+                          id="creditDays"
+                          type="number"
+                          min="1"
+                          value={creditDays}
+                          onChange={(e) => setCreditDays(e.target.value)}
+                          placeholder="Ej: 30, 60, 90"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="border-t pt-4">
@@ -614,6 +635,19 @@ export default function Sales() {
                         </SelectContent>
                       </Select>
                     </div>
+                    {paymentMethod === "credit" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="creditDays">Días de crédito *</Label>
+                        <Input
+                          id="creditDays"
+                          type="number"
+                          min="1"
+                          value={creditDays}
+                          onChange={(e) => setCreditDays(e.target.value)}
+                          placeholder="Ej: 30, 60, 90"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="border-t pt-4">

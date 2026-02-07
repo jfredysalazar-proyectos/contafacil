@@ -337,6 +337,7 @@ export const salesRouter = router({
         discount: z.string().default("0"),
         total: z.string(),
         paymentMethod: z.enum(["cash", "card", "transfer", "credit"]),
+        creditDays: z.number().optional(),
         status: z.enum(["completed", "pending", "cancelled"]).default("completed"),
         notes: z.string().optional(),
       })
@@ -454,6 +455,13 @@ export const salesRouter = router({
       
       // Si es venta a crédito, crear deuda por cobrar
       if (input.paymentMethod === "credit" && input.customerId) {
+        // Calcular fecha de vencimiento: saleDate + creditDays
+        let dueDate: Date | undefined = undefined;
+        if (input.creditDays && input.creditDays > 0) {
+          dueDate = new Date(input.saleDate);
+          dueDate.setDate(dueDate.getDate() + input.creditDays);
+        }
+
         await dbQueries.createReceivable({
           userId: ctx.user.id,
           customerId: input.customerId,
@@ -461,6 +469,7 @@ export const salesRouter = router({
           amount: input.total,
           paidAmount: "0",
           remainingAmount: input.total,
+          dueDate,
           status: "pending",
         });
       }
