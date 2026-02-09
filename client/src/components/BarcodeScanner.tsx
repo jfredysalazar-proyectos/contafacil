@@ -14,6 +14,7 @@ export function BarcodeScanner({ onScan, onError }: BarcodeScannerProps) {
   const [isScanning, setIsScanning] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [error, setError] = useState<string>("");
+  const hasScannedRef = useRef(false); // Flag para evitar escaneos múltiples
 
   const startScanner = async () => {
     try {
@@ -29,10 +30,20 @@ export function BarcodeScanner({ onScan, onError }: BarcodeScannerProps) {
         },
         (decodedText) => {
           // Código escaneado exitosamente
+          // Evitar procesar el mismo código múltiples veces
+          if (hasScannedRef.current) return;
+          
+          hasScannedRef.current = true;
           console.log("Código escaneado:", decodedText);
-          onScan(decodedText);
+          
+          // Detener escáner inmediatamente
           stopScanner();
-          setIsOpen(false);
+          
+          // Llamar callback después de detener
+          setTimeout(() => {
+            onScan(decodedText);
+            setIsOpen(false);
+          }, 100);
         },
         (errorMessage) => {
           // Error de escaneo (normal mientras busca código)
@@ -66,10 +77,13 @@ export function BarcodeScanner({ onScan, onError }: BarcodeScannerProps) {
     stopScanner();
     setIsOpen(false);
     setError("");
+    hasScannedRef.current = false; // Reset flag al cerrar
   };
 
   useEffect(() => {
     if (isOpen && !isScanning) {
+      // Reset flag al abrir
+      hasScannedRef.current = false;
       // Pequeño delay para que el DOM se renderice
       setTimeout(() => {
         startScanner();
