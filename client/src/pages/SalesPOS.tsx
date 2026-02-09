@@ -364,9 +364,9 @@ export default function SalesPOS() {
 
   // Componente del contenido del carrito (reutilizable para desktop y móvil)
   const CartContent = () => (
-    <>
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Customer Selection */}
-      <div className="space-y-2 px-6 py-4 border-b">
+      <div className="space-y-2 px-6 py-4 border-b flex-shrink-0">
         <Label>Cliente (opcional)</Label>
         <div className="flex gap-2">
           <Popover open={openCustomerPopover} onOpenChange={setOpenCustomerPopover}>
@@ -658,7 +658,7 @@ export default function SalesPOS() {
           </Button>
         </div>
       )}
-    </>
+    </div>
   );
 
   if (loading || productsLoading) {
@@ -845,9 +845,7 @@ export default function SalesPOS() {
               </div>
             </div>
           </DrawerHeader>
-          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-            <CartContent />
-          </div>
+          <CartContent />
         </DrawerContent>
       </Drawer>
       
