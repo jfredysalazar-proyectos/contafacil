@@ -14,6 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2, Plus, Edit, Trash2, Package, Upload, Image as ImageIcon, QrCode } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { ResponsiveTable } from "@/components/ResponsiveTable";
 
 export default function Products() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -557,6 +558,7 @@ export default function Products() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : products && products.length > 0 ? (
+              <ResponsiveTable>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -646,6 +648,7 @@ export default function Products() {
                   ))}
                 </TableBody>
               </Table>
+              </ResponsiveTable>
             ) : (
               <div className="text-center py-12">
                 <Package className="mx-auto h-12 w-12 text-gray-400" />

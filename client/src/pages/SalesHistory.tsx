@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ResponsiveTable } from "@/components/ResponsiveTable";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2, FileText, Download, Eye, ArrowLeft, Edit } from "lucide-react";

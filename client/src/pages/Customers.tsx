@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ResponsiveTable } from "@/components/ResponsiveTable";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2, Plus, Edit, Trash2, Users } from "lucide-react";
@@ -250,7 +251,8 @@ export default function Customers() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : customers && customers.length > 0 ? (
-              <Table>
+              <ResponsiveTable>
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nombre</TableHead>
@@ -291,7 +293,8 @@ export default function Customers() {
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+                </Table>
+              </ResponsiveTable>
             ) : (
               <div className="text-center py-12">
                 <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />

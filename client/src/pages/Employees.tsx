@@ -25,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ResponsiveTable } from "@/components/ResponsiveTable";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Plus, Pencil, Trash2, Power, PowerOff, Users } from "lucide-react";

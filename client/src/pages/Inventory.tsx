@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ResponsiveTable } from "@/components/ResponsiveTable";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -329,7 +330,8 @@ export default function Inventory() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : filteredInventory && filteredInventory.length > 0 ? (
-              <Table>
+              <ResponsiveTable>
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Producto</TableHead>
@@ -396,6 +398,7 @@ export default function Inventory() {
                   })}
                 </TableBody>
               </Table>
+                          </ResponsiveTable>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 {searchTerm ? "No se encontraron productos que coincidan con la búsqueda" : "No hay productos en el inventario"}

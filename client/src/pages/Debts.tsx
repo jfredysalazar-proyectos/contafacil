@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ResponsiveTable } from "@/components/ResponsiveTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -147,7 +148,8 @@ export default function Debts() {
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
                 ) : receivables && receivables.length > 0 ? (
-                  <Table>
+                  <ResponsiveTable>
+                <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Cliente</TableHead>
@@ -197,7 +199,8 @@ export default function Debts() {
                       })}
                     </TableBody>
                   </Table>
-                ) : (
+                              </ResponsiveTable>
+            ) : (
                   <div className="text-center py-12">
                     <DollarSign className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                     <p className="text-muted-foreground">No hay cuentas por cobrar</p>
@@ -221,7 +224,8 @@ export default function Debts() {
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
                 ) : payables && payables.length > 0 ? (
-                  <Table>
+                  <ResponsiveTable>
+                <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Proveedor</TableHead>
@@ -269,7 +273,8 @@ export default function Debts() {
                       })}
                     </TableBody>
                   </Table>
-                ) : (
+                              </ResponsiveTable>
+            ) : (
                   <div className="text-center py-12">
                     <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                     <p className="text-muted-foreground">No hay cuentas por pagar</p>
