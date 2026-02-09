@@ -445,7 +445,7 @@ export default function SalesPOS() {
       </div>
 
       {/* Cart Items - Scrollable */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+      <div className="flex-1 overflow-y-auto px-6 py-4" style={{minHeight: '200px'}}>
         {cartItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <ShoppingCart className="h-16 w-16 mb-4" />
@@ -581,7 +581,7 @@ export default function SalesPOS() {
 
       {/* Payment and Checkout - Always visible at bottom */}
       {cartItems.length > 0 && (
-        <div className="px-6 py-4 border-t space-y-4 flex-shrink-0">
+        <div className="px-6 py-4 border-t space-y-3 flex-shrink-0 overflow-y-auto" style={{maxHeight: '50vh'}}>
           {/* Payment Method */}
           <div className="space-y-2">
             <Label>Método de Pago</Label>
