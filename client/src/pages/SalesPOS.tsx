@@ -364,9 +364,9 @@ export default function SalesPOS() {
 
   // Componente del contenido del carrito (reutilizable para desktop y móvil)
   const CartContent = () => (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex-1 overflow-y-auto">
       {/* Customer Selection */}
-      <div className="space-y-2 px-6 py-4 border-b flex-shrink-0">
+      <div className="space-y-2 px-6 py-4 border-b">
         <Label>Cliente (opcional)</Label>
         <div className="flex gap-2">
           <Popover open={openCustomerPopover} onOpenChange={setOpenCustomerPopover}>
@@ -444,8 +444,8 @@ export default function SalesPOS() {
         </div>
       </div>
 
-      {/* Cart Items - Scrollable */}
-      <div className="flex-1 overflow-y-auto px-6 py-4" style={{minHeight: '200px'}}>
+      {/* Cart Items */}
+      <div className="px-6 py-4">
         {cartItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <ShoppingCart className="h-16 w-16 mb-4" />
@@ -581,7 +581,7 @@ export default function SalesPOS() {
 
       {/* Payment and Checkout - Always visible at bottom */}
       {cartItems.length > 0 && (
-        <div className="px-6 py-4 border-t space-y-3 flex-shrink-0 overflow-y-auto" style={{maxHeight: '50vh'}}>
+        <div className="px-6 py-4 border-t space-y-3">
           {/* Payment Method */}
           <div className="space-y-2">
             <Label>Método de Pago</Label>
