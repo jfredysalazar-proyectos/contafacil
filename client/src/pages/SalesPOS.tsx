@@ -444,8 +444,8 @@ export default function SalesPOS() {
         </div>
       </div>
 
-      {/* Cart Items */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      {/* Cart Items - Scrollable */}
+      <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
         {cartItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <ShoppingCart className="h-16 w-16 mb-4" />
@@ -579,9 +579,9 @@ export default function SalesPOS() {
         )}
       </div>
 
-      {/* Payment and Checkout */}
+      {/* Payment and Checkout - Always visible at bottom */}
       {cartItems.length > 0 && (
-        <div className="px-6 py-4 border-t space-y-4">
+        <div className="px-6 py-4 border-t space-y-4 flex-shrink-0">
           {/* Payment Method */}
           <div className="space-y-2">
             <Label>Método de Pago</Label>
@@ -732,7 +732,7 @@ export default function SalesPOS() {
                 <p className="text-lg">No se encontraron productos</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 md:gap-4">
                 {filteredProducts.map((product) => {
                   const productInventory = inventory?.find((inv: any) => inv.id === product.id);
                   const stock = productInventory?.stock || 0;
@@ -746,8 +746,8 @@ export default function SalesPOS() {
                       }`}
                       onClick={() => !isOutOfStock && addToCart(product)}
                     >
-                      <CardContent className="p-4 space-y-2">
-                        <div className="aspect-square bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center mb-2 overflow-hidden">
+                      <CardContent className="p-2 md:p-4 space-y-1 md:space-y-2">
+                        <div className="aspect-square bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center mb-1 md:mb-2 overflow-hidden">
                           {product.imageUrl ? (
                             <img 
                               src={product.imageUrl} 
@@ -755,21 +755,21 @@ export default function SalesPOS() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <span className="text-4xl font-bold text-blue-600">
+                            <span className="text-2xl md:text-4xl font-bold text-blue-600">
                               {product.name.charAt(0).toUpperCase()}
                             </span>
                           )}
                         </div>
                         
                         <div>
-                          <h3 className="font-semibold text-sm line-clamp-2 min-h-[2.5rem]">
+                          <h3 className="font-semibold text-xs md:text-sm line-clamp-2 min-h-[2rem] md:min-h-[2.5rem]">
                             {product.name}
                           </h3>
-                          <p className="text-lg font-bold text-blue-600 mt-1">
+                          <p className="text-sm md:text-lg font-bold text-blue-600 mt-0.5 md:mt-1">
                             ${Number(product.price).toLocaleString("es-CO")}
                           </p>
-                          <div className="flex items-center justify-between mt-2">
-                            <Badge variant={stock > 10 ? "default" : stock > 0 ? "secondary" : "destructive"}>
+                          <div className="flex items-center justify-between mt-1 md:mt-2">
+                            <Badge variant={stock > 10 ? "default" : stock > 0 ? "secondary" : "destructive"} className="text-xs">
                               Stock: {stock}
                             </Badge>
                           </div>
@@ -822,7 +822,7 @@ export default function SalesPOS() {
 
       {/* Mobile Cart Drawer */}
       <Drawer open={isCartDrawerOpen} onOpenChange={setIsCartDrawerOpen}>
-        <DrawerContent className="max-h-[90vh]">
+        <DrawerContent className="h-[95vh] flex flex-col">
           <DrawerHeader className="border-b">
             <div className="flex items-center justify-between">
               <DrawerTitle>Carrito ({cartItems.length})</DrawerTitle>
@@ -845,7 +845,7 @@ export default function SalesPOS() {
               </div>
             </div>
           </DrawerHeader>
-          <div className="flex flex-col h-full overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             <CartContent />
           </div>
         </DrawerContent>
