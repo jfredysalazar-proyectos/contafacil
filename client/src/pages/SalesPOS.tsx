@@ -18,6 +18,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Check, ChevronsUpDown, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 export default function SalesPOS() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -229,6 +230,26 @@ export default function SalesPOS() {
     
     return { subtotal, tax, total };
   }, [cartItems, products]);
+
+  const handleBarcodeScan = (code: string) => {
+    console.log("Código escaneado:", code);
+    
+    // Buscar producto por código de barras, SKU o nombre
+    const product = products?.find(p => 
+      p.barcode === code || 
+      p.sku === code || 
+      p.name.toLowerCase().includes(code.toLowerCase())
+    );
+    
+    if (product) {
+      addToCart(product);
+      toast.success(`Producto encontrado: ${product.name}`);
+    } else {
+      toast.error(`No se encontró producto con código: ${code}`);
+      // Opcional: establecer el código en el campo de búsqueda
+      setSearchTerm(code);
+    }
+  };
 
   const addToCart = (product: any) => {
     const productInventory = inventory?.find((inv: any) => inv.id === product.id);
@@ -703,6 +724,10 @@ export default function SalesPOS() {
                   className="pl-10 h-10 md:h-12 text-sm md:text-lg"
                 />
               </div>
+              <BarcodeScanner 
+                onScan={handleBarcodeScan}
+                onError={(error) => toast.error(error)}
+              />
               <Button
                 onClick={() => setIsAddProductDialogOpen(true)}
                 size="lg"
