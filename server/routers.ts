@@ -18,6 +18,7 @@ import { pdfRouter } from "./pdf";
 import { passwordResetRouter } from "./password-reset-router";
 import { profileRouter } from "./profile-router";
 import { uploadRouter } from "./upload-router";
+import { membershipRouter } from "./membership-router";
 import {
   rolesRouter,
   permissionsRouter,
@@ -28,6 +29,7 @@ import {
 export const appRouter = router({
   system: systemRouter,
   auth: authRouter,
+  membership: membershipRouter,
   products: productsRouter,
   inventory: inventoryRouter,
   customers: customersRouter,

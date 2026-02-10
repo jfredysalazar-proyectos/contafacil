@@ -61,7 +61,11 @@ export const authRouter = router({
       // Hashear contraseña
       const passwordHash = await hashPassword(input.password);
 
-      // Crear usuario
+      // Calcular fecha de fin de prueba gratuita (8 días)
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 8);
+
+      // Crear usuario con membresía de prueba
       await createUser({
         email: input.email,
         passwordHash,
@@ -71,6 +75,9 @@ export const authRouter = router({
         nit: input.nit || null,
         address: input.address || null,
         role: "user",
+        membershipStatus: "trial",
+        membershipStartDate: new Date(),
+        membershipEndDate: trialEndDate,
       });
 
       // Obtener usuario creado

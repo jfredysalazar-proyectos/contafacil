@@ -26,6 +26,8 @@ import SerialNumbers from "./pages/SerialNumbers";
 import Employees from "./pages/Employees";
 import Roles from "./pages/Roles";
 import ProductQRCodes from "./pages/ProductQRCodes";
+import MembershipAdmin from "./pages/MembershipAdmin";
+import MembershipExpired from "./pages/MembershipExpired";
 import Unauthorized from "./pages/Unauthorized";
 
 function Router() {
@@ -87,6 +89,10 @@ function Router() {
       <Route path="/product-qr-codes">
         <AppLayout><ProductQRCodes /></AppLayout>
       </Route>
+      <Route path="/membership-admin">
+        <AppLayout><MembershipAdmin /></AppLayout>
+      </Route>
+      <Route path="/membership-expired" component={MembershipExpired} />
       
       <Route path="/unauthorized" component={Unauthorized} />
       <Route path="/404" component={NotFound} />

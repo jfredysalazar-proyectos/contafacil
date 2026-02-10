@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
 import { useEffect, useMemo } from "react";
+import { MembershipBanner } from "@/components/MembershipBanner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { Loader2, TrendingUp, TrendingDown, Package, Users, DollarSign, AlertTriangle } from "lucide-react";
@@ -65,6 +66,8 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/5">
       <div className="container py-8 space-y-8">
+        {/* Banner de membresía */}
+        <MembershipBanner />
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>

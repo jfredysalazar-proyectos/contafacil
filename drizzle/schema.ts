@@ -19,6 +19,10 @@ export const users = mysqlTable("users", {
   salesNextNumber: int("salesNextNumber").default(1).notNull(),
   quotationsPrefix: varchar("quotationsPrefix", { length: 10 }).default("COT-").notNull(),
   quotationsNextNumber: int("quotationsNextNumber").default(1).notNull(),
+  // Campos de membresía
+  membershipStatus: mysqlEnum("membershipStatus", ["trial", "active", "expired"]).default("trial").notNull(),
+  membershipStartDate: timestamp("membershipStartDate").defaultNow().notNull(),
+  membershipEndDate: timestamp("membershipEndDate"),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
