@@ -834,7 +834,7 @@ export const quotationsRouter = router({
         items: z.array(
           z.object({
             productId: z.number(),
-            variationId: z.number().optional(),
+            variationId: z.number().nullable().optional(),
             productName: z.string(),
             description: z.string().optional(),
             quantity: z.number(),
@@ -907,7 +907,7 @@ export const quotationsRouter = router({
         items: z.array(
           z.object({
             productId: z.number(),
-            variationId: z.number().optional(),
+            variationId: z.number().nullable().optional(),
             productName: z.string(),
             description: z.string().optional(),
             quantity: z.number(),
