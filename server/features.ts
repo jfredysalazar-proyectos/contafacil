@@ -2,6 +2,8 @@ import { z } from "zod";
 import { protectedProcedure, router } from "./_core/trpc";
 import * as dbQueries from "./db-queries";
 import { getDb } from "./db";
+import { users } from "../drizzle/schema";
+import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 // ==================== PRODUCTOS ====================
