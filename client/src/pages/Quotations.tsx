@@ -29,6 +29,7 @@ export default function Quotations() {
   const [editingQuotation, setEditingQuotation] = useState<any>(null);
   const [quotationItems, setQuotationItems] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState("");
+  const [productSearchTerm, setProductSearchTerm] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [discount, setDiscount] = useState("0");
   const [customerId, setCustomerId] = useState("");
@@ -117,6 +118,7 @@ export default function Quotations() {
   const resetForm = () => {
     setQuotationItems([]);
     setSelectedProduct("");
+    setProductSearchTerm("");
     setQuantity("1");
     setDiscount("0");
     setCustomerId("");
@@ -155,6 +157,7 @@ export default function Quotations() {
     ]);
 
     setSelectedProduct("");
+    setProductSearchTerm("");
     setQuantity("1");
     setDiscount("0");
   };
@@ -164,9 +167,10 @@ export default function Quotations() {
   };
 
   const calculateTotals = () => {
-    const subtotal = quotationItems.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
-    const tax = subtotal * 0.19; // IVA 19%
-    const total = subtotal + tax;
+    const total = quotationItems.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
+    // El precio ya incluye IVA, calculamos el IVA implícito
+    const subtotal = total / 1.19; // Base gravable
+    const tax = total - subtotal; // IVA incluido
     return { subtotal, tax, total };
   };
 
@@ -637,18 +641,47 @@ export default function Quotations() {
                   <div className="grid grid-cols-4 gap-4">
                     <div className="col-span-2 space-y-2">
                       <Label>Producto</Label>
-                      <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona un producto" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {products?.map((product: any) => (
-                            <SelectItem key={product.id} value={product.id.toString()}>
-                              {product.name} - ${parseFloat(product.price).toLocaleString()}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          placeholder="Buscar producto por nombre, SKU o código..."
+                          value={productSearchTerm}
+                          onChange={(e) => setProductSearchTerm(e.target.value)}
+                          className="mb-2"
+                        />
+                        {productSearchTerm && (
+                          <div className="absolute z-10 w-full max-h-60 overflow-y-auto bg-white border rounded-md shadow-lg">
+                            {products
+                              ?.filter((p: any) => 
+                                p.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+                                (p.sku && p.sku.toLowerCase().includes(productSearchTerm.toLowerCase())) ||
+                                (p.barcode && p.barcode.toLowerCase().includes(productSearchTerm.toLowerCase()))
+                              )
+                              .map((product: any) => (
+                                <div
+                                  key={product.id}
+                                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                  onClick={() => {
+                                    setSelectedProduct(product.id.toString());
+                                    setProductSearchTerm(product.name);
+                                  }}
+                                >
+                                  <div className="font-medium">{product.name}</div>
+                                  <div className="text-sm text-gray-500">
+                                    ${parseFloat(product.price).toLocaleString()} {product.sku && `- SKU: ${product.sku}`}
+                                  </div>
+                                </div>
+                              ))}
+                            {products?.filter((p: any) => 
+                              p.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+                              (p.sku && p.sku.toLowerCase().includes(productSearchTerm.toLowerCase())) ||
+                              (p.barcode && p.barcode.toLowerCase().includes(productSearchTerm.toLowerCase()))
+                            ).length === 0 && (
+                              <div className="px-4 py-2 text-gray-500">No se encontraron productos</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label>Cantidad</Label>
