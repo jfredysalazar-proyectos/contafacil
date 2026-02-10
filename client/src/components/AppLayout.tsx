@@ -22,6 +22,7 @@ import {
   QrCode,
   ChevronDown,
   ChevronRight,
+  Settings,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -42,6 +43,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
     },
   });
 
+  // Agregar Administración de Membresías solo para el admin
+  const isAdmin = user?.email === "admin@contafacil.com";
+  
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Ventas", href: "/sales", icon: ShoppingCart },
@@ -62,6 +66,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     { name: "Deudas", href: "/debts", icon: DollarSign },
     { name: "Empleados", href: "/employees", icon: UserCog },
     { name: "Roles", href: "/roles", icon: Shield },
+    ...(isAdmin ? [{ name: "Administración de Membresías", href: "/membership-admin", icon: Settings }] : []),
     { name: "Mi Perfil", href: "/profile", icon: UserCircle },
   ];
 
