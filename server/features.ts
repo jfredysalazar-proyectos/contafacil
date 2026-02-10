@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "./_core/trpc";
 import * as dbQueries from "./db-queries";
+import { getDb } from "./db";
 import { TRPCError } from "@trpc/server";
 
 // ==================== PRODUCTOS ====================
