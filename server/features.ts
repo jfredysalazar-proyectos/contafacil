@@ -318,8 +318,8 @@ export const salesRouter = router({
     .input(
       z.object({
         customerId: z.number().optional(),
-        saleNumber: z.string(),
-        saleDate: z.date(),
+        saleNumber: z.string().optional(), // Ahora opcional, se genera automáticamente
+        saleDate: z.date().optional(), // Ahora opcional, usa fecha actual
         items: z.array(
           z.object({
             productId: z.number(),
@@ -345,6 +345,37 @@ export const salesRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { items, ...saleData } = input;
+      
+      // Obtener configuración del usuario para numeración
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      
+      const [userConfig] = await db
+        .select({
+          salesPrefix: users.salesPrefix,
+          salesNextNumber: users.salesNextNumber,
+        })
+        .from(users)
+        .where(eq(users.id, ctx.user.id))
+        .limit(1);
+      
+      // Generar número de venta si no se proporciona
+      if (!saleData.saleNumber) {
+        const prefix = userConfig?.salesPrefix || "VTA-";
+        const nextNumber = userConfig?.salesNextNumber || 1;
+        saleData.saleNumber = `${prefix}${String(nextNumber).padStart(4, '0')}`;
+        
+        // Incrementar el número para la próxima venta
+        await db
+          .update(users)
+          .set({ salesNextNumber: nextNumber + 1 })
+          .where(eq(users.id, ctx.user.id));
+      }
+      
+      // Usar fecha actual si no se proporciona
+      if (!saleData.saleDate) {
+        saleData.saleDate = new Date();
+      }
       
       // Validar stock disponible antes de crear la venta
       for (const item of items) {
@@ -794,8 +825,8 @@ export const quotationsRouter = router({
     .input(
       z.object({
         customerId: z.number().optional(),
-        quotationNumber: z.string(),
-        quotationDate: z.date(),
+        quotationNumber: z.string().optional(), // Ahora opcional, se genera automáticamente
+        quotationDate: z.date().optional(), // Ahora opcional, usa fecha actual
         validUntil: z.date(),
         items: z.array(
           z.object({
@@ -821,6 +852,37 @@ export const quotationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { items, ...quotationData } = input;
+      
+      // Obtener configuración del usuario para numeración
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      
+      const [userConfig] = await db
+        .select({
+          quotationsPrefix: users.quotationsPrefix,
+          quotationsNextNumber: users.quotationsNextNumber,
+        })
+        .from(users)
+        .where(eq(users.id, ctx.user.id))
+        .limit(1);
+      
+      // Generar número de cotización si no se proporciona
+      if (!quotationData.quotationNumber) {
+        const prefix = userConfig?.quotationsPrefix || "COT-";
+        const nextNumber = userConfig?.quotationsNextNumber || 1;
+        quotationData.quotationNumber = `${prefix}${String(nextNumber).padStart(4, '0')}`;
+        
+        // Incrementar el número para la próxima cotización
+        await db
+          .update(users)
+          .set({ quotationsNextNumber: nextNumber + 1 })
+          .where(eq(users.id, ctx.user.id));
+      }
+      
+      // Usar fecha actual si no se proporciona
+      if (!quotationData.quotationDate) {
+        quotationData.quotationDate = new Date();
+      }
       
       const quotationId = await dbQueries.createQuotation(
         {

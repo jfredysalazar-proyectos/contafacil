@@ -14,6 +14,11 @@ export const users = mysqlTable("users", {
   logoUrl: text("logoUrl"),
   nit: varchar("nit", { length: 20 }),
   address: text("address"),
+  // Configuración de numeración de documentos
+  salesPrefix: varchar("salesPrefix", { length: 10 }).default("VTA-").notNull(),
+  salesNextNumber: int("salesNextNumber").default(1).notNull(),
+  quotationsPrefix: varchar("quotationsPrefix", { length: 10 }).default("COT-").notNull(),
+  quotationsNextNumber: int("quotationsNextNumber").default(1).notNull(),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

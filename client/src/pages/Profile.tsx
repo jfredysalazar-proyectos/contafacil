@@ -18,6 +18,10 @@ export default function Profile() {
   const [businessName, setBusinessName] = useState("");
   const [nit, setNit] = useState("");
   const [address, setAddress] = useState("");
+  const [salesPrefix, setSalesPrefix] = useState("VTA-");
+  const [salesNextNumber, setSalesNextNumber] = useState(1);
+  const [quotationsPrefix, setQuotationsPrefix] = useState("COT-");
+  const [quotationsNextNumber, setQuotationsNextNumber] = useState(1);
 
   // Estado para cambio de contraseña
   const [currentPassword, setCurrentPassword] = useState("");
@@ -35,6 +39,10 @@ export default function Profile() {
       setBusinessName(profile.businessName || "");
       setNit(profile.nit || "");
       setAddress(profile.address || "");
+      setSalesPrefix(profile.salesPrefix || "VTA-");
+      setSalesNextNumber(profile.salesNextNumber || 1);
+      setQuotationsPrefix(profile.quotationsPrefix || "COT-");
+      setQuotationsNextNumber(profile.quotationsNextNumber || 1);
     }
   });
 
@@ -89,6 +97,10 @@ export default function Profile() {
       businessName,
       nit,
       address,
+      salesPrefix,
+      salesNextNumber,
+      quotationsPrefix,
+      quotationsNextNumber,
     });
   };
 
@@ -442,6 +454,115 @@ export default function Profile() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Configuración de Numeración de Documentos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            Configuración de Numeración
+          </CardTitle>
+          <CardDescription>
+            Personaliza los prefijos y numeración de tus facturas y cotizaciones
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleUpdateProfile} className="space-y-6">
+            {/* Configuración de Facturas/Ventas */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold mb-3">Facturas / Ventas</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="salesPrefix">Prefijo de Factura</Label>
+                    <Input
+                      id="salesPrefix"
+                      type="text"
+                      placeholder="VTA-"
+                      value={salesPrefix}
+                      onChange={(e) => setSalesPrefix(e.target.value)}
+                      maxLength={10}
+                      disabled={updateProfileMutation.isPending}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Ejemplo: VTA-0001, FACT-0001, INV-0001
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="salesNextNumber">Próximo Número</Label>
+                    <Input
+                      id="salesNextNumber"
+                      type="number"
+                      min="1"
+                      value={salesNextNumber}
+                      onChange={(e) => setSalesNextNumber(parseInt(e.target.value) || 1)}
+                      disabled={updateProfileMutation.isPending}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Próxima factura: {salesPrefix}{String(salesNextNumber).padStart(4, '0')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Configuración de Cotizaciones */}
+              <div>
+                <h3 className="text-sm font-semibold mb-3">Cotizaciones</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="quotationsPrefix">Prefijo de Cotización</Label>
+                    <Input
+                      id="quotationsPrefix"
+                      type="text"
+                      placeholder="COT-"
+                      value={quotationsPrefix}
+                      onChange={(e) => setQuotationsPrefix(e.target.value)}
+                      maxLength={10}
+                      disabled={updateProfileMutation.isPending}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Ejemplo: COT-0001, QUOT-0001, PRE-0001
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="quotationsNextNumber">Próximo Número</Label>
+                    <Input
+                      id="quotationsNextNumber"
+                      type="number"
+                      min="1"
+                      value={quotationsNextNumber}
+                      onChange={(e) => setQuotationsNextNumber(parseInt(e.target.value) || 1)}
+                      disabled={updateProfileMutation.isPending}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Próxima cotización: {quotationsPrefix}{String(quotationsNextNumber).padStart(4, '0')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={updateProfileMutation.isPending}
+            >
+              {updateProfileMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                "Guardar configuración"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {/* Información de la cuenta */}
       <Card>

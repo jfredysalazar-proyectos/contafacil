@@ -30,6 +30,10 @@ export const profileRouter = router({
         nit: users.nit,
         address: users.address,
         logoUrl: users.logoUrl,
+        salesPrefix: users.salesPrefix,
+        salesNextNumber: users.salesNextNumber,
+        quotationsPrefix: users.quotationsPrefix,
+        quotationsNextNumber: users.quotationsNextNumber,
         createdAt: users.createdAt,
       })
       .from(users)
@@ -57,6 +61,10 @@ export const profileRouter = router({
         businessName: z.string().optional(),
         nit: z.string().optional(),
         address: z.string().optional(),
+        salesPrefix: z.string().max(10).optional(),
+        salesNextNumber: z.number().int().min(1).optional(),
+        quotationsPrefix: z.string().max(10).optional(),
+        quotationsNextNumber: z.number().int().min(1).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -75,6 +83,10 @@ export const profileRouter = router({
       if (input.businessName !== undefined) updateData.businessName = input.businessName || null;
       if (input.nit !== undefined) updateData.nit = input.nit || null;
       if (input.address !== undefined) updateData.address = input.address || null;
+      if (input.salesPrefix !== undefined) updateData.salesPrefix = input.salesPrefix;
+      if (input.salesNextNumber !== undefined) updateData.salesNextNumber = input.salesNextNumber;
+      if (input.quotationsPrefix !== undefined) updateData.quotationsPrefix = input.quotationsPrefix;
+      if (input.quotationsNextNumber !== undefined) updateData.quotationsNextNumber = input.quotationsNextNumber;
 
       if (Object.keys(updateData).length === 0) {
         throw new TRPCError({
