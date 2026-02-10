@@ -327,7 +327,7 @@ export const salesRouter = router({
           z.object({
             productId: z.number(),
             variationId: z.number().optional(),
-            productName: z.string(),
+            productName: z.string().optional(),
             quantity: z.number(),
             unitPrice: z.string(),
             subtotal: z.string(),
@@ -522,7 +522,7 @@ export const salesRouter = router({
           z.object({
             productId: z.number(),
             variationId: z.number().optional(),
-            productName: z.string(),
+            productName: z.string().optional(),
             quantity: z.number(),
             unitPrice: z.string(),
             subtotal: z.string(),
