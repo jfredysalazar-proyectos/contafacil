@@ -202,11 +202,9 @@ export default function Quotations() {
       });
     } else {
       // Crear nueva cotización
-      const quotationNumber = `COT-${Date.now()}`;
       createMutation.mutate({
         customerId: customerId && customerId !== "0" ? parseInt(customerId) : undefined,
-        quotationNumber,
-        quotationDate: new Date(),
+        // quotationNumber se genera automáticamente en el backend
         validUntil: new Date(validUntil),
         items: quotationItems,
         subtotal: subtotal.toFixed(2),
