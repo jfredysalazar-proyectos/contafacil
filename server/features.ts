@@ -762,6 +762,21 @@ export const statsRouter = router({
         input.endDate
       );
     }),
+
+  expensesBySupplier: protectedProcedure
+    .input(
+      z.object({
+        startDate: z.date(),
+        endDate: z.date(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      return await dbQueries.getExpensesBySupplier(
+        ctx.user.id,
+        input.startDate,
+        input.endDate
+      );
+    }),
 });
 
 // ==================== CATEGORÍAS ====================

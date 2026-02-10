@@ -30,7 +30,7 @@ export default function Dashboard() {
     limit: 5,
   });
 
-  const { data: expensesByCategory, isLoading: loadingExpenses } = trpc.stats.expensesByCategory.useQuery({
+  const { data: expensesBySupplier, isLoading: loadingExpenses } = trpc.stats.expensesBySupplier.useQuery({
     startDate: startOfMonth,
     endDate: endOfMonth,
   });
@@ -192,10 +192,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Expenses by Category */}
+          {/* Expenses by Supplier */}
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle>Gastos por categoría</CardTitle>
+              <CardTitle>Gastos por Proveedor</CardTitle>
               <CardDescription>Distribución de gastos del mes</CardDescription>
             </CardHeader>
             <CardContent>
@@ -203,26 +203,26 @@ export default function Dashboard() {
                 <div className="flex justify-center items-center h-64">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              ) : expensesByCategory && expensesByCategory.length > 0 ? (
+              ) : expensesBySupplier && expensesBySupplier.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={expensesByCategory}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={(entry) => `${entry.categoryName || "Sin categoría"}: $${Number(entry.totalAmount).toLocaleString("es-CO")}`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="totalAmount"
-                    >
-                      {expensesByCategory.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
+                  <BarChart data={expensesBySupplier}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="supplierName" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={100}
+                      interval={0}
+                    />
+                    <YAxis 
+                      tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip 
+                      formatter={(value: number) => `$${value.toLocaleString("es-CO")}`}
+                      labelFormatter={(label) => `Proveedor: ${label || "Sin proveedor"}`}
+                    />
+                    <Bar dataKey="totalAmount" fill="#3b82f6" />
+                  </BarChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex justify-center items-center h-64 text-muted-foreground">

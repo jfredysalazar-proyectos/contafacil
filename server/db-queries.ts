@@ -1015,6 +1015,32 @@ export async function getExpensesByCategory(userId: number, startDate: Date, end
   return result;
 }
 
+export async function getExpensesBySupplier(userId: number, startDate: Date, endDate: Date) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db
+    .select({
+      supplierId: expenses.supplierId,
+      supplierName: suppliers.name,
+      totalAmount: sql<number>`SUM(${expenses.amount})`,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(expenses)
+    .leftJoin(suppliers, eq(expenses.supplierId, suppliers.id))
+    .where(
+      and(
+        eq(expenses.userId, userId),
+        gte(expenses.expenseDate, startDate),
+        lte(expenses.expenseDate, endDate)
+      )
+    )
+    .groupBy(expenses.supplierId, suppliers.name)
+    .orderBy(sql`SUM(${expenses.amount}) DESC`);
+  
+  return result;
+}
+
 // ==================== MOVIMIENTOS DE INVENTARIO ====================
 
 export async function getInventoryByProductId(productId: number, userId: number) {
