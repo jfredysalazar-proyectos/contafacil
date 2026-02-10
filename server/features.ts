@@ -380,8 +380,17 @@ export const salesRouter = router({
         saleData.saleDate = new Date();
       }
       
+      // Completar productName si no viene del frontend
+      const itemsWithNames = await Promise.all(items.map(async (item) => {
+        if (!item.productName) {
+          const product = await dbQueries.getProductById(item.productId, ctx.user.id);
+          return { ...item, productName: product?.name || "Producto desconocido" };
+        }
+        return item;
+      }));
+      
       // Validar stock disponible antes de crear la venta
-      for (const item of items) {
+      for (const item of itemsWithNames) {
         const inventory = await dbQueries.getInventoryByProductId(item.productId, ctx.user.id);
         const currentStock = inventory?.stock || 0;
         
@@ -398,7 +407,7 @@ export const salesRouter = router({
           ...saleData,
           userId: ctx.user.id,
         },
-        items
+        itemsWithNames
       );
       
       // Actualizar inventario automáticamente
