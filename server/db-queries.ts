@@ -364,6 +364,19 @@ export async function getCustomerById(id: number, userId: number) {
   return result[0];
 }
 
+export async function getCustomerByIdNumber(idNumber: string, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db
+    .select()
+    .from(customers)
+    .where(and(eq(customers.idNumber, idNumber), eq(customers.userId, userId)))
+    .limit(1);
+  
+  return result[0] || null;
+}
+
 export async function updateCustomer(id: number, userId: number, data: Partial<InsertCustomer>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

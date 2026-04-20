@@ -38,6 +38,11 @@ export default function Sales() {
   const [quickCustomerName, setQuickCustomerName] = useState("");
   const [quickCustomerEmail, setQuickCustomerEmail] = useState("");
   const [quickCustomerPhone, setQuickCustomerPhone] = useState("");
+  const [quickCustomerIdNumber, setQuickCustomerIdNumber] = useState("");
+
+  // Estados para búsqueda por Cédula/NIT
+  const [idNumberSearch, setIdNumberSearch] = useState("");
+  const [isSearchingByIdNumber, setIsSearchingByIdNumber] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -50,6 +55,31 @@ export default function Sales() {
   const { data: products } = trpc.products.list.useQuery();
   const { data: customers } = trpc.customers.list.useQuery();
   const { data: inventory } = trpc.inventory.list.useQuery();
+
+  // Función para buscar cliente por Cédula/NIT
+  const handleSearchByIdNumber = async () => {
+    if (!idNumberSearch.trim()) {
+      toast.error("Ingresa una Cédula/NIT para buscar");
+      return;
+    }
+    setIsSearchingByIdNumber(true);
+    try {
+      const found = await utils.customers.getByIdNumber.fetch({ idNumber: idNumberSearch.trim() });
+      if (found) {
+        setCustomerId(found.id.toString());
+        toast.success(`Cliente encontrado: ${found.name}`);
+        setIdNumberSearch("");
+      } else {
+        toast.info("Cliente no encontrado. Puedes crearlo ahora.");
+        setQuickCustomerIdNumber(idNumberSearch.trim());
+        setIsQuickCustomerDialogOpen(true);
+      }
+    } catch (err) {
+      toast.error("Error al buscar cliente");
+    } finally {
+      setIsSearchingByIdNumber(false);
+    }
+  };
 
   const createMutation = trpc.sales.create.useMutation({
     onSuccess: () => {
@@ -79,13 +109,19 @@ export default function Sales() {
   });
 
   const quickCreateCustomerMutation = trpc.customers.create.useMutation({
-    onSuccess: () => {
+    onSuccess: (newCustomer) => {
       toast.success("Cliente creado exitosamente");
       utils.customers.list.invalidate();
+      // Seleccionar automáticamente el cliente recién creado
+      if (newCustomer?.id) {
+        setCustomerId(newCustomer.id.toString());
+      }
       setIsQuickCustomerDialogOpen(false);
       setQuickCustomerName("");
       setQuickCustomerEmail("");
       setQuickCustomerPhone("");
+      setQuickCustomerIdNumber("");
+      setIdNumberSearch("");
     },
     onError: (error) => {
       toast.error(error.message || "Error al crear cliente");
@@ -251,6 +287,7 @@ export default function Sales() {
     setPaymentMethod("cash");
     setCreditDays("30");
     setEditingSale(null);
+    setIdNumberSearch("");
   };
 
   const addItem = () => {
@@ -393,6 +430,34 @@ export default function Sales() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
+                  {/* Búsqueda por Cédula/NIT */}
+                  <div className="space-y-2">
+                    <Label htmlFor="idNumberSearch">Buscar cliente por Cédula / NIT</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="idNumberSearch"
+                        value={idNumberSearch}
+                        onChange={(e) => setIdNumberSearch(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSearchByIdNumber(); } }}
+                        placeholder="Ej: 1234567890 o 900123456-1"
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleSearchByIdNumber}
+                        disabled={isSearchingByIdNumber}
+                      >
+                        {isSearchingByIdNumber ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Buscar"
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Si el cliente existe se seleccionará automáticamente; si no, podrás crearlo.</p>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
@@ -416,7 +481,7 @@ export default function Sales() {
                           <SelectItem value="none">Sin cliente</SelectItem>
                           {customers?.map((customer) => (
                             <SelectItem key={customer.id} value={customer.id.toString()}>
-                              {customer.name}
+                              {customer.name}{customer.idNumber ? ` - ${customer.idNumber}` : ""}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -592,6 +657,34 @@ export default function Sales() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
+                  {/* Búsqueda por Cédula/NIT */}
+                  <div className="space-y-2">
+                    <Label htmlFor="idNumberSearchEdit">Buscar cliente por Cédula / NIT</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="idNumberSearchEdit"
+                        value={idNumberSearch}
+                        onChange={(e) => setIdNumberSearch(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSearchByIdNumber(); } }}
+                        placeholder="Ej: 1234567890 o 900123456-1"
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleSearchByIdNumber}
+                        disabled={isSearchingByIdNumber}
+                      >
+                        {isSearchingByIdNumber ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Buscar"
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Si el cliente existe se seleccionará automáticamente; si no, podrás crearlo.</p>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
@@ -615,7 +708,7 @@ export default function Sales() {
                           <SelectItem value="none">Sin cliente</SelectItem>
                           {customers?.map((customer) => (
                             <SelectItem key={customer.id} value={customer.id.toString()}>
-                              {customer.name}
+                              {customer.name}{customer.idNumber ? ` - ${customer.idNumber}` : ""}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -953,9 +1046,19 @@ export default function Sales() {
               name: quickCustomerName,
               email: quickCustomerEmail || undefined,
               phone: quickCustomerPhone || undefined,
+              idNumber: quickCustomerIdNumber || undefined,
             });
           }}>
             <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="quickCustomerIdNumber">Cédula / NIT (opcional)</Label>
+                <Input
+                  id="quickCustomerIdNumber"
+                  value={quickCustomerIdNumber}
+                  onChange={(e) => setQuickCustomerIdNumber(e.target.value)}
+                  placeholder="Ej: 1234567890 o 900123456-1"
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="quickCustomerName">Nombre del cliente *</Label>
                 <Input
@@ -995,6 +1098,7 @@ export default function Sales() {
                   setQuickCustomerName("");
                   setQuickCustomerEmail("");
                   setQuickCustomerPhone("");
+                  setQuickCustomerIdNumber("");
                 }}
               >
                 Cancelar

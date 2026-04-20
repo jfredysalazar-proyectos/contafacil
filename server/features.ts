@@ -184,6 +184,12 @@ export const customersRouter = router({
       return await dbQueries.getCustomerById(input.id, ctx.user.id);
     }),
 
+  getByIdNumber: protectedProcedure
+    .input(z.object({ idNumber: z.string().min(1) }))
+    .query(async ({ input, ctx }) => {
+      return await dbQueries.getCustomerByIdNumber(input.idNumber, ctx.user.id);
+    }),
+
   create: protectedProcedure
     .input(
       z.object({
