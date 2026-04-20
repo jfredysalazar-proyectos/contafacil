@@ -50,14 +50,20 @@ export async function generateReceiptPDF(sale: SaleData, user: UserData): Promis
   // === COLUMNA IZQUIERDA ===
   let leftY = yPos;
   
-  // Logo (si existe)
+  // Logo (si existe) - con timeout para evitar que bloquee la generación
   if (user.logoUrl) {
     try {
-      const logoBase64 = await imageUrlToBase64(user.logoUrl);
-      doc.addImage(logoBase64, "PNG", leftColX, leftY, 30, 30);
+      const logoBase64 = await Promise.race([
+        imageUrlToBase64(user.logoUrl),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout al cargar logo")), 5000)
+        ),
+      ]);
+      doc.addImage(logoBase64 as string, "JPEG", leftColX, leftY, 30, 30);
       leftY += 35;
     } catch (error) {
-      console.error("Error al agregar logo al PDF:", error);
+      console.warn("Logo omitido en PDF:", error);
+      // El PDF se genera igual sin el logo
     }
   }
   
@@ -189,9 +195,11 @@ export async function generateReceiptPDF(sale: SaleData, user: UserData): Promis
   doc.text(`$${Number(sale.subtotal).toLocaleString("es-CO")}`, 165, yPos);
   yPos += 7;
   
-  doc.text("IVA (19%):", 125, yPos);
-  doc.text(`$${Number(sale.tax).toLocaleString("es-CO")}`, 165, yPos);
-  yPos += 7;
+  if (sale.tax !== undefined && sale.tax !== null) {
+    doc.text("IVA (19%):", 125, yPos);
+    doc.text(`$${Number(sale.tax).toLocaleString("es-CO")}`, 165, yPos);
+    yPos += 7;
+  }
   
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
@@ -348,14 +356,20 @@ export async function createQuotationPDF(quotation: QuotationData, user: UserDat
   // === COLUMNA IZQUIERDA ===
   let leftY = yPos;
   
-  // Logo (si existe)
+  // Logo (si existe) - con timeout para evitar que bloquee la generación
   if (user.logoUrl) {
     try {
-      const logoBase64 = await imageUrlToBase64(user.logoUrl);
-      doc.addImage(logoBase64, "PNG", leftColX, leftY, 30, 30);
+      const logoBase64 = await Promise.race([
+        imageUrlToBase64(user.logoUrl),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout al cargar logo")), 5000)
+        ),
+      ]);
+      doc.addImage(logoBase64 as string, "JPEG", leftColX, leftY, 30, 30);
       leftY += 35;
     } catch (error) {
-      console.error("Error al agregar logo al PDF:", error);
+      console.warn("Logo omitido en PDF:", error);
+      // El PDF se genera igual sin el logo
     }
   }
   
