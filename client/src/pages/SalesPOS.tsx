@@ -48,6 +48,10 @@ export default function SalesPOS() {
     phone: "",
     idNumber: "",
   });
+
+  // Estados para búsqueda por Cédula/NIT
+  const [idNumberSearch, setIdNumberSearch] = useState("");
+  const [isSearchingByIdNumber, setIsSearchingByIdNumber] = useState(false);
   
   // Estados para crear producto rápido
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
@@ -79,6 +83,31 @@ export default function SalesPOS() {
   const { data: products, isLoading: productsLoading } = trpc.products.list.useQuery();
   const { data: customers } = trpc.customers.list.useQuery();
   const { data: inventory } = trpc.inventory.list.useQuery();
+
+  // Función para buscar cliente por Cédula/NIT
+  const handleSearchByIdNumber = async () => {
+    if (!idNumberSearch.trim()) {
+      toast.error("Ingresa una Cédula/NIT para buscar");
+      return;
+    }
+    setIsSearchingByIdNumber(true);
+    try {
+      const found = await utils.customers.getByIdNumber.fetch({ idNumber: idNumberSearch.trim() });
+      if (found) {
+        setCustomerId(found.id.toString());
+        toast.success(`Cliente encontrado: ${found.name}`);
+        setIdNumberSearch("");
+      } else {
+        toast.info("Cliente no encontrado. Puedes crearlo ahora.");
+        setNewCustomerData(prev => ({ ...prev, idNumber: idNumberSearch.trim() }));
+        setIsAddCustomerDialogOpen(true);
+      }
+    } catch (err) {
+      toast.error("Error al buscar cliente");
+    } finally {
+      setIsSearchingByIdNumber(false);
+    }
+  };
 
   const createSaleMutation = trpc.sales.create.useMutation({
     onSuccess: () => {
@@ -316,6 +345,7 @@ export default function SalesPOS() {
     setPaymentMethod("cash");
     setCreditDays("30");
     setNotes("");
+    setIdNumberSearch("");
   };
 
   const handleCreateCustomer = (e: React.FormEvent) => {
@@ -387,7 +417,35 @@ export default function SalesPOS() {
   const CartContent = () => (
     <div className="flex-1 overflow-y-auto">
       {/* Customer Selection */}
-      <div className="space-y-2 px-6 py-4 border-b">
+      <div className="space-y-3 px-6 py-4 border-b">
+        {/* Búsqueda por Cédula/NIT */}
+        <div className="space-y-1">
+          <Label className="text-xs font-medium text-gray-600">Buscar por Cédula / NIT</Label>
+          <div className="flex gap-2">
+            <Input
+              value={idNumberSearch}
+              onChange={(e) => setIdNumberSearch(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSearchByIdNumber(); } }}
+              placeholder="Ej: 1234567890"
+              className="h-9 text-sm flex-1"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleSearchByIdNumber}
+              disabled={isSearchingByIdNumber}
+              className="h-9 px-3"
+            >
+              {isSearchingByIdNumber ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Search className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </div>
+
         <Label>Cliente (opcional)</Label>
         <div className="flex gap-2">
           <Popover open={openCustomerPopover} onOpenChange={setOpenCustomerPopover}>
@@ -427,7 +485,7 @@ export default function SalesPOS() {
                   {customers?.map((customer) => (
                     <CommandItem
                       key={customer.id}
-                      value={customer.name}
+                      value={`${customer.name} ${customer.idNumber || ''} ${customer.phone || ''}`}
                       onSelect={() => {
                         setCustomerId(customer.id.toString());
                         setOpenCustomerPopover(false);
@@ -443,6 +501,9 @@ export default function SalesPOS() {
                       />
                       <div className="flex flex-col">
                         <span>{customer.name}</span>
+                        {customer.idNumber && (
+                          <span className="text-xs text-blue-600 font-medium">{customer.idNumber}</span>
+                        )}
                         {customer.phone && (
                           <span className="text-xs text-gray-500">{customer.phone}</span>
                         )}
@@ -931,6 +992,7 @@ export default function SalesPOS() {
                 onClick={() => {
                   setIsAddCustomerDialogOpen(false);
                   setNewCustomerData({ name: "", email: "", phone: "", idNumber: "" });
+                  setIdNumberSearch("");
                 }}
               >
                 Cancelar
