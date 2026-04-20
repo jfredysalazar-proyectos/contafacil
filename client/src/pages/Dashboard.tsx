@@ -1,15 +1,47 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MembershipBanner } from "@/components/MembershipBanner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { Loader2, TrendingUp, TrendingDown, Package, Users, DollarSign, AlertTriangle } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Package, Users, DollarSign, AlertTriangle, Download, CheckCircle } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { toast } from "sonner";
 
 export default function Dashboard() {
   const { user, loading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+  const [isDownloadingBackup, setIsDownloadingBackup] = useState(false);
+
+  const handleBackupExcel = async () => {
+    setIsDownloadingBackup(true);
+    try {
+      const response = await fetch("/api/backup/excel", {
+        method: "GET",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || `Error ${response.status}`);
+      }
+      const blob = await response.blob();
+      const today = new Date().toISOString().split("T")[0];
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `ContaFacil_Backup_${today}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success("Backup descargado exitosamente");
+    } catch (error: any) {
+      toast.error("Error al generar backup: " + (error?.message || "Error desconocido"));
+    } finally {
+      setIsDownloadingBackup(false);
+    }
+  };
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -69,13 +101,31 @@ export default function Dashboard() {
         {/* Banner de membresía */}
         <MembershipBanner />
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-4">
           <div>
             <h1 className="text-4xl font-bold text-foreground">Dashboard</h1>
             <p className="text-muted-foreground mt-2">
               Bienvenido de vuelta, {user?.name}
             </p>
           </div>
+          <Button
+            onClick={handleBackupExcel}
+            disabled={isDownloadingBackup}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white shadow-md"
+            size="lg"
+          >
+            {isDownloadingBackup ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Generando backup...
+              </>
+            ) : (
+              <>
+                <Download className="h-5 w-5" />
+                Backup Excel
+              </>
+            )}
+          </Button>
         </div>
 
         {/* Stats Cards */}

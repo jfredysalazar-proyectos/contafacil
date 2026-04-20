@@ -10,6 +10,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerAdminEndpoint } from "../create-admin-endpoint";
 import { registerSetupEndpoint } from "../setup-database-endpoint";
+import { registerBackupEndpoint } from "../backup-endpoint";
 import mysql from "mysql2/promise";
 
 /**
@@ -101,6 +102,8 @@ async function startServer() {
   registerAdminEndpoint(app);
   // Setup database endpoint
   registerSetupEndpoint(app);
+  // Backup Excel endpoint
+  registerBackupEndpoint(app);
   // tRPC API
   app.use(
     "/api/trpc",
