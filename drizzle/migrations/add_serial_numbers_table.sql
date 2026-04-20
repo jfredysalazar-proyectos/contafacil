@@ -1,4 +1,5 @@
 -- Migración para agregar tabla de números de serie
+-- Incluye columna warrantyDays y usa DATETIME para saleDate (compatible con Drizzle datetime())
 CREATE TABLE IF NOT EXISTS `serial_numbers` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `userId` INT NOT NULL,
@@ -9,7 +10,8 @@ CREATE TABLE IF NOT EXISTS `serial_numbers` (
   `saleNumber` VARCHAR(50) NOT NULL,
   `customerId` INT,
   `customerName` TEXT,
-  `saleDate` TIMESTAMP NOT NULL,
+  `saleDate` DATETIME NOT NULL,
+  `warrantyDays` INT NOT NULL DEFAULT 90,
   `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX `serialNumbers_userId_idx` (`userId`),
   INDEX `serialNumbers_serialNumber_idx` (`serialNumber`),

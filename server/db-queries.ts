@@ -1523,54 +1523,81 @@ export async function getSerialNumbersByUserId(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  console.log('🔍 getSerialNumbersByUserId - userId:', userId);
-  
-  // Usar Drizzle ORM en lugar de db.execute
-  const rows = await db
-    .select()
-    .from(serialNumbers)
-    .where(eq(serialNumbers.userId, userId))
-    .orderBy(desc(serialNumbers.saleDate));
-  
-  console.log('🔍 getSerialNumbersByUserId - rows encontrados:', rows.length);
-  console.log('🔍 getSerialNumbersByUserId - primeros 2 rows:', JSON.stringify(rows.slice(0, 2)));
-  
-  return rows;
+  try {
+    const rows = await db
+      .select()
+      .from(serialNumbers)
+      .where(eq(serialNumbers.userId, userId))
+      .orderBy(desc(serialNumbers.saleDate));
+    return rows;
+  } catch (error: any) {
+    if (
+      error?.message?.includes("serial_numbers") ||
+      error?.code === "ER_NO_SUCH_TABLE" ||
+      error?.errno === 1146
+    ) {
+      console.warn("[getSerialNumbersByUserId] Tabla serial_numbers no disponible:", error.message);
+      return [];
+    }
+    throw error;
+  }
 }
 
 export async function searchSerialNumber(userId: number, serialNumber: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  // Usar Drizzle ORM en lugar de db.execute
-  const rows = await db
-    .select()
-    .from(serialNumbers)
-    .where(
-      and(
-        eq(serialNumbers.userId, userId),
-        like(serialNumbers.serialNumber, `%${serialNumber}%`)
+  try {
+    const rows = await db
+      .select()
+      .from(serialNumbers)
+      .where(
+        and(
+          eq(serialNumbers.userId, userId),
+          like(serialNumbers.serialNumber, `%${serialNumber}%`)
+        )
       )
-    )
-    .orderBy(desc(serialNumbers.saleDate));
-  
-  return rows as any[];
+      .orderBy(desc(serialNumbers.saleDate));
+    return rows as any[];
+  } catch (error: any) {
+    if (
+      error?.message?.includes("serial_numbers") ||
+      error?.code === "ER_NO_SUCH_TABLE" ||
+      error?.errno === 1146
+    ) {
+      console.warn("[searchSerialNumber] Tabla serial_numbers no disponible:", error.message);
+      return [];
+    }
+    throw error;
+  }
 }
 
 export async function getSerialNumbersBySaleId(saleId: number, userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  // Usar Drizzle ORM en lugar de db.execute
-  const rows = await db
-    .select()
-    .from(serialNumbers)
-    .where(
-      and(
-        eq(serialNumbers.userId, userId),
-        eq(serialNumbers.saleId, saleId)
-      )
-    );
-  
-  return rows;
+  try {
+    const rows = await db
+      .select()
+      .from(serialNumbers)
+      .where(
+        and(
+          eq(serialNumbers.userId, userId),
+          eq(serialNumbers.saleId, saleId)
+        )
+      );
+    return rows;
+  } catch (error: any) {
+    // Si la tabla no existe (tabla pendiente de migración), devolver array vacío
+    // para no interrumpir la generación de PDF ni la carga de items de venta
+    if (
+      error?.message?.includes("serial_numbers") ||
+      error?.code === "ER_NO_SUCH_TABLE" ||
+      error?.errno === 1146
+    ) {
+      console.warn("[getSerialNumbersBySaleId] Tabla serial_numbers no disponible, devolviendo vacío:", error.message);
+      return [];
+    }
+    throw error;
+  }
 }

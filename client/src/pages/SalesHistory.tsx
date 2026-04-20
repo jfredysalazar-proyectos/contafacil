@@ -73,9 +73,8 @@ export default function SalesHistory() {
       setShowPdfModal(true);
       toast.success('Comprobante PDF generado');
     } catch (error: any) {
-      console.error("Error al generar PDF (view):", error);
-      const msg = error?.message || error?.toString() || "Error desconocido";
-      toast.error(`Error al generar PDF: ${msg}`);
+      console.error("Error al generar PDF:", error);
+      toast.error("Error al generar comprobante PDF");
     }
   };
 
@@ -125,9 +124,8 @@ export default function SalesHistory() {
       
       toast.success("Comprobante descargado");
     } catch (error: any) {
-      console.error("Error al generar PDF (download):", error);
-      const msg = error?.message || error?.toString() || "Error desconocido";
-      toast.error(`Error al generar PDF: ${msg}`);
+      console.error("Error al generar PDF:", error);
+      toast.error("Error al generar comprobante PDF");
     }
   };
 
