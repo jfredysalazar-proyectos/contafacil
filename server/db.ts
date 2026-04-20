@@ -34,7 +34,29 @@ export async function getUserByEmail(email: string) {
     return undefined;
   }
 
-  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  // Seleccionar columnas explícitas para evitar errores si hay columnas nuevas pendientes de migración
+  const result = await db.select({
+    id: users.id,
+    email: users.email,
+    passwordHash: users.passwordHash,
+    name: users.name,
+    phone: users.phone,
+    businessName: users.businessName,
+    logoUrl: users.logoUrl,
+    nit: users.nit,
+    address: users.address,
+    salesPrefix: users.salesPrefix,
+    salesNextNumber: users.salesNextNumber,
+    quotationsPrefix: users.quotationsPrefix,
+    quotationsNextNumber: users.quotationsNextNumber,
+    membershipStatus: users.membershipStatus,
+    membershipStartDate: users.membershipStartDate,
+    membershipEndDate: users.membershipEndDate,
+    role: users.role,
+    createdAt: users.createdAt,
+    updatedAt: users.updatedAt,
+    lastSignedIn: users.lastSignedIn,
+  }).from(users).where(eq(users.email, email)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -45,7 +67,29 @@ export async function getUserById(id: number) {
     return undefined;
   }
 
-  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  // Seleccionar columnas explícitas para evitar errores si hay columnas nuevas pendientes de migración
+  const result = await db.select({
+    id: users.id,
+    email: users.email,
+    passwordHash: users.passwordHash,
+    name: users.name,
+    phone: users.phone,
+    businessName: users.businessName,
+    logoUrl: users.logoUrl,
+    nit: users.nit,
+    address: users.address,
+    salesPrefix: users.salesPrefix,
+    salesNextNumber: users.salesNextNumber,
+    quotationsPrefix: users.quotationsPrefix,
+    quotationsNextNumber: users.quotationsNextNumber,
+    membershipStatus: users.membershipStatus,
+    membershipStartDate: users.membershipStartDate,
+    membershipEndDate: users.membershipEndDate,
+    role: users.role,
+    createdAt: users.createdAt,
+    updatedAt: users.updatedAt,
+    lastSignedIn: users.lastSignedIn,
+  }).from(users).where(eq(users.id, id)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 

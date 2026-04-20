@@ -132,11 +132,23 @@ async function runMigrationIfNeeded() {
         // Ignorar si la tabla no existe
       }
       
-      // Agregar columnas del módulo de servicios
-      statements.push(
-        "ALTER TABLE `products` ADD COLUMN IF NOT EXISTS `isService` BOOLEAN NOT NULL DEFAULT FALSE",
-        "ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `servicesModuleEnabled` BOOLEAN NOT NULL DEFAULT FALSE"
-      );
+      // Verificar y agregar columna isService en products
+      const [isServiceRows] = await connection.execute(`
+        SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'isService'
+      `);
+      if (isServiceRows.length === 0) {
+        statements.push("ALTER TABLE `products` ADD COLUMN `isService` BOOLEAN NOT NULL DEFAULT FALSE");
+      }
+
+      // Verificar y agregar columna servicesModuleEnabled en users
+      const [svcModRows] = await connection.execute(`
+        SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'servicesModuleEnabled'
+      `);
+      if (svcModRows.length === 0) {
+        statements.push("ALTER TABLE `users` ADD COLUMN `servicesModuleEnabled` BOOLEAN NOT NULL DEFAULT FALSE");
+      }
 
       // Crear tabla de cierres de caja
       statements.push(`
