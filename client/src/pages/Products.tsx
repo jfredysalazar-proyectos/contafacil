@@ -336,14 +336,14 @@ export default function Products() {
                     <Label htmlFor="categoryId">Categoría</Label>
                     <div className="flex gap-2">
                       <Select
-                        value={formData.categoryId ? String(formData.categoryId) : ""}
-                        onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
+                        value={formData.categoryId ? String(formData.categoryId) : "none"}
+                        onValueChange={(value) => setFormData({ ...formData, categoryId: value === "none" ? "" : value })}
                       >
                         <SelectTrigger className="flex-1">
                           <SelectValue placeholder="Sin categoría" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Sin categoría</SelectItem>
+                          <SelectItem value="none">Sin categoría</SelectItem>
                           {categories?.map((cat: any) => (
                             <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>
                           ))}
