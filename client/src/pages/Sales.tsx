@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ProductFormDialog } from "@/components/ProductFormDialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -30,9 +31,7 @@ export default function Sales() {
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "transfer" | "credit">("cash");
   const [creditDays, setCreditDays] = useState("30");
   
-  // Estados para creación rápida de producto
-  const [quickProductName, setQuickProductName] = useState("");
-  const [quickProductPrice, setQuickProductPrice] = useState("");
+  // Estado para el diálogo de creación de producto (componente unificado)
   
   // Estados para creación rápida de cliente
   const [quickCustomerName, setQuickCustomerName] = useState("");
@@ -95,18 +94,7 @@ export default function Sales() {
     },
   });
 
-  const quickCreateProductMutation = trpc.products.create.useMutation({
-    onSuccess: () => {
-      toast.success("Producto creado exitosamente");
-      utils.products.list.invalidate();
-      setIsQuickProductDialogOpen(false);
-      setQuickProductName("");
-      setQuickProductPrice("");
-    },
-    onError: (error) => {
-      toast.error(error.message || "Error al crear producto");
-    },
-  });
+
 
   const quickCreateCustomerMutation = trpc.customers.create.useMutation({
     onSuccess: (newCustomer) => {
@@ -954,78 +942,11 @@ export default function Sales() {
         </Card>
       </div>
 
-      {/* Modal de creación rápida de producto */}
-      <Dialog open={isQuickProductDialogOpen} onOpenChange={setIsQuickProductDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Crear Producto Rápido</DialogTitle>
-            <DialogDescription>
-              Crea un producto nuevo sin salir del registro de venta
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            if (!quickProductName || !quickProductPrice) {
-              toast.error("Completa todos los campos");
-              return;
-            }
-            quickCreateProductMutation.mutate({
-              name: quickProductName,
-              price: quickProductPrice,
-              stockAlert: 10,
-            });
-          }}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="quickProductName">Nombre del producto *</Label>
-                <Input
-                  id="quickProductName"
-                  value={quickProductName}
-                  onChange={(e) => setQuickProductName(e.target.value)}
-                  placeholder="Ej: Laptop HP"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="quickProductPrice">Precio de venta *</Label>
-                <Input
-                  id="quickProductPrice"
-                  type="number"
-                  value={quickProductPrice}
-                  onChange={(e) => setQuickProductPrice(e.target.value)}
-                  placeholder="Ej: 2500000"
-                  min="0"
-                  step="0.01"
-                  required
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setIsQuickProductDialogOpen(false);
-                  setQuickProductName("");
-                  setQuickProductPrice("");
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={quickCreateProductMutation.isPending}>
-                {quickCreateProductMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creando...
-                  </>
-                ) : (
-                  "Crear Producto"
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Modal de creación de producto (formulario completo unificado) */}
+      <ProductFormDialog
+        open={isQuickProductDialogOpen}
+        onOpenChange={setIsQuickProductDialogOpen}
+      />
 
       {/* Modal de creación rápida de cliente */}
       <Dialog open={isQuickCustomerDialogOpen} onOpenChange={setIsQuickCustomerDialogOpen}>
