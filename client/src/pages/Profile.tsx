@@ -82,6 +82,16 @@ export default function Profile() {
     },
   });
 
+  const updateProfileMutation = trpc.profile.updateProfile.useMutation({
+    onSuccess: () => {
+      toast.success("Perfil actualizado exitosamente");
+      utils.profile.getProfile.invalidate();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Error al actualizar perfil");
+    },
+  });
+
   const handleUpdateProfile = (e: React.FormEvent) => {
     e.preventDefault();
     updateProfileMutation.mutate({
