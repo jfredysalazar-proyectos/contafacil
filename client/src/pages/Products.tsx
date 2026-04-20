@@ -25,6 +25,7 @@ export default function Products() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    categoryId: "" as string | number,
     sku: "",
     price: "",
     cost: "",
@@ -36,6 +37,7 @@ export default function Products() {
     taxType: "iva_19" as "excluded" | "exempt" | "iva_5" | "iva_19",
     promotionalPrice: "",
     featured: false,
+    isService: false,
   });
 
   useEffect(() => {
@@ -56,6 +58,18 @@ export default function Products() {
 
   const utils = trpc.useUtils();
   const { data: products, isLoading } = trpc.products.list.useQuery();
+  const { data: categories } = trpc.categories.products.list.useQuery();
+
+  const createCategoryMutation = trpc.categories.products.create.useMutation({
+    onSuccess: () => {
+      utils.categories.products.list.invalidate();
+      toast.success("Categoría creada");
+    },
+  });
+
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [showNewCategory, setShowNewCategory] = useState(false);
+  const [filterCategory, setFilterCategory] = useState("all");
 
   const createMutation = trpc.products.create.useMutation({
     onSuccess: () => {
@@ -95,6 +109,7 @@ export default function Products() {
     setFormData({
       name: "",
       description: "",
+      categoryId: "",
       sku: "",
       price: "",
       cost: "",
@@ -106,7 +121,10 @@ export default function Products() {
       taxType: "iva_19",
       promotionalPrice: "",
       featured: false,
+      isService: false,
     });
+    setShowNewCategory(false);
+    setNewCategoryName("");
     setImagePreview(null);
     setEditingProduct(null);
   };
@@ -181,7 +199,9 @@ export default function Products() {
     if (formData.cost) payload.cost = formData.cost;
     if (formData.imageUrl) payload.imageUrl = formData.imageUrl;
     if (formData.promotionalPrice) payload.promotionalPrice = formData.promotionalPrice;
-    // NO agregar categoryId ni barcode si no tienen valor
+    if (formData.categoryId) payload.categoryId = Number(formData.categoryId);
+    payload.isService = formData.isService || false;
+    // NO agregar barcode si no tiene valor
 
     if (editingProduct) {
       updateMutation.mutate({
@@ -198,6 +218,8 @@ export default function Products() {
     setFormData({
       name: product.name,
       description: product.description || "",
+      categoryId: product.categoryId || "",
+      isService: product.isService || false,
       sku: product.sku || "",
       price: product.price,
       cost: product.cost || "",
@@ -307,6 +329,57 @@ export default function Products() {
                         )}
                       </div>
                     </div>
+                  </div>
+
+                  {/* Categoría */}
+                  <div className="space-y-2">
+                    <Label htmlFor="categoryId">Categoría</Label>
+                    <div className="flex gap-2">
+                      <Select
+                        value={formData.categoryId ? String(formData.categoryId) : ""}
+                        onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Sin categoría" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Sin categoría</SelectItem>
+                          {categories?.map((cat: any) => (
+                            <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowNewCategory(!showNewCategory)}
+                      >
+                        + Nueva
+                      </Button>
+                    </div>
+                    {showNewCategory && (
+                      <div className="flex gap-2 mt-2">
+                        <Input
+                          placeholder="Nombre de la categoría"
+                          value={newCategoryName}
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => {
+                            if (newCategoryName.trim()) {
+                              createCategoryMutation.mutate({ name: newCategoryName.trim() });
+                              setNewCategoryName("");
+                              setShowNewCategory(false);
+                            }
+                          }}
+                        >
+                          Crear
+                        </Button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Información Básica */}
@@ -484,6 +557,25 @@ export default function Products() {
                     )}
                   </div>
 
+                  {/* Es Servicio */}
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-purple-50/50">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="isService" className="text-base font-semibold text-purple-900">
+                        Es un Servicio
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Activa si es un servicio (fotocopia, impresión, etc.). No descuenta inventario.
+                      </p>
+                    </div>
+                    <Switch
+                      id="isService"
+                      checked={formData.isService}
+                      onCheckedChange={(checked) => 
+                        setFormData({ ...formData, isService: checked, stockControlEnabled: checked ? false : formData.stockControlEnabled })
+                      }
+                    />
+                  </div>
+
                   {/* Producto Destacado */}
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="space-y-0.5">
@@ -548,8 +640,22 @@ export default function Products() {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>Lista de Productos</CardTitle>
-            <CardDescription>
-              {products?.length || 0} productos registrados
+            <CardDescription className="flex items-center gap-4 flex-wrap">
+              <span>{products?.length || 0} productos registrados</span>
+              <Select
+                value={filterCategory}
+                onValueChange={setFilterCategory}
+              >
+                <SelectTrigger className="w-48 h-7 text-xs">
+                  <SelectValue placeholder="Todas las categorías" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las categorías</SelectItem>
+                  {categories?.map((cat: any) => (
+                    <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -564,6 +670,7 @@ export default function Products() {
                   <TableRow>
                     <TableHead>Imagen</TableHead>
                     <TableHead>Nombre</TableHead>
+                    <TableHead>Categoría</TableHead>
                     <TableHead>SKU</TableHead>
                     <TableHead>Precio</TableHead>
                     <TableHead>Stock</TableHead>
@@ -572,7 +679,7 @@ export default function Products() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {products.map((product: any) => (
+                  {(filterCategory === "all" ? products : products.filter((p: any) => String(p.categoryId) === filterCategory)).map((product: any) => (
                     <TableRow key={product.id}>
                       <TableCell>
                         {product.imageUrl ? (
@@ -593,6 +700,15 @@ export default function Products() {
                           <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
                             ⭐ Destacado
                           </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {product.categoryId ? (
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                            {categories?.find((c: any) => c.id === product.categoryId)?.name || "-"}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-xs">-</span>
                         )}
                       </TableCell>
                       <TableCell>{product.sku || "-"}</TableCell>

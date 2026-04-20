@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2, User, Lock, Building2, Mail, Phone, Upload, X } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 export default function Profile() {
   const { data: profile, isLoading } = trpc.profile.getProfile.useQuery();
@@ -22,6 +23,7 @@ export default function Profile() {
   const [salesNextNumber, setSalesNextNumber] = useState(1);
   const [quotationsPrefix, setQuotationsPrefix] = useState("COT-");
   const [quotationsNextNumber, setQuotationsNextNumber] = useState(1);
+  const [servicesModuleEnabled, setServicesModuleEnabled] = useState(false);
 
   // Estado para cambio de contraseña
   const [currentPassword, setCurrentPassword] = useState("");
@@ -43,17 +45,8 @@ export default function Profile() {
       setSalesNextNumber(profile.salesNextNumber || 1);
       setQuotationsPrefix(profile.quotationsPrefix || "COT-");
       setQuotationsNextNumber(profile.quotationsNextNumber || 1);
+      setServicesModuleEnabled(profile.servicesModuleEnabled || false);
     }
-  });
-
-  const updateProfileMutation = trpc.profile.updateProfile.useMutation({
-    onSuccess: () => {
-      toast.success("Perfil actualizado exitosamente");
-      utils.profile.getProfile.invalidate();
-    },
-    onError: (error: any) => {
-      toast.error(error.message || "Error al actualizar perfil");
-    },
   });
 
   const changePasswordMutation = trpc.profile.changePassword.useMutation({
@@ -561,6 +554,37 @@ export default function Profile() {
               )}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Módulos Opcionales */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            Módulos Opcionales
+          </CardTitle>
+          <CardDescription>
+            Habilita o deshabilita funcionalidades adicionales según las necesidades de tu negocio
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between p-4 border rounded-lg bg-purple-50/50">
+            <div className="space-y-0.5">
+              <p className="text-base font-semibold text-purple-900">Módulo de Servicios</p>
+              <p className="text-sm text-muted-foreground">
+                Permite registrar servicios (fotocopias, impresiones, plastificado, etc.) que no descuentan inventario.
+                Al activarlo, podrás marcar productos como &quot;Servicio&quot; en el catálogo.
+              </p>
+            </div>
+            <Switch
+              checked={servicesModuleEnabled}
+              onCheckedChange={(checked) => {
+                setServicesModuleEnabled(checked);
+                updateProfileMutation.mutate({ servicesModuleEnabled: checked });
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
 

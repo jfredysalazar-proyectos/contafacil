@@ -29,6 +29,7 @@ import ProductQRCodes from "./pages/ProductQRCodes";
 import MembershipAdmin from "./pages/MembershipAdmin";
 import MembershipExpired from "./pages/MembershipExpired";
 import Unauthorized from "./pages/Unauthorized";
+import CashRegister from "./pages/CashRegister";
 
 function Router() {
   return (
@@ -91,6 +92,9 @@ function Router() {
       </Route>
       <Route path="/membership-admin">
         <AppLayout><MembershipAdmin /></AppLayout>
+      </Route>
+      <Route path="/cash-register">
+        <AppLayout><CashRegister /></AppLayout>
       </Route>
       <Route path="/membership-expired" component={MembershipExpired} />
       

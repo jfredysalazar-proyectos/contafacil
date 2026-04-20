@@ -13,6 +13,7 @@ import {
   categoriesRouter,
   quotationsRouter,
   serialNumbersRouter,
+  cashRegisterRouter,
 } from "./features";
 import { pdfRouter } from "./pdf";
 import { passwordResetRouter } from "./password-reset-router";
@@ -49,6 +50,7 @@ export const appRouter = router({
   permissions: permissionsRouter,
   businessUsers: businessUsersRouter,
   activity: activityRouter,
+  cashRegister: cashRegisterRouter,
 });
 
 export type AppRouter = typeof appRouter;

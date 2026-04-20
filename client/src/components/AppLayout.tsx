@@ -23,6 +23,7 @@ import {
   ChevronDown,
   ChevronRight,
   Settings,
+  Landmark,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -63,6 +64,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     { name: "Proveedores", href: "/suppliers", icon: Building2 },
     { name: "Cotizaciones", href: "/quotations", icon: FileText },
     { name: "Gastos y Compras", href: "/expenses", icon: Receipt },
+    { name: "Caja Diaria", href: "/cash-register", icon: Landmark },
     { name: "Deudas", href: "/debts", icon: DollarSign },
     { name: "Empleados", href: "/employees", icon: UserCog },
     { name: "Roles", href: "/roles", icon: Shield },

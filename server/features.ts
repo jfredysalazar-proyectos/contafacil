@@ -32,6 +32,7 @@ export const productsRouter = router({
         taxType: z.enum(["excluded", "exempt", "iva_5", "iva_19"]).default("iva_19"),
         promotionalPrice: z.string().optional(),
         featured: z.boolean().default(false),
+        isService: z.boolean().default(false),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -60,6 +61,7 @@ export const productsRouter = router({
         taxType: z.enum(["excluded", "exempt", "iva_5", "iva_19"]).optional(),
         promotionalPrice: z.string().optional(),
         featured: z.boolean().optional(),
+        isService: z.boolean().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -1025,5 +1027,187 @@ export const serialNumbersRouter = router({
     .input(z.object({ saleId: z.number() }))
     .query(async ({ input, ctx }) => {
       return await dbQueries.getSerialNumbersBySaleId(input.saleId, ctx.user.id);
+    }),
+});
+
+// ==================== CAJA ====================
+
+export const cashRegisterRouter = router({
+  // Obtener el estado actual de la caja (si hay una abierta)
+  getCurrent: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return null;
+    const { cashRegisters } = await import("../drizzle/schema");
+    const { and, eq } = await import("drizzle-orm");
+    const [current] = await db
+      .select()
+      .from(cashRegisters)
+      .where(and(eq(cashRegisters.userId, ctx.user.id), eq(cashRegisters.status, "open")))
+      .limit(1);
+    return current || null;
+  }),
+
+  // Listar historial de cierres de caja
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return [];
+    const { cashRegisters } = await import("../drizzle/schema");
+    const { eq, desc } = await import("drizzle-orm");
+    return await db
+      .select()
+      .from(cashRegisters)
+      .where(eq(cashRegisters.userId, ctx.user.id))
+      .orderBy(desc(cashRegisters.openedAt))
+      .limit(30);
+  }),
+
+  // Abrir caja
+  open: protectedProcedure
+    .input(z.object({
+      openingBalance: z.string().default("0"),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB no disponible" });
+      const { cashRegisters } = await import("../drizzle/schema");
+      const { and, eq } = await import("drizzle-orm");
+      // Verificar si ya hay una caja abierta
+      const [existing] = await db
+        .select()
+        .from(cashRegisters)
+        .where(and(eq(cashRegisters.userId, ctx.user.id), eq(cashRegisters.status, "open")))
+        .limit(1);
+      if (existing) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Ya hay una caja abierta" });
+      }
+      await db.insert(cashRegisters).values({
+        userId: ctx.user.id,
+        openedAt: new Date(),
+        openingBalance: input.openingBalance,
+        status: "open",
+        notes: input.notes || null,
+      });
+      return { success: true };
+    }),
+
+  // Cerrar caja con resumen calculado desde las ventas del día
+  close: protectedProcedure
+    .input(z.object({
+      cashRegisterId: z.number(),
+      closingBalance: z.string(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB no disponible" });
+      const { cashRegisters, sales } = await import("../drizzle/schema");
+      const { and, eq, gte, lte, sum, count } = await import("drizzle-orm");
+
+      // Obtener la caja
+      const [register] = await db
+        .select()
+        .from(cashRegisters)
+        .where(and(eq(cashRegisters.id, input.cashRegisterId), eq(cashRegisters.userId, ctx.user.id)))
+        .limit(1);
+      if (!register) throw new TRPCError({ code: "NOT_FOUND", message: "Caja no encontrada" });
+      if (register.status === "closed") throw new TRPCError({ code: "BAD_REQUEST", message: "La caja ya está cerrada" });
+
+      // Calcular totales de ventas desde la apertura hasta ahora
+      const openedAt = register.openedAt;
+      const closedAt = new Date();
+
+      const salesData = await db
+        .select({
+          paymentMethod: sales.paymentMethod,
+          total: sum(sales.total),
+          cnt: count(sales.id),
+        })
+        .from(sales)
+        .where(
+          and(
+            eq(sales.userId, ctx.user.id),
+            eq(sales.status, "completed"),
+            gte(sales.saleDate, openedAt),
+            lte(sales.saleDate, closedAt)
+          )
+        )
+        .groupBy(sales.paymentMethod);
+
+      let totalCash = 0, totalCard = 0, totalTransfer = 0, totalCredit = 0, totalSales = 0, salesCount = 0;
+      for (const row of salesData) {
+        const amount = parseFloat(row.total || "0");
+        const cnt = Number(row.cnt || 0);
+        salesCount += cnt;
+        totalSales += amount;
+        if (row.paymentMethod === "cash") totalCash += amount;
+        else if (row.paymentMethod === "card") totalCard += amount;
+        else if (row.paymentMethod === "transfer") totalTransfer += amount;
+        else if (row.paymentMethod === "credit") totalCredit += amount;
+      }
+
+      await db.update(cashRegisters)
+        .set({
+          closedAt,
+          closingBalance: input.closingBalance,
+          totalCash: String(totalCash),
+          totalCard: String(totalCard),
+          totalTransfer: String(totalTransfer),
+          totalCredit: String(totalCredit),
+          totalSales: String(totalSales),
+          salesCount,
+          status: "closed",
+          notes: input.notes || register.notes || null,
+        })
+        .where(eq(cashRegisters.id, input.cashRegisterId));
+
+      return { success: true, totalSales, salesCount, totalCash, totalCard, totalTransfer, totalCredit };
+    }),
+
+  // Obtener resumen en tiempo real de la caja abierta
+  getSummary: protectedProcedure
+    .input(z.object({ cashRegisterId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) return null;
+      const { cashRegisters, sales } = await import("../drizzle/schema");
+      const { and, eq, gte, sum, count } = await import("drizzle-orm");
+
+      const [register] = await db
+        .select()
+        .from(cashRegisters)
+        .where(and(eq(cashRegisters.id, input.cashRegisterId), eq(cashRegisters.userId, ctx.user.id)))
+        .limit(1);
+      if (!register) return null;
+
+      const salesData = await db
+        .select({
+          paymentMethod: sales.paymentMethod,
+          total: sum(sales.total),
+          cnt: count(sales.id),
+        })
+        .from(sales)
+        .where(
+          and(
+            eq(sales.userId, ctx.user.id),
+            eq(sales.status, "completed"),
+            gte(sales.saleDate, register.openedAt)
+          )
+        )
+        .groupBy(sales.paymentMethod);
+
+      let totalCash = 0, totalCard = 0, totalTransfer = 0, totalCredit = 0, totalSales = 0, salesCount = 0;
+      for (const row of salesData) {
+        const amount = parseFloat(row.total || "0");
+        const cnt = Number(row.cnt || 0);
+        salesCount += cnt;
+        totalSales += amount;
+        if (row.paymentMethod === "cash") totalCash += amount;
+        else if (row.paymentMethod === "card") totalCard += amount;
+        else if (row.paymentMethod === "transfer") totalTransfer += amount;
+        else if (row.paymentMethod === "credit") totalCredit += amount;
+      }
+
+      return { register, totalCash, totalCard, totalTransfer, totalCredit, totalSales, salesCount };
     }),
 });

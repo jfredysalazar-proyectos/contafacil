@@ -132,6 +132,37 @@ async function runMigrationIfNeeded() {
         // Ignorar si la tabla no existe
       }
       
+      // Agregar columnas del módulo de servicios
+      statements.push(
+        "ALTER TABLE `products` ADD COLUMN IF NOT EXISTS `isService` BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `servicesModuleEnabled` BOOLEAN NOT NULL DEFAULT FALSE"
+      );
+
+      // Crear tabla de cierres de caja
+      statements.push(`
+        CREATE TABLE IF NOT EXISTS \`cashRegisters\` (
+          \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+          \`userId\` INT NOT NULL,
+          \`openedAt\` TIMESTAMP NOT NULL,
+          \`closedAt\` TIMESTAMP NULL,
+          \`openingBalance\` DECIMAL(15,2) NOT NULL DEFAULT 0,
+          \`closingBalance\` DECIMAL(15,2) NULL,
+          \`totalCash\` DECIMAL(15,2) DEFAULT 0,
+          \`totalCard\` DECIMAL(15,2) DEFAULT 0,
+          \`totalTransfer\` DECIMAL(15,2) DEFAULT 0,
+          \`totalCredit\` DECIMAL(15,2) DEFAULT 0,
+          \`totalSales\` DECIMAL(15,2) DEFAULT 0,
+          \`salesCount\` INT DEFAULT 0,
+          \`notes\` TEXT NULL,
+          \`status\` ENUM('open','closed') NOT NULL DEFAULT 'open',
+          \`createdAt\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          \`updatedAt\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX \`cashRegisters_userId_idx\` (\`userId\`),
+          INDEX \`cashRegisters_openedAt_idx\` (\`openedAt\`),
+          INDEX \`cashRegisters_status_idx\` (\`status\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+
       // Agregar otras migraciones de DEFAULT NULL
       statements.push(
         "ALTER TABLE `products` MODIFY COLUMN `categoryId` int DEFAULT NULL",

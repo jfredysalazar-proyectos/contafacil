@@ -83,6 +83,7 @@ export default function SalesPOS() {
   const { data: products, isLoading: productsLoading } = trpc.products.list.useQuery();
   const { data: customers } = trpc.customers.list.useQuery();
   const { data: inventory } = trpc.inventory.list.useQuery();
+  const { data: categories } = trpc.categories.products.list.useQuery();
 
   // Función para buscar cliente por Cédula/NIT
   const handleSearchByIdNumber = async () => {
@@ -771,7 +772,7 @@ export default function SalesPOS() {
               </Button>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button
                 variant={selectedCategory === "all" ? "default" : "outline"}
                 size="sm"
@@ -779,6 +780,16 @@ export default function SalesPOS() {
               >
                 Todos
               </Button>
+              {categories?.map((cat: any) => (
+                <Button
+                  key={cat.id}
+                  variant={selectedCategory === String(cat.id) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(String(cat.id))}
+                >
+                  {cat.name}
+                </Button>
+              ))}
             </div>
           </div>
 

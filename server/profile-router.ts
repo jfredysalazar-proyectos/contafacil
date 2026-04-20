@@ -34,6 +34,7 @@ export const profileRouter = router({
         salesNextNumber: users.salesNextNumber,
         quotationsPrefix: users.quotationsPrefix,
         quotationsNextNumber: users.quotationsNextNumber,
+        servicesModuleEnabled: users.servicesModuleEnabled,
         createdAt: users.createdAt,
       })
       .from(users)
@@ -65,6 +66,7 @@ export const profileRouter = router({
         salesNextNumber: z.number().int().min(1).optional(),
         quotationsPrefix: z.string().max(10).optional(),
         quotationsNextNumber: z.number().int().min(1).optional(),
+        servicesModuleEnabled: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -87,6 +89,7 @@ export const profileRouter = router({
       if (input.salesNextNumber !== undefined) updateData.salesNextNumber = input.salesNextNumber;
       if (input.quotationsPrefix !== undefined) updateData.quotationsPrefix = input.quotationsPrefix;
       if (input.quotationsNextNumber !== undefined) updateData.quotationsNextNumber = input.quotationsNextNumber;
+      if (input.servicesModuleEnabled !== undefined) updateData.servicesModuleEnabled = input.servicesModuleEnabled;
 
       if (Object.keys(updateData).length === 0) {
         throw new TRPCError({

@@ -24,6 +24,7 @@ export const users = mysqlTable("users", {
   membershipStartDate: timestamp("membershipStartDate").defaultNow().notNull(),
   membershipEndDate: timestamp("membershipEndDate"),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  servicesModuleEnabled: boolean("servicesModuleEnabled").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -133,6 +134,7 @@ export const products = mysqlTable("products", {
   taxType: mysqlEnum("taxType", ["excluded", "exempt", "iva_5", "iva_19"]).default("iva_19").notNull(),
   promotionalPrice: decimal("promotionalPrice", { precision: 15, scale: 2 }).default(null),
   featured: boolean("featured").default(false).notNull(),
+  isService: boolean("isService").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
@@ -618,3 +620,33 @@ export const serialNumbers = mysqlTable("serial_numbers", {
 
 export type SerialNumber = typeof serialNumbers.$inferSelect;
 export type InsertSerialNumber = typeof serialNumbers.$inferInsert;
+
+/**
+ * Tabla de cierres de caja
+ * Registra la apertura y cierre de caja diario con resumen de ventas
+ */
+export const cashRegisters = mysqlTable("cashRegisters", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  openedAt: timestamp("openedAt").notNull(),
+  closedAt: timestamp("closedAt"),
+  openingBalance: decimal("openingBalance", { precision: 15, scale: 2 }).notNull().default("0"),
+  closingBalance: decimal("closingBalance", { precision: 15, scale: 2 }),
+  totalCash: decimal("totalCash", { precision: 15, scale: 2 }).default("0"),
+  totalCard: decimal("totalCard", { precision: 15, scale: 2 }).default("0"),
+  totalTransfer: decimal("totalTransfer", { precision: 15, scale: 2 }).default("0"),
+  totalCredit: decimal("totalCredit", { precision: 15, scale: 2 }).default("0"),
+  totalSales: decimal("totalSales", { precision: 15, scale: 2 }).default("0"),
+  salesCount: int("salesCount").default(0),
+  notes: text("notes"),
+  status: mysqlEnum("status", ["open", "closed"]).default("open").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("cashRegisters_userId_idx").on(table.userId),
+  openedAtIdx: index("cashRegisters_openedAt_idx").on(table.openedAt),
+  statusIdx: index("cashRegisters_status_idx").on(table.status),
+}));
+
+export type CashRegister = typeof cashRegisters.$inferSelect;
+export type InsertCashRegister = typeof cashRegisters.$inferInsert;
