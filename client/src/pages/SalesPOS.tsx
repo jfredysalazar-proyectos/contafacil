@@ -8,17 +8,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Search, ShoppingCart, X, Image as ImageIcon, Package } from "lucide-react";
+import { Loader2, Plus, Trash2, Search, ShoppingCart, X, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
+
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Check, ChevronsUpDown, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { ProductFormDialog } from "@/components/ProductFormDialog";
 
 export default function SalesPOS() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -53,25 +53,8 @@ export default function SalesPOS() {
   const [idNumberSearch, setIdNumberSearch] = useState("");
   const [isSearchingByIdNumber, setIsSearchingByIdNumber] = useState(false);
   
-  // Estados para crear producto rápido
+  // Estado para el diálogo de creación de producto (componente unificado)
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
-  const [newProductData, setNewProductData] = useState({
-    name: "",
-    description: "",
-    sku: "",
-    price: "",
-    cost: "",
-    imageUrl: "",
-    stockControlEnabled: false,
-    stock: "0",
-    stockAlert: "10",
-    sellBy: "unit" as "unit" | "fraction",
-    taxType: "iva_19" as "excluded" | "exempt" | "iva_5" | "iva_19",
-    promotionalPrice: "",
-    featured: false,
-  });
-  const [newProductImagePreview, setNewProductImagePreview] = useState<string | null>(null);
-  const [isUploadingNewProductImage, setIsUploadingNewProductImage] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -139,75 +122,7 @@ export default function SalesPOS() {
     },
   });
   
-  const createProductMutation = trpc.products.create.useMutation({
-    onSuccess: () => {
-      toast.success("Producto creado exitosamente");
-      utils.products.list.invalidate();
-      utils.inventory.list.invalidate();
-      setIsAddProductDialogOpen(false);
-      setNewProductData({
-        name: "",
-        description: "",
-        sku: "",
-        price: "",
-        cost: "",
-        imageUrl: "",
-        stockControlEnabled: false,
-        stock: "0",
-        stockAlert: "10",
-        sellBy: "unit",
-        taxType: "iva_19",
-        promotionalPrice: "",
-        featured: false,
-      });
-      setNewProductImagePreview(null);
-    },
-    onError: (error) => {
-      toast.error(error.message || "Error al crear producto");
-    },
-  });
-  
-  const uploadNewProductImageMutation = trpc.upload.uploadImage.useMutation({
-    onSuccess: (data) => {
-      setNewProductData({ ...newProductData, imageUrl: data.url });
-      toast.success("Imagen subida exitosamente");
-      setIsUploadingNewProductImage(false);
-    },
-    onError: (error) => {
-      toast.error(error.message || "Error al subir la imagen");
-      setIsUploadingNewProductImage(false);
-    },
-  });
-  
-  const handleNewProductImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("La imagen no debe superar los 5MB");
-        return;
-      }
 
-      if (!file.type.startsWith("image/")) {
-        toast.error("Solo se permiten archivos de imagen");
-        return;
-      }
-
-      setIsUploadingNewProductImage(true);
-      toast.info("Subiendo imagen...");
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64Image = reader.result as string;
-        setNewProductImagePreview(base64Image);
-        
-        uploadNewProductImageMutation.mutate({
-          image: base64Image,
-          folder: "contafacil/products",
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const filteredProducts = useMemo(() => {
     if (!products) return [];
@@ -354,20 +269,7 @@ export default function SalesPOS() {
     createCustomerMutation.mutate(newCustomerData);
   };
 
-  const handleCreateProduct = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const productData = {
-      ...newProductData,
-      price: parseFloat(newProductData.price),
-      cost: newProductData.cost ? parseFloat(newProductData.cost) : undefined,
-      promotionalPrice: newProductData.promotionalPrice ? parseFloat(newProductData.promotionalPrice) : undefined,
-      stock: newProductData.stockControlEnabled ? parseInt(newProductData.stock) : undefined,
-      stockAlert: newProductData.stockControlEnabled ? parseInt(newProductData.stockAlert) : undefined,
-    };
 
-    createProductMutation.mutate(productData as any);
-  };
 
   const handleCheckout = () => {
     if (cartItems.length === 0) {
@@ -998,271 +900,14 @@ export default function SalesPOS() {
         </DialogContent>
       </Dialog>
       
-      {/* Dialog para crear producto rápido - Simplificado para móvil */}
-      <Dialog open={isAddProductDialogOpen} onOpenChange={setIsAddProductDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Crear Nuevo Producto</DialogTitle>
-            <DialogDescription>
-              Crea un producto rápido sin salir de la pantalla de ventas
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleCreateProduct}>
-            <div className="grid gap-6 py-4">
-              {/* Imagen del Producto */}
-              <div className="space-y-2">
-                <Label>Imagen del Producto (Opcional)</Label>
-                <div className="flex flex-col md:flex-row items-center gap-4">
-                  <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
-                    {newProductImagePreview ? (
-                      <img src={newProductImagePreview} alt="Preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <ImageIcon className="h-12 w-12 text-gray-400" />
-                    )}
-                  </div>
-                  <div className="flex-1 w-full">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleNewProductImageChange}
-                      className="cursor-pointer"
-                      disabled={isUploadingNewProductImage}
-                    />
-                    {isUploadingNewProductImage ? (
-                      <p className="text-sm text-blue-600 mt-2 flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Subiendo imagen a Cloudinary...
-                      </p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Sube una imagen del producto (JPG, PNG, máx 5MB)
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Información Básica */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nombre del Producto *</Label>
-                  <Input
-                    id="name"
-                    value={newProductData.name}
-                    onChange={(e) => setNewProductData({ ...newProductData, name: e.target.value })}
-                    placeholder="Ej: Laptop HP 15"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sku">SKU / Código</Label>
-                  <Input
-                    id="sku"
-                    value={newProductData.sku}
-                    onChange={(e) => setNewProductData({ ...newProductData, sku: e.target.value })}
-                    placeholder="Ej: LAP-HP-001"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Descripción</Label>
-                <Textarea
-                  id="description"
-                  value={newProductData.description}
-                  onChange={(e) => setNewProductData({ ...newProductData, description: e.target.value })}
-                  placeholder="Describe las características del producto..."
-                  rows={3}
-                />
-              </div>
-
-              {/* Precios */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Precio de Venta (COP) *</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    value={newProductData.price}
-                    onChange={(e) => setNewProductData({ ...newProductData, price: e.target.value })}
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cost">Costo (COP)</Label>
-                  <Input
-                    id="cost"
-                    type="number"
-                    step="0.01"
-                    value={newProductData.cost}
-                    onChange={(e) => setNewProductData({ ...newProductData, cost: e.target.value })}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="promotionalPrice">Precio Promocional (COP)</Label>
-                  <Input
-                    id="promotionalPrice"
-                    type="number"
-                    step="0.01"
-                    value={newProductData.promotionalPrice}
-                    onChange={(e) => setNewProductData({ ...newProductData, promotionalPrice: e.target.value })}
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-
-              {/* Tipo de Venta */}
-              <div className="space-y-2">
-                <Label htmlFor="sellBy">Vender por</Label>
-                <Select
-                  value={newProductData.sellBy}
-                  onValueChange={(value: "unit" | "fraction") => 
-                    setNewProductData({ ...newProductData, sellBy: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unit">Unidad (enteros)</SelectItem>
-                    <SelectItem value="fraction">Fracción (kg, litros, metros, etc.)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Tipo de Impuesto */}
-              <div className="space-y-2">
-                <Label htmlFor="taxType">Tipo de Impuesto</Label>
-                <Select
-                  value={newProductData.taxType}
-                  onValueChange={(value: "excluded" | "exempt" | "iva_5" | "iva_19") => 
-                    setNewProductData({ ...newProductData, taxType: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="excluded">Excluido</SelectItem>
-                    <SelectItem value="exempt">IVA 0% (Exento)</SelectItem>
-                    <SelectItem value="iva_5">IVA 5%</SelectItem>
-                    <SelectItem value="iva_19">IVA 19%</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Control de Stock */}
-              <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="stockControl" className="text-base font-semibold">
-                      Control de Stock
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Activa esta opción para controlar el inventario del producto
-                    </p>
-                  </div>
-                  <Switch
-                    id="stockControl"
-                    checked={newProductData.stockControlEnabled}
-                    onCheckedChange={(checked) => 
-                      setNewProductData({ ...newProductData, stockControlEnabled: checked })
-                    }
-                  />
-                </div>
-
-                {newProductData.stockControlEnabled && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
-                    <div className="space-y-2">
-                      <Label htmlFor="stock">Stock Actual</Label>
-                      <Input
-                        id="stock"
-                        type="number"
-                        value={newProductData.stock}
-                        onChange={(e) => setNewProductData({ ...newProductData, stock: e.target.value })}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="stockAlert">Stock Mínimo (Alerta)</Label>
-                      <Input
-                        id="stockAlert"
-                        type="number"
-                        value={newProductData.stockAlert}
-                        onChange={(e) => setNewProductData({ ...newProductData, stockAlert: e.target.value })}
-                        placeholder="10"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Producto Destacado */}
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="space-y-0.5">
-                  <Label htmlFor="featured" className="text-base font-semibold">
-                    Producto Destacado
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Este producto aparecerá destacado en tu catálogo
-                  </p>
-                </div>
-                <Switch
-                  id="featured"
-                  checked={newProductData.featured}
-                  onCheckedChange={(checked) => 
-                    setNewProductData({ ...newProductData, featured: checked })
-                  }
-                />
-              </div>
-            </div>
-            
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setIsAddProductDialogOpen(false);
-                  setNewProductData({
-                    name: "",
-                    description: "",
-                    sku: "",
-                    price: "",
-                    cost: "",
-                    imageUrl: "",
-                    stockControlEnabled: false,
-                    stock: "0",
-                    stockAlert: "10",
-                    sellBy: "unit",
-                    taxType: "iva_19",
-                    promotionalPrice: "",
-                    featured: false,
-                  });
-                  setNewProductImagePreview(null);
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={createProductMutation.isPending}>
-                {createProductMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creando...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Crear Producto
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Dialog para crear producto - Formulario completo unificado */}
+      <ProductFormDialog
+        open={isAddProductDialogOpen}
+        onOpenChange={setIsAddProductDialogOpen}
+        onSuccess={() => {
+          utils.inventory.list.invalidate();
+        }}
+      />
     </div>
   );
 }
