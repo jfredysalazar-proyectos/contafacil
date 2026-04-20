@@ -417,35 +417,7 @@ export default function SalesPOS() {
   const CartContent = () => (
     <div className="flex-1 overflow-y-auto">
       {/* Customer Selection */}
-      <div className="space-y-3 px-6 py-4 border-b">
-        {/* Búsqueda por Cédula/NIT */}
-        <div className="space-y-1">
-          <Label className="text-xs font-medium text-gray-600">Buscar por Cédula / NIT</Label>
-          <div className="flex gap-2">
-            <Input
-              value={idNumberSearch}
-              onChange={(e) => setIdNumberSearch(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSearchByIdNumber(); } }}
-              placeholder="Ej: 1234567890"
-              className="h-9 text-sm flex-1"
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={handleSearchByIdNumber}
-              disabled={isSearchingByIdNumber}
-              className="h-9 px-3"
-            >
-              {isSearchingByIdNumber ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-        </div>
-
+      <div className="space-y-2 px-6 py-4 border-b">
         <Label>Cliente (opcional)</Label>
         <div className="flex gap-2">
           <Popover open={openCustomerPopover} onOpenChange={setOpenCustomerPopover}>
