@@ -535,19 +535,38 @@ export async function getSaleItemsBySaleId(saleId: number, userId: number) {
 export async function getSalesByUserId(userId: number, startDate?: Date, endDate?: Date) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const conditions = [eq(sales.userId, userId)];
-  
+
   if (startDate && endDate) {
     conditions.push(gte(sales.saleDate, startDate));
     conditions.push(lte(sales.saleDate, endDate));
   }
-  
-  return await db
-    .select()
+
+  const rows = await db
+    .select({
+      id: sales.id,
+      userId: sales.userId,
+      customerId: sales.customerId,
+      customerName: customers.name,
+      saleNumber: sales.saleNumber,
+      saleDate: sales.saleDate,
+      subtotal: sales.subtotal,
+      tax: sales.tax,
+      discount: sales.discount,
+      total: sales.total,
+      paymentMethod: sales.paymentMethod,
+      status: sales.status,
+      notes: sales.notes,
+      createdAt: sales.createdAt,
+      updatedAt: sales.updatedAt,
+    })
     .from(sales)
+    .leftJoin(customers, eq(sales.customerId, customers.id))
     .where(and(...conditions))
     .orderBy(desc(sales.saleDate));
+
+  return rows;
 }
 
 export async function getSaleById(id: number, userId: number) {
