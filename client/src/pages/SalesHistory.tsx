@@ -43,11 +43,20 @@ export default function SalesHistory() {
 
   const utils = trpc.useUtils();
 
-  // Construir parámetros de fecha para la query
+  // Construir parámetros de fecha para la query.
+  // IMPORTANTE: new Date("yyyy-MM-dd") parsea como UTC medianoche, lo que en
+  // Colombia (UTC-5) resulta en el día anterior. Se usan los componentes locales
+  // (año, mes, día) para construir la fecha en la zona horaria del navegador.
   const queryParams = useMemo(() => {
     const params: { startDate?: Date; endDate?: Date } = {};
-    if (dateFrom) params.startDate = startOfDay(new Date(dateFrom));
-    if (dateTo) params.endDate = endOfDay(new Date(dateTo));
+    if (dateFrom) {
+      const [y, m, d] = dateFrom.split("-").map(Number);
+      params.startDate = startOfDay(new Date(y, m - 1, d));
+    }
+    if (dateTo) {
+      const [y, m, d] = dateTo.split("-").map(Number);
+      params.endDate = endOfDay(new Date(y, m - 1, d));
+    }
     return params;
   }, [dateFrom, dateTo]);
 
