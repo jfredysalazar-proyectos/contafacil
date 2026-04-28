@@ -197,17 +197,20 @@ export default function SalesPOS() {
   };
 
   const addToCart = (product: any) => {
-    const productInventory = inventory?.find((inv: any) => inv.id === product.id);
-    const availableStock = productInventory?.stock || 0;
-    
     const existingItem = cartItems.find(item => item.productId === product.id);
-    const currentQuantity = existingItem ? existingItem.quantity : 0;
-    
-    if (currentQuantity >= availableStock) {
-      toast.error(`Stock insuficiente para ${product.name}. Disponible: ${availableStock}`);
-      return;
+
+    // Los servicios no requieren control de inventario
+    if (!product.isService) {
+      const productInventory = inventory?.find((inv: any) => inv.productId === product.id);
+      const availableStock = productInventory?.stock || 0;
+      const currentQuantity = existingItem ? existingItem.quantity : 0;
+
+      if (currentQuantity >= availableStock) {
+        toast.error(`Stock insuficiente para ${product.name}. Disponible: ${availableStock}`);
+        return;
+      }
     }
-    
+
     if (existingItem) {
       setCartItems(cartItems.map(item =>
         item.productId === product.id
@@ -235,13 +238,17 @@ export default function SalesPOS() {
       removeFromCart(productId);
       return;
     }
-    
-    const productInventory = inventory?.find((inv: any) => inv.id === productId);
-    const availableStock = productInventory?.stock || 0;
-    
-    if (newQuantity > availableStock) {
-      toast.error(`Stock insuficiente. Disponible: ${availableStock}`);
-      return;
+
+    const product = products?.find(p => p.id === productId);
+    // Los servicios no requieren control de inventario
+    if (!product?.isService) {
+      const productInventory = inventory?.find((inv: any) => inv.productId === productId);
+      const availableStock = productInventory?.stock || 0;
+
+      if (newQuantity > availableStock) {
+        toast.error(`Stock insuficiente. Disponible: ${availableStock}`);
+        return;
+      }
     }
     
     setCartItems(cartItems.map(item =>
@@ -705,10 +712,14 @@ export default function SalesPOS() {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 md:gap-4">
                 {filteredProducts.map((product) => {
-                  const productInventory = inventory?.find((inv: any) => inv.id === product.id);
+                  // Los servicios no tienen inventario: siempre disponibles
+                  const isService = (product as any).isService;
+                  const productInventory = !isService
+                    ? inventory?.find((inv: any) => inv.productId === product.id)
+                    : undefined;
                   const stock = productInventory?.stock || 0;
-                  const isOutOfStock = stock === 0;
-                  
+                  const isOutOfStock = !isService && stock === 0;
+
                   return (
                     <Card
                       key={product.id}
@@ -720,8 +731,8 @@ export default function SalesPOS() {
                       <CardContent className="p-2 md:p-4 space-y-1 md:space-y-2">
                         <div className="aspect-square bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center mb-1 md:mb-2 overflow-hidden">
                           {product.imageUrl ? (
-                            <img 
-                              src={product.imageUrl} 
+                            <img
+                              src={product.imageUrl}
                               alt={product.name}
                               className="w-full h-full object-cover"
                             />
@@ -731,7 +742,7 @@ export default function SalesPOS() {
                             </span>
                           )}
                         </div>
-                        
+
                         <div>
                           <h3 className="font-semibold text-xs md:text-sm line-clamp-2 min-h-[2rem] md:min-h-[2.5rem]">
                             {product.name}
@@ -740,9 +751,18 @@ export default function SalesPOS() {
                             ${Number(product.price).toLocaleString("es-CO")}
                           </p>
                           <div className="flex items-center justify-between mt-1 md:mt-2">
-                            <Badge variant={stock > 10 ? "default" : stock > 0 ? "secondary" : "destructive"} className="text-xs">
-                              Stock: {stock}
-                            </Badge>
+                            {isService ? (
+                              <Badge variant="outline" className="text-xs">
+                                Servicio
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant={stock > 10 ? "default" : stock > 0 ? "secondary" : "destructive"}
+                                className="text-xs"
+                              >
+                                Stock: {stock}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </CardContent>

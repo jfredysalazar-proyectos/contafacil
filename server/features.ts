@@ -399,9 +399,13 @@ export const salesRouter = router({
       
       // Validar stock disponible antes de crear la venta
       for (const item of itemsWithNames) {
+        // Los servicios no tienen inventario físico, se omite la validación de stock
+        const product = await dbQueries.getProductById(item.productId, ctx.user.id);
+        if (product?.isService) continue;
+
         const inventory = await dbQueries.getInventoryByProductId(item.productId, ctx.user.id);
         const currentStock = inventory?.stock || 0;
-        
+
         if (currentStock < item.quantity) {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -418,8 +422,11 @@ export const salesRouter = router({
         itemsWithNames
       );
       
-      // Actualizar inventario automáticamente
+      // Actualizar inventario automáticamente (solo para productos físicos, no servicios)
       for (const item of items) {
+        const productForInventory = await dbQueries.getProductById(item.productId, ctx.user.id);
+        if (productForInventory?.isService) continue;
+
         await dbQueries.addInventoryMovement({
           userId: ctx.user.id,
           productId: item.productId,
@@ -562,16 +569,20 @@ export const salesRouter = router({
       
       // Validar stock disponible considerando los items actuales
       for (const newItem of items) {
+        // Los servicios no tienen inventario físico, se omite la validación de stock
+        const product = await dbQueries.getProductById(newItem.productId, ctx.user.id);
+        if (product?.isService) continue;
+
         const inventory = await dbQueries.getInventoryByProductId(newItem.productId, ctx.user.id);
         const currentStock = inventory?.stock || 0;
-        
+
         // Encontrar si este producto ya estaba en la venta
         const oldItem = currentItems.find((item: any) => item.productId === newItem.productId);
         const oldQuantity = oldItem?.quantity || 0;
-        
+
         // Stock disponible = stock actual + cantidad que se va a devolver - cantidad nueva
         const availableStock = currentStock + oldQuantity;
-        
+
         if (availableStock < newItem.quantity) {
           throw new TRPCError({
             code: "BAD_REQUEST",

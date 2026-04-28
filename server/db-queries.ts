@@ -85,7 +85,7 @@ export async function createProduct(data: InsertProduct) {
       INSERT INTO products (
         userId, categoryId, name, description, sku, barcode, price, cost,
         hasVariations, imageUrl, qrCode, stockControlEnabled, stock, stockAlert,
-        sellBy, promotionalPrice, featured
+        sellBy, promotionalPrice, featured, isService
       ) VALUES (
         ${data.userId},
         ${categoryId},
@@ -103,7 +103,8 @@ export async function createProduct(data: InsertProduct) {
         ${data.stockAlert},
         ${data.sellBy},
         ${promotionalPrice},
-        ${data.featured}
+        ${data.featured},
+        ${data.isService ?? false}
       )
     `);
     console.log('DEBUG: INSERT exitoso, insertId:', result.insertId);
