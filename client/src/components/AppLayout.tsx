@@ -24,6 +24,7 @@ import {
   ChevronRight,
   Settings,
   Landmark,
+  BarChart3,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -59,7 +60,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
         { name: "Códigos QR", href: "/product-qr-codes", icon: QrCode },
       ]
     },
-    { name: "Inventario", href: "/inventory", icon: Warehouse },
+    { 
+      name: "Inventario", 
+      href: "/inventory", 
+      icon: Warehouse,
+      submenu: [
+        { name: "Informes de Inventario", href: "/inventory/reports", icon: BarChart3 },
+      ]
+    },
     { name: "Clientes", href: "/customers", icon: Users },
     { name: "Proveedores", href: "/suppliers", icon: Building2 },
     { name: "Cotizaciones", href: "/quotations", icon: FileText },

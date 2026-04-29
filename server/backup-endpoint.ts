@@ -484,6 +484,174 @@ export function registerBackupEndpoint(app: Express) {
       return res.status(500).json({ error: "Error al generar el reporte: " + error.message });
     }
   });
+
+  // ─── Reporte de Rotación de Inventario ───────────────────────────────────────
+  // GET /api/inventory/rotation/excel?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+  app.get("/api/inventory/rotation/excel", async (req: Request, res: Response) => {
+    try {
+      const token =
+        req.cookies?.[COOKIE_NAME] ||
+        (req.headers.authorization?.startsWith("Bearer ")
+          ? req.headers.authorization.slice(7)
+          : null);
+      if (!token) return res.status(401).json({ error: "No autenticado" });
+      const payload = await verifyToken(token);
+      if (!payload) return res.status(401).json({ error: "Sesión inválida" });
+      const user = await getUserById(payload.userId);
+      if (!user) return res.status(401).json({ error: "Usuario no encontrado" });
+
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+
+      const report = await dbQueries.getInventoryRotationReport(payload.userId, startDate, endDate);
+      const { products: prods, periodDays } = report;
+
+      const rows = prods.map((p: any) => ({
+        "Producto": p.productName,
+        "SKU": p.sku || "",
+        "Stock Actual": p.currentStock,
+        "Costo Prom. (CPP)": p.averageCost > 0 ? p.averageCost : "",
+        "Valor Inventario": p.inventoryValue > 0 ? Math.round(p.inventoryValue) : 0,
+        "Unidades Vendidas": p.totalSold,
+        "Ingresos por Ventas": Math.round(p.totalRevenue),
+        "Costo de Ventas (COGS)": Math.round(p.totalCOGS),
+        "Utilidad Bruta": Math.round(p.grossProfit),
+        "Margen Bruto %": p.totalRevenue > 0 ? Math.round(p.grossMarginPct * 100) / 100 : "",
+        "N° Transacciones": p.numberOfSales,
+        "Índice de Rotación": p.rotationRate > 0 ? Math.round(p.rotationRate * 100) / 100 : 0,
+        "Días de Inventario": p.daysOfInventory ? Math.round(p.daysOfInventory) : "Sin ventas",
+        "Última Venta": p.lastSaleDate ? formatDate(p.lastSaleDate) : "Sin ventas",
+        "Días sin Venta": p.daysSinceLastSale ?? "Sin ventas",
+        "Clasificación": p.classification,
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws["!cols"] = autoColWidths(rows);
+      XLSX.utils.book_append_sheet(wb, ws, "Rotación");
+
+      // Hoja de resumen
+      const businessName = (user as any).businessName || user.name || "Mi Negocio";
+      const totalSold = prods.reduce((a: number, p: any) => a + p.totalSold, 0);
+      const totalRevenue = prods.reduce((a: number, p: any) => a + p.totalRevenue, 0);
+      const totalCOGS = prods.reduce((a: number, p: any) => a + p.totalCOGS, 0);
+      const totalGP = totalRevenue - totalCOGS;
+      const highRot = prods.filter((p: any) => p.classification === "Alta rotación").length;
+      const medRot = prods.filter((p: any) => p.classification === "Rotación media").length;
+      const lowRot = prods.filter((p: any) => p.classification === "Baja rotación").length;
+      const noMov = prods.filter((p: any) => p.classification === "Sin movimiento").length;
+
+      const resumen = [
+        ["REPORTE DE ROTACIÓN DE INVENTARIO - CONTAFÁCIL"],
+        [""],
+        ["Empresa:", businessName],
+        ["Período:", `${formatDate(report.startDate)} al ${formatDate(report.endDate)}`],
+        ["Días del período:", periodDays],
+        ["Fecha del reporte:", formatDate(new Date())],
+        [""],
+        ["RESUMEN GENERAL"],
+        ["Total productos físicos:", prods.length],
+        ["Alta rotación:", highRot],
+        ["Rotación media:", medRot],
+        ["Baja rotación:", lowRot],
+        ["Sin movimiento:", noMov],
+        [""],
+        ["Total unidades vendidas:", totalSold],
+        ["Total ingresos por ventas:", Math.round(totalRevenue)],
+        ["Total costo de ventas (COGS):", Math.round(totalCOGS)],
+        ["Utilidad bruta total:", Math.round(totalGP)],
+        ["Margen bruto promedio %:", totalRevenue > 0 ? Math.round((totalGP / totalRevenue) * 10000) / 100 : 0],
+      ];
+      const wsResumen = XLSX.utils.aoa_to_sheet(resumen);
+      wsResumen["!cols"] = [{ wch: 38 }, { wch: 25 }];
+      XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
+
+      const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      const today = new Date().toISOString().split("T")[0];
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", `attachment; filename="ContaFacil_Rotacion_${today}.xlsx"`);
+      res.setHeader("Content-Length", buf.length);
+      return res.send(buf);
+    } catch (error: any) {
+      console.error("[Rotación] Error al generar reporte Excel:", error);
+      return res.status(500).json({ error: "Error al generar el reporte: " + error.message });
+    }
+  });
+
+  // ─── Reporte COGS / Utilidad Bruta ───────────────────────────────────────────
+  // GET /api/reports/cogs/excel?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+  app.get("/api/reports/cogs/excel", async (req: Request, res: Response) => {
+    try {
+      const token =
+        req.cookies?.[COOKIE_NAME] ||
+        (req.headers.authorization?.startsWith("Bearer ")
+          ? req.headers.authorization.slice(7)
+          : null);
+      if (!token) return res.status(401).json({ error: "No autenticado" });
+      const payload = await verifyToken(token);
+      if (!payload) return res.status(401).json({ error: "Sesión inválida" });
+      const user = await getUserById(payload.userId);
+      if (!user) return res.status(401).json({ error: "Usuario no encontrado" });
+
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+
+      const report = await dbQueries.getCOGSReport(payload.userId, startDate, endDate);
+      const { rows: dataRows, totals } = report;
+
+      const excelRows = dataRows.map((r: any) => ({
+        "N° Venta": r.saleNumber,
+        "Fecha": formatDate(r.saleDate),
+        "Cliente": r.customerName || "Consumidor Final",
+        "Producto": r.productName,
+        "SKU": r.sku || "",
+        "Tipo": r.isService ? "Servicio" : "Producto",
+        "Cantidad": r.quantity,
+        "Precio Unitario": parseFloat(r.unitPrice) || 0,
+        "Costo Unitario (CPP)": parseFloat(r.unitCost) || 0,
+        "Ingresos": parseFloat(r.revenue) || 0,
+        "COGS": parseFloat(r.cogs) || 0,
+        "Utilidad Bruta": parseFloat(r.grossProfit) || 0,
+        "Margen Bruto %": Math.round(parseFloat(r.grossMarginPct) * 100) / 100 || 0,
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(excelRows);
+      ws["!cols"] = autoColWidths(excelRows);
+      XLSX.utils.book_append_sheet(wb, ws, "Detalle COGS");
+
+      // Hoja de resumen
+      const businessName = (user as any).businessName || user.name || "Mi Negocio";
+      const resumen = [
+        ["REPORTE COGS / UTILIDAD BRUTA - CONTAFÁCIL"],
+        [""],
+        ["Empresa:", businessName],
+        ["Período:", `${formatDate(report.startDate)} al ${formatDate(report.endDate)}`],
+        ["Fecha del reporte:", formatDate(new Date())],
+        [""],
+        ["RESUMEN"],
+        ["Total ingresos por ventas:", Math.round(totals.totalRevenue)],
+        ["Costo de ventas (COGS):", Math.round(totals.totalCOGS)],
+        ["Utilidad bruta:", Math.round(totals.totalGrossProfit)],
+        ["Margen bruto %:", Math.round(totals.grossMarginPct * 100) / 100],
+        [""],
+        ["Nota: El COGS de servicios es $0 (no tienen costo de inventario)"],
+      ];
+      const wsResumen = XLSX.utils.aoa_to_sheet(resumen);
+      wsResumen["!cols"] = [{ wch: 38 }, { wch: 25 }];
+      XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
+
+      const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      const today = new Date().toISOString().split("T")[0];
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", `attachment; filename="ContaFacil_COGS_${today}.xlsx"`);
+      res.setHeader("Content-Length", buf.length);
+      return res.send(buf);
+    } catch (error: any) {
+      console.error("[COGS] Error al generar reporte Excel:", error);
+      return res.status(500).json({ error: "Error al generar el reporte: " + error.message });
+    }
+  });
 }
 
 // Utilidades

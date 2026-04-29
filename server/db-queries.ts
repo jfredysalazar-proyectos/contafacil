@@ -8,6 +8,8 @@ import {
   suppliers,
   sales,
   saleItems,
+  saleReturns,
+  saleReturnItems,
   expenses,
   receivables,
   payables,
@@ -461,16 +463,28 @@ export async function deleteSupplier(id: number, userId: number) {
 export async function createSale(saleData: InsertSale, items: Omit<InsertSaleItem, 'saleId'>[]) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   // Insertar venta
   const saleResult = await db.insert(sales).values(saleData);
   const saleId = Number(saleResult[0].insertId);
-  
-  // Insertar items de venta
-  const itemsWithSaleId = items.map(item => ({ ...item, saleId }));
-  await db.insert(saleItems).values(itemsWithSaleId);
-  
-  // Actualizar inventario
+
+  // Capturar el CPP actual de cada producto para COGS y guardar en saleItems.unitCost
+  const itemsWithCost = await Promise.all(
+    items.map(async (item) => {
+      const invRecord = await db
+        .select({ averageCost: inventory.averageCost })
+        .from(inventory)
+        .where(eq(inventory.productId, item.productId))
+        .limit(1);
+      const unitCostValue = invRecord[0]?.averageCost
+        ? parseFloat(invRecord[0].averageCost as string)
+        : 0;
+      return { ...item, saleId, unitCost: String(unitCostValue) };
+    })
+  );
+  await db.insert(saleItems).values(itemsWithCost);
+
+  // Actualizar inventario (stock)
   for (const item of items) {
     const inventoryRecord = await db
       .select()
@@ -478,13 +492,13 @@ export async function createSale(saleData: InsertSale, items: Omit<InsertSaleIte
       .where(
         and(
           eq(inventory.productId, item.productId),
-          item.variationId 
+          item.variationId
             ? eq(inventory.variationId, item.variationId)
             : sql`${inventory.variationId} IS NULL`
         )
       )
       .limit(1);
-    
+
     if (inventoryRecord.length > 0) {
       const newStock = inventoryRecord[0].stock - item.quantity;
       await db
@@ -493,7 +507,7 @@ export async function createSale(saleData: InsertSale, items: Omit<InsertSaleIte
         .where(eq(inventory.id, inventoryRecord[0].id));
     }
   }
-  
+
   return saleId;
 }
 
@@ -1661,4 +1675,291 @@ export async function getSerialNumbersBySaleId(saleId: number, userId: number) {
     }
     throw error;
   }
+}
+
+// ==================== DEVOLUCIONES DE VENTAS ====================
+
+export async function createSaleReturn(data: {
+  userId: number;
+  saleId: number;
+  returnNumber: string;
+  returnDate: Date;
+  reason?: string;
+  notes?: string;
+  items: Array<{
+    saleItemId: number;
+    productId: number;
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    unitCost: number;
+    subtotal: number;
+    restockInventory: boolean;
+  }>;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Verificar que la venta pertenece al usuario
+  const sale = await db
+    .select()
+    .from(sales)
+    .where(and(eq(sales.id, data.saleId), eq(sales.userId, data.userId)))
+    .limit(1);
+  if (sale.length === 0) throw new Error("Venta no encontrada o sin autorización");
+
+  // Calcular total de reembolso
+  const totalRefund = data.items.reduce((acc, item) => acc + item.subtotal, 0);
+
+  // Insertar la devolución
+  const returnResult = await db.execute(sql`
+    INSERT INTO saleReturns (userId, saleId, returnNumber, returnDate, reason, notes, totalRefund, status)
+    VALUES (
+      ${data.userId}, ${data.saleId}, ${data.returnNumber}, ${data.returnDate},
+      ${data.reason ?? null}, ${data.notes ?? null}, ${totalRefund}, 'completed'
+    )
+  `);
+  const returnId = Number((returnResult as any)[0].insertId);
+
+  // Insertar items de devolución y reintegrar stock si aplica
+  for (const item of data.items) {
+    await db.execute(sql`
+      INSERT INTO saleReturnItems (returnId, saleItemId, productId, productName, quantity, unitPrice, unitCost, subtotal, restockInventory)
+      VALUES (
+        ${returnId}, ${item.saleItemId}, ${item.productId}, ${item.productName},
+        ${item.quantity}, ${item.unitPrice}, ${item.unitCost}, ${item.subtotal}, ${item.restockInventory}
+      )
+    `);
+
+    // Reintegrar stock al inventario si el producto es físico y se marcó para restock
+    if (item.restockInventory) {
+      // El CPP no cambia en devoluciones de clientes: el producto regresa al mismo costo
+      // con el que salió, por lo que el CPP promedio se mantiene igual.
+      await addInventoryMovement({
+        userId: data.userId,
+        productId: item.productId,
+        movementType: "in",
+        quantity: item.quantity,
+        unitCost: item.unitCost > 0 ? item.unitCost : undefined,
+        reason: "Devolución de cliente",
+        notes: `Devolución ${data.returnNumber} - Venta #${data.saleId}`,
+      });
+    }
+  }
+
+  return { success: true, returnId, totalRefund };
+}
+
+export async function getSaleReturnsByUserId(userId: number, limit = 100) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.execute(sql`
+    SELECT
+      sr.*,
+      s.saleNumber,
+      c.name AS customerName
+    FROM saleReturns sr
+    LEFT JOIN sales s ON sr.saleId = s.id
+    LEFT JOIN customers c ON s.customerId = c.id
+    WHERE sr.userId = ${userId}
+    ORDER BY sr.returnDate DESC
+    LIMIT ${limit}
+  `);
+  return result as any[];
+}
+
+export async function getSaleReturnsBySaleId(saleId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.execute(sql`
+    SELECT sr.*, sri.*,
+      sr.id AS returnId, sr.returnNumber, sr.returnDate, sr.totalRefund, sr.reason, sr.notes
+    FROM saleReturns sr
+    JOIN saleReturnItems sri ON sri.returnId = sr.id
+    WHERE sr.saleId = ${saleId} AND sr.userId = ${userId}
+    ORDER BY sr.returnDate DESC
+  `);
+  return result as any[];
+}
+
+// ==================== ROTACIÓN DE INVENTARIO ====================
+
+export async function getInventoryRotationReport(userId: number, startDate?: Date, endDate?: Date) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const start = startDate ?? new Date(new Date().getFullYear(), 0, 1); // Inicio del año
+  const end = endDate ?? new Date();
+
+  // Días del período
+  const periodDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+
+  // Ventas por producto en el período
+  const salesData = await db.execute(sql`
+    SELECT
+      si.productId,
+      p.name AS productName,
+      p.sku,
+      p.isService,
+      SUM(si.quantity) AS totalSold,
+      SUM(si.subtotal) AS totalRevenue,
+      SUM(si.quantity * si.unitCost) AS totalCOGS,
+      COUNT(DISTINCT si.saleId) AS numberOfSales,
+      MAX(s.saleDate) AS lastSaleDate
+    FROM saleItems si
+    JOIN sales s ON si.saleId = s.id
+    JOIN products p ON si.productId = p.id
+    WHERE s.userId = ${userId}
+      AND s.saleDate >= ${start}
+      AND s.saleDate <= ${end}
+      AND s.status != 'cancelled'
+      AND p.isService = FALSE
+    GROUP BY si.productId, p.name, p.sku, p.isService
+    ORDER BY totalSold DESC
+  `) as any[];
+
+  // Stock actual e inventario
+  const inventoryData = await db.execute(sql`
+    SELECT
+      p.id AS productId,
+      p.name AS productName,
+      p.sku,
+      COALESCE(i.stock, 0) AS currentStock,
+      COALESCE(i.averageCost, 0) AS averageCost,
+      i.lastRestockDate
+    FROM products p
+    LEFT JOIN inventory i ON i.productId = p.id AND i.userId = ${userId}
+    WHERE p.userId = ${userId} AND p.isService = FALSE
+  `) as any[];
+
+  // Combinar datos
+  const inventoryMap = new Map<number, any>();
+  for (const inv of inventoryData) {
+    inventoryMap.set(Number(inv.productId), inv);
+  }
+
+  const salesMap = new Map<number, any>();
+  for (const s of salesData) {
+    salesMap.set(Number(s.productId), s);
+  }
+
+  // Todos los productos físicos
+  const allProducts = inventoryData.map((inv: any) => {
+    const productId = Number(inv.productId);
+    const sale = salesMap.get(productId);
+    const currentStock = Number(inv.currentStock) || 0;
+    const avgCost = parseFloat(inv.averageCost) || 0;
+    const totalSold = sale ? Number(sale.totalSold) : 0;
+    const totalRevenue = sale ? parseFloat(sale.totalRevenue) : 0;
+    const totalCOGS = sale ? parseFloat(sale.totalCOGS) : 0;
+    const grossProfit = totalRevenue - totalCOGS;
+
+    // Rotación = unidades vendidas / stock promedio
+    // Stock promedio estimado = (stock actual + stock actual + unidades vendidas) / 2
+    const avgStock = (currentStock + totalSold) / 2;
+    const rotationRate = avgStock > 0 ? totalSold / avgStock : 0;
+
+    // Días de inventario = días del período / rotación (cuántos días tarda en agotarse)
+    const daysOfInventory = rotationRate > 0 ? periodDays / rotationRate : null;
+
+    // Última venta
+    const lastSaleDate = sale?.lastSaleDate ?? null;
+    const daysSinceLastSale = lastSaleDate
+      ? Math.round((end.getTime() - new Date(lastSaleDate).getTime()) / (1000 * 60 * 60 * 24))
+      : null;
+
+    // Clasificación
+    let classification: string;
+    if (totalSold === 0) {
+      classification = "Sin movimiento";
+    } else if (rotationRate >= 2) {
+      classification = "Alta rotación";
+    } else if (rotationRate >= 0.5) {
+      classification = "Rotación media";
+    } else {
+      classification = "Baja rotación";
+    }
+
+    return {
+      productId,
+      productName: inv.productName,
+      sku: inv.sku || "",
+      currentStock,
+      averageCost: avgCost,
+      inventoryValue: currentStock * avgCost,
+      totalSold,
+      totalRevenue,
+      totalCOGS,
+      grossProfit,
+      grossMarginPct: totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0,
+      numberOfSales: sale ? Number(sale.numberOfSales) : 0,
+      rotationRate,
+      daysOfInventory,
+      lastSaleDate,
+      daysSinceLastSale,
+      classification,
+    };
+  });
+
+  return { products: allProducts, periodDays, startDate: start, endDate: end };
+}
+
+// ==================== REPORTE COGS / UTILIDAD BRUTA ====================
+
+export async function getCOGSReport(userId: number, startDate?: Date, endDate?: Date) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const start = startDate ?? new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const end = endDate ?? new Date();
+
+  // Ventas con COGS por ítem
+  const rows = await db.execute(sql`
+    SELECT
+      s.id AS saleId,
+      s.saleNumber,
+      s.saleDate,
+      c.name AS customerName,
+      si.productId,
+      si.productName,
+      p.sku,
+      p.isService,
+      si.quantity,
+      si.unitPrice,
+      si.unitCost,
+      si.subtotal AS revenue,
+      (si.quantity * si.unitCost) AS cogs,
+      (si.subtotal - si.quantity * si.unitCost) AS grossProfit,
+      CASE
+        WHEN si.subtotal > 0
+        THEN ((si.subtotal - si.quantity * si.unitCost) / si.subtotal) * 100
+        ELSE 0
+      END AS grossMarginPct
+    FROM saleItems si
+    JOIN sales s ON si.saleId = s.id
+    LEFT JOIN customers c ON s.customerId = c.id
+    LEFT JOIN products p ON si.productId = p.id
+    WHERE s.userId = ${userId}
+      AND s.saleDate >= ${start}
+      AND s.saleDate <= ${end}
+      AND s.status != 'cancelled'
+    ORDER BY s.saleDate DESC, s.id DESC
+  `) as any[];
+
+  // Totales agregados
+  const totals = rows.reduce(
+    (acc: any, row: any) => ({
+      totalRevenue: acc.totalRevenue + parseFloat(row.revenue || 0),
+      totalCOGS: acc.totalCOGS + parseFloat(row.cogs || 0),
+      totalGrossProfit: acc.totalGrossProfit + parseFloat(row.grossProfit || 0),
+    }),
+    { totalRevenue: 0, totalCOGS: 0, totalGrossProfit: 0 }
+  );
+
+  const grossMarginPct =
+    totals.totalRevenue > 0 ? (totals.totalGrossProfit / totals.totalRevenue) * 100 : 0;
+
+  return { rows, totals: { ...totals, grossMarginPct }, startDate: start, endDate: end };
 }

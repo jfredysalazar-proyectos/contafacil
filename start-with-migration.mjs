@@ -150,6 +150,51 @@ async function runMigrationIfNeeded() {
         statements.push("ALTER TABLE `inventory` ADD COLUMN `averageCost` DECIMAL(15,4) NOT NULL DEFAULT 0 AFTER `stock`");
       }
 
+      // Verificar y agregar columna unitCost en saleItems (CPP al momento de la venta, para COGS)
+      const [saleItemsCostRows] = await connection.execute(`
+        SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saleItems' AND COLUMN_NAME = 'unitCost'
+      `);
+      if (saleItemsCostRows.length === 0) {
+        statements.push("ALTER TABLE `saleItems` ADD COLUMN `unitCost` DECIMAL(15,4) DEFAULT 0 AFTER `unitPrice`");
+      }
+
+      // Crear tabla saleReturns si no existe
+      statements.push(`
+        CREATE TABLE IF NOT EXISTS \`saleReturns\` (
+          \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+          \`userId\` INT NOT NULL,
+          \`saleId\` INT NOT NULL,
+          \`returnNumber\` VARCHAR(50) NOT NULL,
+          \`returnDate\` DATETIME NOT NULL,
+          \`reason\` TEXT NULL,
+          \`notes\` TEXT NULL,
+          \`totalRefund\` DECIMAL(15,2) NOT NULL,
+          \`status\` ENUM('completed','cancelled') NOT NULL DEFAULT 'completed',
+          \`createdAt\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          INDEX \`saleReturns_userId_idx\` (\`userId\`),
+          INDEX \`saleReturns_saleId_idx\` (\`saleId\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+
+      // Crear tabla saleReturnItems si no existe
+      statements.push(`
+        CREATE TABLE IF NOT EXISTS \`saleReturnItems\` (
+          \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+          \`returnId\` INT NOT NULL,
+          \`saleItemId\` INT NOT NULL,
+          \`productId\` INT NOT NULL,
+          \`productName\` TEXT NOT NULL,
+          \`quantity\` INT NOT NULL,
+          \`unitPrice\` DECIMAL(15,2) NOT NULL,
+          \`unitCost\` DECIMAL(15,4) DEFAULT 0,
+          \`subtotal\` DECIMAL(15,2) NOT NULL,
+          \`restockInventory\` BOOLEAN NOT NULL DEFAULT TRUE,
+          \`createdAt\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          INDEX \`saleReturnItems_returnId_idx\` (\`returnId\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+
       // Verificar y agregar columna servicesModuleEnabled en users
       const [svcModRows] = await connection.execute(`
         SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS

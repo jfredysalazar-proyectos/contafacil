@@ -224,6 +224,7 @@ export const saleItems = mysqlTable("saleItems", {
   productName: text("productName").notNull(),
   quantity: int("quantity").notNull(),
   unitPrice: decimal("unitPrice", { precision: 15, scale: 2 }).notNull(),
+  unitCost: decimal("unitCost", { precision: 15, scale: 4 }).default("0"),  // CPP al momento de la venta (para COGS)
   subtotal: decimal("subtotal", { precision: 15, scale: 2 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
@@ -232,6 +233,50 @@ export const saleItems = mysqlTable("saleItems", {
 
 export type SaleItem = typeof saleItems.$inferSelect;
 export type InsertSaleItem = typeof saleItems.$inferInsert;
+
+/**
+ * Tabla de devoluciones de ventas (clientes)
+ */
+export const saleReturns = mysqlTable("saleReturns", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  saleId: int("saleId").notNull(),
+  returnNumber: varchar("returnNumber", { length: 50 }).notNull(),
+  returnDate: datetime("returnDate").notNull(),
+  reason: text("reason"),
+  notes: text("notes"),
+  totalRefund: decimal("totalRefund", { precision: 15, scale: 2 }).notNull(),
+  status: mysqlEnum("status", ["completed", "cancelled"]).default("completed").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("saleReturns_userId_idx").on(table.userId),
+  saleIdIdx: index("saleReturns_saleId_idx").on(table.saleId),
+}));
+
+export type SaleReturn = typeof saleReturns.$inferSelect;
+export type InsertSaleReturn = typeof saleReturns.$inferInsert;
+
+/**
+ * Tabla de items de devoluciones de ventas
+ */
+export const saleReturnItems = mysqlTable("saleReturnItems", {
+  id: int("id").autoincrement().primaryKey(),
+  returnId: int("returnId").notNull(),
+  saleItemId: int("saleItemId").notNull(),
+  productId: int("productId").notNull(),
+  productName: text("productName").notNull(),
+  quantity: int("quantity").notNull(),
+  unitPrice: decimal("unitPrice", { precision: 15, scale: 2 }).notNull(),
+  unitCost: decimal("unitCost", { precision: 15, scale: 4 }).default("0"),
+  subtotal: decimal("subtotal", { precision: 15, scale: 2 }).notNull(),
+  restockInventory: boolean("restockInventory").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  returnIdIdx: index("saleReturnItems_returnId_idx").on(table.returnId),
+}));
+
+export type SaleReturnItem = typeof saleReturnItems.$inferSelect;
+export type InsertSaleReturnItem = typeof saleReturnItems.$inferInsert;
 
 /**
  * Tabla de categorías de gastos

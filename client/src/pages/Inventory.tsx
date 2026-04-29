@@ -13,7 +13,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
   Loader2, Package, AlertTriangle, Plus, Minus, Edit, Search,
-  FileSpreadsheet, TrendingUp, DollarSign, Boxes,
+  FileSpreadsheet, TrendingUp, DollarSign, Boxes, History, ArrowUpCircle, ArrowDownCircle, SlidersHorizontal,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -48,6 +48,16 @@ export default function Inventory() {
   const [quickSupplierPhone, setQuickSupplierPhone] = useState("");
 
   const [isDownloadingExcel, setIsDownloadingExcel] = useState(false);
+
+  // Estado del modal de historial de movimientos
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [historyProduct, setHistoryProduct] = useState<any>(null);
+  const [historyProductId, setHistoryProductId] = useState<number | null>(null);
+
+  const { data: movementsData, isLoading: isLoadingMovements } = trpc.inventory.movements.useQuery(
+    historyProductId ? { productId: historyProductId } : { productId: 0 },
+    { enabled: !!historyProductId }
+  );
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -211,6 +221,12 @@ export default function Inventory() {
     setSelectedProduct(product);
     setAdjustStock(product.stock?.toString() || "0");
     setAdjustStockDialogOpen(true);
+  };
+
+  const openHistoryDialog = (product: any) => {
+    setHistoryProduct(product);
+    setHistoryProductId(product.productId || product.id);
+    setHistoryDialogOpen(true);
   };
 
   const handleCreateQuickSupplier = (e: React.FormEvent) => {
@@ -454,6 +470,9 @@ export default function Inventory() {
                               <Button onClick={() => openAdjustStockDialog(item)} size="sm" variant="outline" title="Ajustar inventario">
                                 <Edit className="h-4 w-4" />
                               </Button>
+                              <Button onClick={() => openHistoryDialog(item)} size="sm" variant="outline" title="Historial de movimientos" className="text-purple-600 hover:text-purple-700 hover:bg-purple-50">
+                                <History className="h-4 w-4" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -624,6 +643,100 @@ export default function Inventory() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Historial de Movimientos */}
+      <Dialog open={historyDialogOpen} onOpenChange={(open) => { if (!open) { setHistoryDialogOpen(false); setHistoryProduct(null); setHistoryProductId(null); } }}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-purple-600" />
+              Historial de Movimientos
+            </DialogTitle>
+            <DialogDescription>
+              <strong>{historyProduct?.productName || historyProduct?.name}</strong> — Todas las entradas, salidas y ajustes
+            </DialogDescription>
+          </DialogHeader>
+
+          {isLoadingMovements ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-6 w-6 animate-spin text-purple-500" />
+            </div>
+          ) : !movementsData || (movementsData as any[]).length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground">
+              <History className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p>No hay movimientos registrados para este producto</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead className="text-right">Cantidad</TableHead>
+                    <TableHead className="text-right">Costo Unit.</TableHead>
+                    <TableHead className="text-right">Stock Resultante</TableHead>
+                    <TableHead>Motivo / Notas</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(movementsData as any[]).map((mov: any) => {
+                    const isEntry = mov.type === "entry" || mov.type === "return";
+                    const isAdjust = mov.type === "adjustment";
+                    return (
+                      <TableRow key={mov.id}>
+                        <TableCell className="text-sm whitespace-nowrap">
+                          {new Date(mov.createdAt).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" })}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            {isEntry ? (
+                              <ArrowUpCircle className="h-4 w-4 text-green-600" />
+                            ) : isAdjust ? (
+                              <SlidersHorizontal className="h-4 w-4 text-blue-600" />
+                            ) : (
+                              <ArrowDownCircle className="h-4 w-4 text-red-500" />
+                            )}
+                            <span className={`text-xs font-medium ${
+                              isEntry ? "text-green-700" : isAdjust ? "text-blue-700" : "text-red-600"
+                            }`}>
+                              {mov.type === "entry" && "Entrada"}
+                              {mov.type === "exit" && "Salida"}
+                              {mov.type === "adjustment" && "Ajuste"}
+                              {mov.type === "return" && "Devolución"}
+                              {mov.type === "sale" && "Venta"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          <span className={isEntry ? "text-green-700" : isAdjust ? "text-blue-700" : "text-red-600"}>
+                            {isEntry ? "+" : isAdjust ? "→" : "-"}{Math.abs(mov.quantity)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right text-sm">
+                          {mov.unitCost && parseFloat(mov.unitCost) > 0
+                            ? `$${parseFloat(mov.unitCost).toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            : "-"}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {mov.stockAfter ?? "-"}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                          {mov.reason || mov.notes || "-"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" onClick={() => setHistoryDialogOpen(false)}>Cerrar</Button>
+          </div>
         </DialogContent>
       </Dialog>
 

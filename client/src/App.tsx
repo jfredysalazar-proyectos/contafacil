@@ -30,6 +30,7 @@ import MembershipAdmin from "./pages/MembershipAdmin";
 import MembershipExpired from "./pages/MembershipExpired";
 import Unauthorized from "./pages/Unauthorized";
 import CashRegister from "./pages/CashRegister";
+import InventoryReports from "./pages/InventoryReports";
 
 function Router() {
   return (
@@ -50,6 +51,9 @@ function Router() {
       </Route>
       <Route path="/inventory">
         <AppLayout><Inventory /></AppLayout>
+      </Route>
+      <Route path="/inventory/reports">
+        <AppLayout><InventoryReports /></AppLayout>
       </Route>
       <Route path="/customers">
         <AppLayout><Customers /></AppLayout>

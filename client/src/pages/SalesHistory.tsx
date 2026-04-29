@@ -6,11 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Loader2, FileText, Download, Eye, ArrowLeft, CalendarDays, X } from "lucide-react";
+import { Loader2, FileText, Download, Eye, ArrowLeft, CalendarDays, X, RotateCcw, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { generateReceiptPDF } from "@/lib/pdfGenerator";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, subDays } from "date-fns";
 import { es } from "date-fns/locale";
@@ -35,6 +37,15 @@ export default function SalesHistory() {
   const [dateTo, setDateTo] = useState<string>("");
   const [activeShortcut, setActiveShortcut] = useState<string | null>(null);
 
+  // Estado del modal de devoluciones
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnSale, setReturnSale] = useState<any>(null);
+  const [returnSaleItems, setReturnSaleItems] = useState<any[]>([]);
+  const [returnSelections, setReturnSelections] = useState<Record<number, { selected: boolean; quantity: number; restock: boolean }>>({});
+  const [returnReason, setReturnReason] = useState("");
+  const [returnNotes, setReturnNotes] = useState("");
+  const [isLoadingReturnItems, setIsLoadingReturnItems] = useState(false);
+
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       setLocation("/login");
@@ -44,9 +55,6 @@ export default function SalesHistory() {
   const utils = trpc.useUtils();
 
   // Construir parámetros de fecha para la query.
-  // IMPORTANTE: new Date("yyyy-MM-dd") parsea como UTC medianoche, lo que en
-  // Colombia (UTC-5) resulta en el día anterior. Se usan los componentes locales
-  // (año, mes, día) para construir la fecha en la zona horaria del navegador.
   const queryParams = useMemo(() => {
     const params: { startDate?: Date; endDate?: Date } = {};
     if (dateFrom) {
@@ -65,6 +73,22 @@ export default function SalesHistory() {
   );
   const { data: customers } = trpc.customers.list.useQuery();
 
+  const createReturnMutation = trpc.saleReturns.create.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Devolución registrada. Reembolso: $${Number(data.totalRefund).toLocaleString("es-CO")}`);
+      setShowReturnModal(false);
+      setReturnSale(null);
+      setReturnSaleItems([]);
+      setReturnSelections({});
+      setReturnReason("");
+      setReturnNotes("");
+      utils.inventory.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error("Error al registrar devolución: " + error.message);
+    },
+  });
+
   // Aplicar atajo de fecha
   const applyShortcut = (shortcut: typeof DATE_SHORTCUTS[0]) => {
     const { from, to } = shortcut.getValue();
@@ -80,7 +104,6 @@ export default function SalesHistory() {
     setActiveShortcut(null);
   };
 
-  // Actualizar atajo activo cuando el usuario cambia las fechas manualmente
   const handleDateFromChange = (val: string) => {
     setDateFrom(val);
     setActiveShortcut(null);
@@ -105,6 +128,78 @@ export default function SalesHistory() {
       { count: 0, subtotal: 0, tax: 0, total: 0 }
     );
   }, [sales]);
+
+  // Abrir modal de devolución
+  const handleOpenReturn = async (sale: any) => {
+    setReturnSale(sale);
+    setReturnReason("");
+    setReturnNotes("");
+    setReturnSelections({});
+    setIsLoadingReturnItems(true);
+    setShowReturnModal(true);
+    try {
+      const items = await utils.sales.getItems.fetch({ saleId: sale.id });
+      // Solo productos físicos (no servicios) pueden devolverse al inventario
+      setReturnSaleItems(items);
+      const initialSelections: Record<number, { selected: boolean; quantity: number; restock: boolean }> = {};
+      items.forEach((item: any) => {
+        initialSelections[item.id] = {
+          selected: false,
+          quantity: item.quantity,
+          restock: !item.isService,
+        };
+      });
+      setReturnSelections(initialSelections);
+    } catch (e) {
+      toast.error("Error al cargar los ítems de la venta");
+    } finally {
+      setIsLoadingReturnItems(false);
+    }
+  };
+
+  // Confirmar devolución
+  const handleConfirmReturn = () => {
+    if (!returnSale) return;
+    const selectedItems = returnSaleItems
+      .filter((item: any) => returnSelections[item.id]?.selected)
+      .map((item: any) => {
+        const sel = returnSelections[item.id];
+        const qty = Math.min(Math.max(1, sel.quantity), item.quantity);
+        const unitPrice = parseFloat(item.unitPrice) || 0;
+        return {
+          saleItemId: item.id,
+          productId: item.productId,
+          productName: item.productName,
+          quantity: qty,
+          unitPrice,
+          unitCost: parseFloat(item.unitCost || "0") || 0,
+          subtotal: unitPrice * qty,
+          restockInventory: sel.restock,
+        };
+      });
+
+    if (selectedItems.length === 0) {
+      toast.error("Selecciona al menos un producto para devolver");
+      return;
+    }
+
+    createReturnMutation.mutate({
+      saleId: returnSale.id,
+      reason: returnReason || undefined,
+      notes: returnNotes || undefined,
+      items: selectedItems,
+    });
+  };
+
+  const totalRefundPreview = useMemo(() => {
+    return returnSaleItems
+      .filter((item: any) => returnSelections[item.id]?.selected)
+      .reduce((acc: number, item: any) => {
+        const sel = returnSelections[item.id];
+        const qty = Math.min(Math.max(1, sel.quantity), item.quantity);
+        return acc + parseFloat(item.unitPrice || "0") * qty;
+      }, 0);
+  }, [returnSaleItems, returnSelections]);
 
   const handleViewPDF = async (sale: any) => {
     if (!user) return;
@@ -400,7 +495,7 @@ export default function SalesHistory() {
                           ${Number(sale.total).toLocaleString("es-CO")}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-end gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -416,6 +511,15 @@ export default function SalesHistory() {
                               title="Descargar comprobante"
                             >
                               <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenReturn(sale)}
+                              title="Registrar devolución"
+                              className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            >
+                              <RotateCcw className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
@@ -443,6 +547,159 @@ export default function SalesHistory() {
                 title="Comprobante PDF"
               />
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de devolución */}
+      <Dialog open={showReturnModal} onOpenChange={(open) => { if (!open) { setShowReturnModal(false); setReturnSale(null); } }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-orange-600" />
+              Registrar Devolución
+            </DialogTitle>
+            <DialogDescription>
+              {returnSale && (
+                <span>Venta <strong>{returnSale.saleNumber || `#${returnSale.id}`}</strong> — Selecciona los productos a devolver</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Aviso */}
+            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+              <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <span>El stock de los productos físicos marcados con "Reintegrar al inventario" se devolverá automáticamente. El CPP no cambia en devoluciones de clientes.</span>
+            </div>
+
+            {/* Ítems de la venta */}
+            {isLoadingReturnItems ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Productos de la venta</Label>
+                {returnSaleItems.map((item: any) => {
+                  const sel = returnSelections[item.id];
+                  if (!sel) return null;
+                  return (
+                    <div key={item.id} className={`border rounded-lg p-3 space-y-2 transition-colors ${sel.selected ? "border-orange-300 bg-orange-50" : "border-gray-200"}`}>
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id={`item-${item.id}`}
+                          checked={sel.selected}
+                          onCheckedChange={(checked) =>
+                            setReturnSelections((prev) => ({
+                              ...prev,
+                              [item.id]: { ...prev[item.id], selected: !!checked },
+                            }))
+                          }
+                        />
+                        <div className="flex-1">
+                          <label htmlFor={`item-${item.id}`} className="font-medium cursor-pointer">
+                            {item.productName}
+                          </label>
+                          <p className="text-xs text-gray-500">
+                            Vendido: {item.quantity} × ${Number(item.unitPrice).toLocaleString("es-CO")} = ${Number(item.subtotal).toLocaleString("es-CO")}
+                          </p>
+                        </div>
+                      </div>
+                      {sel.selected && (
+                        <div className="ml-7 flex flex-wrap gap-4 items-center">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-gray-600">Cantidad a devolver</Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={item.quantity}
+                              value={sel.quantity}
+                              onChange={(e) =>
+                                setReturnSelections((prev) => ({
+                                  ...prev,
+                                  [item.id]: { ...prev[item.id], quantity: parseInt(e.target.value) || 1 },
+                                }))
+                              }
+                              className="w-24 h-8 text-sm"
+                            />
+                          </div>
+                          {!item.isService && (
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                id={`restock-${item.id}`}
+                                checked={sel.restock}
+                                onCheckedChange={(checked) =>
+                                  setReturnSelections((prev) => ({
+                                    ...prev,
+                                    [item.id]: { ...prev[item.id], restock: !!checked },
+                                  }))
+                                }
+                              />
+                              <label htmlFor={`restock-${item.id}`} className="text-xs text-gray-700 cursor-pointer">
+                                Reintegrar al inventario
+                              </label>
+                            </div>
+                          )}
+                          <p className="text-sm font-semibold text-orange-700">
+                            Subtotal: ${(parseFloat(item.unitPrice) * Math.min(Math.max(1, sel.quantity), item.quantity)).toLocaleString("es-CO")}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Motivo y notas */}
+            <div className="space-y-1">
+              <Label htmlFor="returnReason" className="text-sm">Motivo de la devolución</Label>
+              <Input
+                id="returnReason"
+                placeholder="Ej: Producto defectuoso, no era lo que pedía..."
+                value={returnReason}
+                onChange={(e) => setReturnReason(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="returnNotes" className="text-sm">Notas adicionales (opcional)</Label>
+              <Textarea
+                id="returnNotes"
+                placeholder="Observaciones internas..."
+                value={returnNotes}
+                onChange={(e) => setReturnNotes(e.target.value)}
+                rows={2}
+              />
+            </div>
+
+            {/* Total de reembolso */}
+            {totalRefundPreview > 0 && (
+              <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                <span className="text-sm font-medium text-green-800">Total a reembolsar:</span>
+                <span className="text-lg font-bold text-green-700">
+                  ${totalRefundPreview.toLocaleString("es-CO")}
+                </span>
+              </div>
+            )}
+
+            {/* Botones */}
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => { setShowReturnModal(false); setReturnSale(null); }}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleConfirmReturn}
+                disabled={createReturnMutation.isPending || isLoadingReturnItems}
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                {createReturnMutation.isPending ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Procesando...</>
+                ) : (
+                  <><RotateCcw className="h-4 w-4 mr-2" /> Confirmar Devolución</>
+                )}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

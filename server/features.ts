@@ -171,6 +171,38 @@ export const inventoryRouter = router({
       }
       return await dbQueries.getInventoryMovementsByUserId(ctx.user.id, input.limit);
     }),
+
+  // Informe de rotación de inventario
+  rotationReport: protectedProcedure
+    .input(
+      z.object({
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+      }).optional()
+    )
+    .query(async ({ input, ctx }) => {
+      return await dbQueries.getInventoryRotationReport(
+        ctx.user.id,
+        input?.startDate,
+        input?.endDate
+      );
+    }),
+
+  // Reporte COGS / Utilidad bruta
+  cogsReport: protectedProcedure
+    .input(
+      z.object({
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+      }).optional()
+    )
+    .query(async ({ input, ctx }) => {
+      return await dbQueries.getCOGSReport(
+        ctx.user.id,
+        input?.startDate,
+        input?.endDate
+      );
+    }),
 });
 
 // ==================== CLIENTES ====================
@@ -1018,6 +1050,60 @@ export const quotationsRouter = router({
           message: error instanceof Error ? error.message : "Error al convertir cotización a venta",
         });
       }
+    }),
+});
+
+// ==================== DEVOLUCIONES DE VENTAS ====================
+
+export const saleReturnsRouter = router({
+  // Crear una devolución
+  create: protectedProcedure
+    .input(
+      z.object({
+        saleId: z.number(),
+        returnDate: z.date().optional(),
+        reason: z.string().optional(),
+        notes: z.string().optional(),
+        items: z.array(
+          z.object({
+            saleItemId: z.number(),
+            productId: z.number(),
+            productName: z.string(),
+            quantity: z.number().positive(),
+            unitPrice: z.number(),
+            unitCost: z.number().default(0),
+            subtotal: z.number(),
+            restockInventory: z.boolean().default(true),
+          })
+        ).min(1),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Generar número de devolución automático
+      const returnNumber = `DEV-${Date.now()}`;
+      return await dbQueries.createSaleReturn({
+        userId: ctx.user.id,
+        saleId: input.saleId,
+        returnNumber,
+        returnDate: input.returnDate ?? new Date(),
+        reason: input.reason,
+        notes: input.notes,
+        items: input.items,
+      });
+    }),
+
+  // Listar todas las devoluciones del usuario
+  list: protectedProcedure
+    .input(z.object({ limit: z.number().optional() }).optional())
+    .query(async ({ input, ctx }) => {
+      return await dbQueries.getSaleReturnsByUserId(ctx.user.id, input?.limit ?? 100);
+    }),
+
+  // Devoluciones de una venta específica
+  getBySaleId: protectedProcedure
+    .input(z.object({ saleId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      return await dbQueries.getSaleReturnsBySaleId(input.saleId, ctx.user.id);
     }),
 });
 
