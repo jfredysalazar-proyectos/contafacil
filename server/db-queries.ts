@@ -1257,9 +1257,11 @@ export async function getInventoryMovementsByProductId(productId: number, userId
     WHERE im.productId = ${productId} AND im.userId = ${userId}
     ORDER BY im.createdAt DESC
     LIMIT ${limit}
-  `) as any[];
+  `);
   
-  return result;
+  // db.execute() con MySQL2 devuelve [rows, fields]. Extraer solo las filas.
+  const rows = Array.isArray((result as any)[0]) ? (result as any)[0] : result;
+  return rows as any[];
 }
 
 export async function getInventoryMovementsByUserId(userId: number, limit: number = 100) {
@@ -1279,7 +1281,9 @@ export async function getInventoryMovementsByUserId(userId: number, limit: numbe
     LIMIT ${limit}
   `);
   
-  return result as any[];
+  // db.execute() con MySQL2 devuelve [rows, fields]. Extraer solo las filas.
+  const rows2 = Array.isArray((result as any)[0]) ? (result as any)[0] : result;
+  return rows2 as any[];
 }
 
 export async function getLowStockProducts(userId: number) {
