@@ -705,7 +705,17 @@ export default function Inventory() {
                     const rawDate = mov.createdAt;
                     let dateDisplay = "-";
                     try {
-                      const d = rawDate instanceof Date ? rawDate : new Date(rawDate);
+                      let d: Date;
+                      if (rawDate instanceof Date) {
+                        d = rawDate;
+                      } else if (typeof rawDate === "string") {
+                        // MySQL devuelve "2026-02-03 19:06:19" (con espacio, no T)
+                        // new Date() no parsea este formato en Safari/Firefox
+                        const isoStr = rawDate.replace(" ", "T");
+                        d = new Date(isoStr);
+                      } else {
+                        d = new Date(rawDate);
+                      }
                       if (!isNaN(d.getTime())) {
                         dateDisplay = d.toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" });
                       }
