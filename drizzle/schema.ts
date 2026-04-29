@@ -175,6 +175,7 @@ export const inventory = mysqlTable("inventory", {
   productId: int("productId").notNull(),
   variationId: int("variationId"),
   stock: int("stock").default(0).notNull(),
+  averageCost: decimal("averageCost", { precision: 15, scale: 4 }).default("0"),
   lastRestockDate: timestamp("lastRestockDate"),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({

@@ -375,6 +375,115 @@ export function registerBackupEndpoint(app: Express) {
       return res.status(500).json({ error: "Error al generar el backup: " + error.message });
     }
   });
+
+  // ─── Reporte de Inventario Actual ────────────────────────────────────────────
+  // GET /api/inventory/excel
+  // Genera un Excel con el estado actual del inventario de productos físicos,
+  // incluyendo stock, costo promedio ponderado y valoración total.
+  app.get("/api/inventory/excel", async (req: Request, res: Response) => {
+    try {
+      // Autenticación
+      const token =
+        req.cookies?.[COOKIE_NAME] ||
+        (req.headers.authorization?.startsWith("Bearer ")
+          ? req.headers.authorization.slice(7)
+          : null);
+      if (!token) return res.status(401).json({ error: "No autenticado" });
+
+      const payload = await verifyToken(token);
+      if (!payload) return res.status(401).json({ error: "Sesión inválida" });
+
+      const user = await getUserById(payload.userId);
+      if (!user) return res.status(401).json({ error: "Usuario no encontrado" });
+
+      const inventoryItems = await dbQueries.getInventoryByUserId(payload.userId);
+
+      // Calcular totales
+      let totalUnidades = 0;
+      let totalValorInventario = 0;
+
+      const rows = inventoryItems.map((item: any) => {
+        const stock = item.stock ?? 0;
+        const avgCost = parseFloat(item.averageCost ?? "0") || 0;
+        const price = parseFloat(item.productPrice ?? "0") || 0;
+        const valorCosto = stock * avgCost;
+        const valorVenta = stock * price;
+        const margen = avgCost > 0 ? ((price - avgCost) / avgCost) * 100 : 0;
+
+        totalUnidades += stock;
+        totalValorInventario += valorCosto;
+
+        return {
+          "Producto": item.productName || "",
+          "SKU": item.sku || "",
+          "Stock Actual": stock,
+          "Costo Promedio (CPP)": avgCost > 0 ? avgCost : "",
+          "Precio de Venta": price > 0 ? price : "",
+          "Valor en Inventario (costo)": valorCosto > 0 ? valorCosto : 0,
+          "Valor en Inventario (venta)": valorVenta > 0 ? valorVenta : 0,
+          "Margen %": avgCost > 0 && price > 0 ? Math.round(margen * 100) / 100 : "",
+          "Stock Mínimo": item.stockAlert ?? "",
+          "Última Entrada": item.lastRestockDate ? formatDate(item.lastRestockDate) : "",
+        };
+      });
+
+      // Fila de totales
+      rows.push({
+        "Producto": "TOTAL",
+        "SKU": "",
+        "Stock Actual": totalUnidades,
+        "Costo Promedio (CPP)": "",
+        "Precio de Venta": "",
+        "Valor en Inventario (costo)": totalValorInventario,
+        "Valor en Inventario (venta)": inventoryItems.reduce((acc: number, item: any) => {
+          return acc + (item.stock ?? 0) * (parseFloat(item.productPrice ?? "0") || 0);
+        }, 0),
+        "Margen %": "",
+        "Stock Mínimo": "",
+        "Última Entrada": "",
+      } as any);
+
+      const wb = XLSX.utils.book_new();
+
+      // Hoja principal: Inventario
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws["!cols"] = autoColWidths(rows);
+      XLSX.utils.book_append_sheet(wb, ws, "Inventario Actual");
+
+      // Hoja de resumen
+      const businessName = (user as any).businessName || user.name || "Mi Negocio";
+      const now = new Date();
+      const resumen = [
+        ["REPORTE DE INVENTARIO ACTUAL - CONTAFÁCIL"],
+        [""],
+        ["Empresa:", businessName],
+        ["Fecha del reporte:", formatDate(now)],
+        ["Hora:", now.toLocaleTimeString("es-CO")],
+        [""],
+        ["Método de valuación:", "Costo Promedio Ponderado (CPP)"],
+        [""],
+        ["RESUMEN"],
+        ["Total productos físicos:", inventoryItems.length],
+        ["Total unidades en stock:", totalUnidades],
+        ["Valor total del inventario (a costo):", totalValorInventario],
+      ];
+      const wsResumen = XLSX.utils.aoa_to_sheet(resumen);
+      wsResumen["!cols"] = [{ wch: 38 }, { wch: 30 }];
+      XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
+
+      const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      const today = new Date().toISOString().split("T")[0];
+      const filename = `ContaFacil_Inventario_${today}.xlsx`;
+
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Length", buffer.length);
+      return res.send(buffer);
+    } catch (error: any) {
+      console.error("[Inventario] Error al generar reporte Excel:", error);
+      return res.status(500).json({ error: "Error al generar el reporte: " + error.message });
+    }
+  });
 }
 
 // Utilidades

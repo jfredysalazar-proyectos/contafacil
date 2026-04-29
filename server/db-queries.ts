@@ -237,18 +237,21 @@ export async function createOrUpdateInventory(data: InsertInventory) {
 export async function getInventoryByUserId(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
-  // Obtener todos los productos del usuario con su stock actual
-  // Si no tienen registro en inventory, el stock es 0
+
+  // Obtener solo productos físicos (no servicios) con su stock y costo promedio
   const result = await db
     .select({
       id: inventory.id,
       stock: inventory.stock,
+      averageCost: inventory.averageCost,
       lastRestockDate: inventory.lastRestockDate,
       productId: products.id,
       productName: products.name,
       productPrice: products.price,
+      productCost: products.cost,
       stockAlert: products.stockAlert,
+      sku: products.sku,
+      isService: products.isService,
       variationId: productVariations.id,
       variationName: productVariations.name,
     })
@@ -258,12 +261,15 @@ export async function getInventoryByUserId(userId: number) {
       eq(inventory.userId, userId)
     ))
     .leftJoin(productVariations, eq(inventory.variationId, productVariations.id))
-    .where(eq(products.userId, userId));
-  
-  // Asegurar que stock sea 0 si es null
+    .where(and(
+      eq(products.userId, userId),
+      eq(products.isService, false)   // Solo productos físicos
+    ));
+
   return result.map(item => ({
     ...item,
-    stock: item.stock ?? 0
+    stock: item.stock ?? 0,
+    averageCost: item.averageCost ? parseFloat(item.averageCost as string) : 0,
   }));
 }
 
@@ -1137,7 +1143,39 @@ export async function addInventoryMovement(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
+  // Obtener estado actual del inventario
+  const currentInventory = await getInventoryByProductId(data.productId, data.userId);
+  const currentStock = currentInventory?.stock || 0;
+  const currentAvgCost = parseFloat((currentInventory as any)?.averageCost ?? "0") || 0;
+
+  // Calcular nuevo stock
+  let newStock = currentStock;
+  if (data.movementType === "in") {
+    newStock = currentStock + data.quantity;
+  } else if (data.movementType === "out") {
+    newStock = Math.max(0, currentStock - data.quantity);
+  } else if (data.movementType === "adjustment") {
+    newStock = data.quantity;
+  }
+
+  // ─── Costo Promedio Ponderado (CPP) ───────────────────────────────────────
+  // Solo se recalcula en entradas con costo unitario informado y para productos
+  // físicos (los servicios nunca llegan aquí con movementType "in" desde ventas).
+  // Fórmula: CPP_nuevo = (stock_actual × CPP_actual + cantidad_nueva × costo_nuevo)
+  //                      ÷ (stock_actual + cantidad_nueva)
+  let newAvgCost = currentAvgCost;
+  if (data.movementType === "in" && data.unitCost && data.unitCost > 0) {
+    const totalValueBefore = currentStock * currentAvgCost;
+    const totalValueNew = data.quantity * data.unitCost;
+    const totalUnits = currentStock + data.quantity;
+    newAvgCost = totalUnits > 0 ? (totalValueBefore + totalValueNew) / totalUnits : data.unitCost;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
+  // Calcular totalCost si no viene informado
+  const totalCost = data.totalCost ?? (data.unitCost ? data.unitCost * data.quantity : undefined);
+
   // Insertar movimiento
   await db.execute(sql`
     INSERT INTO inventoryMovements (
@@ -1145,33 +1183,36 @@ export async function addInventoryMovement(data: {
       movementType, quantity, unitCost, totalCost, reason, notes
     ) VALUES (
       ${data.userId}, ${data.productId}, ${data.variationId ?? null}, ${data.supplierId ?? null}, ${data.saleId ?? null},
-      ${data.movementType}, ${data.quantity}, ${data.unitCost ?? null}, ${data.totalCost ?? null}, ${data.reason ?? null}, ${data.notes ?? null}
+      ${data.movementType}, ${data.quantity}, ${data.unitCost ?? null}, ${totalCost ?? null}, ${data.reason ?? null}, ${data.notes ?? null}
     )
   `);
-  
-  // Actualizar stock en la tabla inventory
-  const currentInventory = await getInventoryByProductId(data.productId, data.userId);
-  const currentStock = currentInventory?.stock || 0;
-  
-  let newStock = currentStock;
-  if (data.movementType === "in") {
-    newStock = currentStock + data.quantity;
-  } else if (data.movementType === "out") {
-    newStock = currentStock - data.quantity;
-  } else if (data.movementType === "adjustment") {
-    newStock = data.quantity; // Para ajustes, la cantidad es el nuevo stock total
+
+  // Actualizar stock y costo promedio en la tabla inventory
+  const existing = await getInventoryByProductId(data.productId, data.userId);
+  if (existing) {
+    await db.execute(sql`
+      UPDATE inventory
+      SET stock = ${newStock},
+          averageCost = ${newAvgCost},
+          lastRestockDate = ${data.movementType === "in" ? new Date() : (existing as any).lastRestockDate}
+      WHERE productId = ${data.productId} AND userId = ${data.userId}
+    `);
+  } else {
+    await db.execute(sql`
+      INSERT INTO inventory (userId, productId, stock, averageCost, lastRestockDate)
+      VALUES (${data.userId}, ${data.productId}, ${newStock}, ${newAvgCost}, ${new Date()})
+    `);
   }
-  
-  await updateInventoryStock(data.productId, data.userId, newStock);
-  
-  // También actualizar stock en la tabla products para mantener sincronización
+
+  // Sincronizar stock en la tabla products
   await db.execute(sql`
     UPDATE products
-    SET stock = ${newStock}
+    SET stock = ${newStock},
+        cost = CASE WHEN ${newAvgCost} > 0 THEN ${newAvgCost} ELSE cost END
     WHERE id = ${data.productId} AND userId = ${data.userId}
   `);
-  
-  return { success: true, newStock };
+
+  return { success: true, newStock, newAvgCost };
 }
 
 export async function getInventoryMovementsByProductId(productId: number, userId: number, limit: number = 50) {

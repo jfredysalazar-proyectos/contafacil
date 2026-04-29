@@ -141,6 +141,15 @@ async function runMigrationIfNeeded() {
         statements.push("ALTER TABLE `products` ADD COLUMN `isService` BOOLEAN NOT NULL DEFAULT FALSE");
       }
 
+      // Verificar y agregar columna averageCost en inventory (costo promedio ponderado)
+      const [avgCostRows] = await connection.execute(`
+        SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventory' AND COLUMN_NAME = 'averageCost'
+      `);
+      if (avgCostRows.length === 0) {
+        statements.push("ALTER TABLE `inventory` ADD COLUMN `averageCost` DECIMAL(15,4) NOT NULL DEFAULT 0 AFTER `stock`");
+      }
+
       // Verificar y agregar columna servicesModuleEnabled en users
       const [svcModRows] = await connection.execute(`
         SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
