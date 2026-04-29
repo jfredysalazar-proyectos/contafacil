@@ -1783,7 +1783,8 @@ export async function getSaleReturnsByUserId(userId: number, limit = 100) {
     ORDER BY sr.returnDate DESC
     LIMIT ${limit}
   `);
-  return result as any[];
+  const returnRows = Array.isArray((result as any)[0]) ? (result as any)[0] : result;
+  return returnRows as any[];
 }
 
 export async function getSaleReturnsBySaleId(saleId: number, userId: number) {
@@ -1798,7 +1799,8 @@ export async function getSaleReturnsBySaleId(saleId: number, userId: number) {
     WHERE sr.saleId = ${saleId} AND sr.userId = ${userId}
     ORDER BY sr.returnDate DESC
   `);
-  return result as any[];
+  const returnItemRows = Array.isArray((result as any)[0]) ? (result as any)[0] : result;
+  return returnItemRows as any[];
 }
 
 // ==================== ROTACIÓN DE INVENTARIO ====================
@@ -1814,7 +1816,7 @@ export async function getInventoryRotationReport(userId: number, startDate?: Dat
   const periodDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
 
   // Ventas por producto en el período
-  const salesData = await db.execute(sql`
+  const salesRaw = await db.execute(sql`
     SELECT
       si.productId,
       p.name AS productName,
@@ -1835,10 +1837,11 @@ export async function getInventoryRotationReport(userId: number, startDate?: Dat
       AND p.isService = FALSE
     GROUP BY si.productId, p.name, p.sku, p.isService
     ORDER BY totalSold DESC
-  `) as any[];
+  `);
+  const salesData: any[] = Array.isArray((salesRaw as any)[0]) ? (salesRaw as any)[0] : salesRaw as any[];
 
   // Stock actual e inventario
-  const inventoryData = await db.execute(sql`
+  const inventoryRaw = await db.execute(sql`
     SELECT
       p.id AS productId,
       p.name AS productName,
@@ -1849,7 +1852,8 @@ export async function getInventoryRotationReport(userId: number, startDate?: Dat
     FROM products p
     LEFT JOIN inventory i ON i.productId = p.id AND i.userId = ${userId}
     WHERE p.userId = ${userId} AND p.isService = FALSE
-  `) as any[];
+  `);
+  const inventoryData: any[] = Array.isArray((inventoryRaw as any)[0]) ? (inventoryRaw as any)[0] : inventoryRaw as any[];
 
   // Combinar datos
   const inventoryMap = new Map<number, any>();
@@ -1933,7 +1937,7 @@ export async function getCOGSReport(userId: number, startDate?: Date, endDate?: 
   const end = endDate ?? new Date();
 
   // Ventas con COGS por ítem
-  const rows = await db.execute(sql`
+  const rowsRaw = await db.execute(sql`
     SELECT
       s.id AS saleId,
       s.saleNumber,
@@ -1963,7 +1967,8 @@ export async function getCOGSReport(userId: number, startDate?: Date, endDate?: 
       AND s.saleDate <= ${end}
       AND s.status != 'cancelled'
     ORDER BY s.saleDate DESC, s.id DESC
-  `) as any[];
+  `);
+  const rows: any[] = Array.isArray((rowsRaw as any)[0]) ? (rowsRaw as any)[0] : rowsRaw as any[];
 
   // Totales agregados
   const totals = rows.reduce(
