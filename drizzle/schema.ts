@@ -468,6 +468,7 @@ export const inventoryMovements = mysqlTable("inventoryMovements", {
   quantity: int("quantity").notNull(),
   unitCost: decimal("unitCost", { precision: 15, scale: 2 }),
   totalCost: decimal("totalCost", { precision: 15, scale: 2 }),
+  stockAfter: int("stockAfter"),
   reason: text("reason"),
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

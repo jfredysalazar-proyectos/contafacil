@@ -54,7 +54,7 @@ export default function Inventory() {
   const [historyProduct, setHistoryProduct] = useState<any>(null);
   const [historyProductId, setHistoryProductId] = useState<number | null>(null);
 
-  const { data: movementsData, isLoading: isLoadingMovements } = trpc.inventory.movements.useQuery(
+  const { data: movementsData, isLoading: isLoadingMovements } = trpc.inventory.getMovements.useQuery(
     historyProductId ? { productId: historyProductId } : { productId: 0 },
     { enabled: !!historyProductId }
   );
@@ -683,8 +683,24 @@ export default function Inventory() {
                 </TableHeader>
                 <TableBody>
                   {(movementsData as any[]).map((mov: any) => {
-                    const isEntry = mov.type === "entry" || mov.type === "return";
-                    const isAdjust = mov.type === "adjustment";
+                    // La BD guarda movementType: "in" | "out" | "adjustment"
+                    const mType = mov.movementType || mov.type || "";
+                    const isEntry = mType === "in";
+                    const isAdjust = mType === "adjustment";
+                    const isOut = mType === "out";
+
+                    // Determinar etiqueta legible según el motivo
+                    let typeLabel = "Movimiento";
+                    if (isEntry) {
+                      const r = (mov.reason || "").toLowerCase();
+                      typeLabel = r.includes("devoluci") ? "Devolución" : "Entrada";
+                    } else if (isAdjust) {
+                      typeLabel = "Ajuste";
+                    } else if (isOut) {
+                      const r = (mov.reason || "").toLowerCase();
+                      typeLabel = r.includes("venta") ? "Venta" : "Salida";
+                    }
+
                     return (
                       <TableRow key={mov.id}>
                         <TableCell className="text-sm whitespace-nowrap">
@@ -702,11 +718,7 @@ export default function Inventory() {
                             <span className={`text-xs font-medium ${
                               isEntry ? "text-green-700" : isAdjust ? "text-blue-700" : "text-red-600"
                             }`}>
-                              {mov.type === "entry" && "Entrada"}
-                              {mov.type === "exit" && "Salida"}
-                              {mov.type === "adjustment" && "Ajuste"}
-                              {mov.type === "return" && "Devolución"}
-                              {mov.type === "sale" && "Venta"}
+                              {typeLabel}
                             </span>
                           </div>
                         </TableCell>

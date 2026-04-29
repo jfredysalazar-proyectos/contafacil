@@ -1194,10 +1194,10 @@ export async function addInventoryMovement(data: {
   await db.execute(sql`
     INSERT INTO inventoryMovements (
       userId, productId, variationId, supplierId, saleId,
-      movementType, quantity, unitCost, totalCost, reason, notes
+      movementType, quantity, unitCost, totalCost, stockAfter, reason, notes
     ) VALUES (
       ${data.userId}, ${data.productId}, ${data.variationId ?? null}, ${data.supplierId ?? null}, ${data.saleId ?? null},
-      ${data.movementType}, ${data.quantity}, ${data.unitCost ?? null}, ${totalCost ?? null}, ${data.reason ?? null}, ${data.notes ?? null}
+      ${data.movementType}, ${data.quantity}, ${data.unitCost ?? null}, ${totalCost ?? null}, ${newStock}, ${data.reason ?? null}, ${data.notes ?? null}
     )
   `);
 

@@ -195,6 +195,15 @@ async function runMigrationIfNeeded() {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
 
+      // Verificar y agregar columna stockAfter en inventoryMovements
+      const [stockAfterRows] = await connection.execute(`
+        SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventoryMovements' AND COLUMN_NAME = 'stockAfter'
+      `);
+      if (stockAfterRows.length === 0) {
+        statements.push("ALTER TABLE `inventoryMovements` ADD COLUMN `stockAfter` INT NULL AFTER `totalCost`");
+      }
+
       // Verificar y agregar columna servicesModuleEnabled en users
       const [svcModRows] = await connection.execute(`
         SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
