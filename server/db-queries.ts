@@ -1235,18 +1235,31 @@ export async function getInventoryMovementsByProductId(productId: number, userId
   
   const result = await db.execute(sql`
     SELECT 
-      im.*,
-      p.name as productName,
-      s.name as supplierName
+      im.id,
+      im.userId,
+      im.productId,
+      im.variationId,
+      im.supplierId,
+      im.saleId,
+      im.movementType,
+      im.quantity,
+      im.unitCost,
+      im.totalCost,
+      im.stockAfter,
+      im.reason,
+      im.notes,
+      im.createdAt,
+      p.name AS productName,
+      s.name AS supplierName
     FROM inventoryMovements im
     LEFT JOIN products p ON im.productId = p.id
     LEFT JOIN suppliers s ON im.supplierId = s.id
     WHERE im.productId = ${productId} AND im.userId = ${userId}
     ORDER BY im.createdAt DESC
     LIMIT ${limit}
-  `);
+  `) as any[];
   
-  return result as any[];
+  return result;
 }
 
 export async function getInventoryMovementsByUserId(userId: number, limit: number = 100) {

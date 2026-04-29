@@ -701,10 +701,23 @@ export default function Inventory() {
                       typeLabel = r.includes("venta") ? "Venta" : "Salida";
                     }
 
+                    // MySQL puede devolver createdAt como objeto Date, string ISO o timestamp
+                    const rawDate = mov.createdAt;
+                    let dateDisplay = "-";
+                    try {
+                      const d = rawDate instanceof Date ? rawDate : new Date(rawDate);
+                      if (!isNaN(d.getTime())) {
+                        dateDisplay = d.toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" });
+                      }
+                    } catch {}
+
+                    // MySQL puede devolver quantity como string
+                    const qty = typeof mov.quantity === "string" ? parseInt(mov.quantity, 10) : (mov.quantity ?? 0);
+
                     return (
                       <TableRow key={mov.id}>
                         <TableCell className="text-sm whitespace-nowrap">
-                          {new Date(mov.createdAt).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" })}
+                          {dateDisplay}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
@@ -724,7 +737,7 @@ export default function Inventory() {
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           <span className={isEntry ? "text-green-700" : isAdjust ? "text-blue-700" : "text-red-600"}>
-                            {isEntry ? "+" : isAdjust ? "→" : "-"}{Math.abs(mov.quantity)}
+                            {isEntry ? "+" : isAdjust ? "→" : "-"}{Math.abs(qty)}
                           </span>
                         </TableCell>
                         <TableCell className="text-right text-sm">
