@@ -162,14 +162,24 @@ export const inventoryRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
+      let rows: any[];
       if (input.productId) {
-        return await dbQueries.getInventoryMovementsByProductId(
+        rows = await dbQueries.getInventoryMovementsByProductId(
           input.productId,
           ctx.user.id,
           input.limit
         );
+      } else {
+        rows = await dbQueries.getInventoryMovementsByUserId(ctx.user.id, input.limit);
       }
-      return await dbQueries.getInventoryMovementsByUserId(ctx.user.id, input.limit);
+      // DEBUG: ver estructura real de la primera fila
+      if (rows && rows.length > 0) {
+        console.log('[DEBUG getMovements] keys:', Object.keys(rows[0]));
+        console.log('[DEBUG getMovements] first row:', JSON.stringify(rows[0]));
+      } else {
+        console.log('[DEBUG getMovements] rows:', JSON.stringify(rows));
+      }
+      return rows;
     }),
 
   // Informe de rotación de inventario
