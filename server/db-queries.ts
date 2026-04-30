@@ -109,17 +109,26 @@ export async function createProduct(data: InsertProduct) {
         ${data.isService ?? false}
       )
     `);
-    console.log('DEBUG: INSERT exitoso, insertId:', result.insertId);
+    // db.execute() con MySQL2 devuelve [rows, fields]; extraer el insertId correctamente
+    const insertId = (result as any).insertId ?? (result as any)[0]?.insertId;
+    console.log('DEBUG: INSERT exitoso, insertId:', insertId);
+    (result as any)._insertId = insertId; // guardar para uso posterior
   } catch (error) {
     console.error('ERROR en INSERT:', error);
     console.error('ERROR details:', JSON.stringify(error, null, 2));
     throw error;
   }
+
+  // Extraer el insertId de forma robusta
+  const insertId: number | undefined =
+    (result as any)._insertId ||
+    (result as any).insertId ||
+    (result as any)[0]?.insertId;
   
   // Si no había SKU, generar QR con el ID del producto
-  if (!qrCode && result.insertId) {
+  if (!qrCode && insertId) {
     const { generateProductQRCode } = await import('./qr-generator');
-    const productId = Number(result.insertId);
+    const productId = Number(insertId);
     qrCode = await generateProductQRCode(null, productId, data.name);
     
     // Actualizar el producto con el QR
@@ -136,9 +145,9 @@ export async function createProduct(data: InsertProduct) {
     !data.isService &&
     data.stock &&
     data.stock > 0 &&
-    result.insertId
+    insertId
   ) {
-    const productId = Number(result.insertId);
+    const productId = Number(insertId);
     const unitCost = cost ? parseFloat(cost) : 0;
     await addInventoryMovement({
       userId: data.userId,
