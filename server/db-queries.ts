@@ -516,29 +516,9 @@ export async function createSale(saleData: InsertSale, items: Omit<InsertSaleIte
   );
   await db.insert(saleItems).values(itemsWithCost);
 
-  // Actualizar inventario (stock)
-  for (const item of items) {
-    const inventoryRecord = await db
-      .select()
-      .from(inventory)
-      .where(
-        and(
-          eq(inventory.productId, item.productId),
-          item.variationId
-            ? eq(inventory.variationId, item.variationId)
-            : sql`${inventory.variationId} IS NULL`
-        )
-      )
-      .limit(1);
-
-    if (inventoryRecord.length > 0) {
-      const newStock = inventoryRecord[0].stock - item.quantity;
-      await db
-        .update(inventory)
-        .set({ stock: newStock })
-        .where(eq(inventory.id, inventoryRecord[0].id));
-    }
-  }
+  // NOTA: El descuento de stock se realiza en features.ts a través de addInventoryMovement(),
+  // que además registra el movimiento en inventoryMovements con CPP y stockAfter.
+  // NO se descuenta aquí para evitar doble descuento.
 
   return saleId;
 }
