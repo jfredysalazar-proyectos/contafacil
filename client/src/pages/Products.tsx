@@ -74,16 +74,17 @@ export default function Products() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/5">
       <div className="container py-8 space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-foreground">Productos</h1>
-            <p className="text-muted-foreground mt-2">
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground">Productos</h1>
+            <p className="text-muted-foreground mt-1">
               Gestiona tu catálogo de productos
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setLocation("/serial-numbers")}
             >
               <Package className="mr-2 h-4 w-4" />
@@ -91,12 +92,13 @@ export default function Products() {
             </Button>
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setLocation("/product-qr-codes")}
             >
               <QrCode className="mr-2 h-4 w-4" />
               Códigos QR
             </Button>
-            <Button onClick={() => { setEditingProduct(null); setIsDialogOpen(true); }}>
+            <Button size="sm" onClick={() => { setEditingProduct(null); setIsDialogOpen(true); }}>
               <Plus className="mr-2 h-4 w-4" />
               Nuevo Producto
             </Button>

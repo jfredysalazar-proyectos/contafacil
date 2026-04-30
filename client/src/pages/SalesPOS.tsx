@@ -12,6 +12,7 @@ import { Loader2, Plus, Trash2, Search, ShoppingCart, X, Package } from "lucide-
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/useMobile";
 
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -55,6 +56,11 @@ export default function SalesPOS() {
   
   // Estado para el diálogo de creación de producto (componente unificado)
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
+
+  // Detectar si es móvil para usar Dialog en lugar de Popover en el selector de cliente
+  const isMobile = useIsMobile();
+  const [openCustomerDialog, setOpenCustomerDialog] = useState(false);
+  const [mobileCustomerSearch, setMobileCustomerSearch] = useState("");
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -330,72 +336,137 @@ export default function SalesPOS() {
       <div className="space-y-2 px-6 py-4 border-b">
         <Label>Cliente (opcional)</Label>
         <div className="flex gap-2">
-          <Popover open={openCustomerPopover} onOpenChange={setOpenCustomerPopover}>
-            <PopoverTrigger asChild>
+          {/* ── Desktop: Popover con búsqueda integrada ── */}
+          {!isMobile && (
+            <Popover open={openCustomerPopover} onOpenChange={setOpenCustomerPopover}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openCustomerPopover}
+                  className="flex-1 justify-between"
+                >
+                  {customerId && customerId !== "none"
+                    ? customers?.find((c) => c.id.toString() === customerId)?.name
+                    : "Seleccionar cliente"}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0">
+                <Command>
+                  <CommandInput placeholder="Buscar cliente..." />
+                  <CommandEmpty>No se encontró cliente.</CommandEmpty>
+                  <CommandGroup className="max-h-64 overflow-auto">
+                    <CommandItem
+                      value="none"
+                      onSelect={() => {
+                        setCustomerId("none");
+                        setOpenCustomerPopover(false);
+                      }}
+                    >
+                      <Check className={cn("mr-2 h-4 w-4", customerId === "none" ? "opacity-100" : "opacity-0")} />
+                      Sin cliente
+                    </CommandItem>
+                    {customers?.map((customer) => (
+                      <CommandItem
+                        key={customer.id}
+                        value={`${customer.name} ${customer.idNumber || ''} ${customer.phone || ''}`}
+                        onSelect={() => {
+                          setCustomerId(customer.id.toString());
+                          setOpenCustomerPopover(false);
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", customerId === customer.id.toString() ? "opacity-100" : "opacity-0")} />
+                        <div className="flex flex-col">
+                          <span>{customer.name}</span>
+                          {customer.idNumber && <span className="text-xs text-blue-600 font-medium">{customer.idNumber}</span>}
+                          {customer.phone && <span className="text-xs text-gray-500">{customer.phone}</span>}
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {/* ── Móvil: botón que abre Dialog de pantalla completa ── */}
+          {isMobile && (
+            <>
               <Button
                 variant="outline"
-                role="combobox"
-                aria-expanded={openCustomerPopover}
                 className="flex-1 justify-between"
+                onClick={() => { setMobileCustomerSearch(""); setOpenCustomerDialog(true); }}
               >
                 {customerId && customerId !== "none"
                   ? customers?.find((c) => c.id.toString() === customerId)?.name
                   : "Seleccionar cliente"}
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[300px] p-0">
-              <Command>
-                <CommandInput placeholder="Buscar cliente..." />
-                <CommandEmpty>No se encontró cliente.</CommandEmpty>
-                <CommandGroup className="max-h-64 overflow-auto">
-                  <CommandItem
-                    value="none"
-                    onSelect={() => {
-                      setCustomerId("none");
-                      setOpenCustomerPopover(false);
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        customerId === "none" ? "opacity-100" : "opacity-0"
-                      )}
+
+              {/* Dialog de selección de cliente para móvil */}
+              <Dialog open={openCustomerDialog} onOpenChange={setOpenCustomerDialog}>
+                <DialogContent className="w-full max-w-full h-[90vh] flex flex-col p-0 gap-0 rounded-t-2xl">
+                  <DialogHeader className="px-4 pt-4 pb-2 border-b">
+                    <DialogTitle>Seleccionar Cliente</DialogTitle>
+                  </DialogHeader>
+                  {/* Campo de búsqueda */}
+                  <div className="px-4 py-3 border-b">
+                    <Input
+                      autoFocus
+                      placeholder="Buscar por nombre, cédula o teléfono..."
+                      value={mobileCustomerSearch}
+                      onChange={(e) => setMobileCustomerSearch(e.target.value)}
+                      className="h-11 text-base"
                     />
-                    Sin cliente
-                  </CommandItem>
-                  {customers?.map((customer) => (
-                    <CommandItem
-                      key={customer.id}
-                      value={`${customer.name} ${customer.idNumber || ''} ${customer.phone || ''}`}
-                      onSelect={() => {
-                        setCustomerId(customer.id.toString());
-                        setOpenCustomerPopover(false);
-                      }}
+                  </div>
+                  {/* Lista de clientes */}
+                  <div className="flex-1 overflow-y-auto">
+                    {/* Opción sin cliente */}
+                    <button
+                      className="w-full flex items-center gap-3 px-4 py-3 border-b hover:bg-gray-50 active:bg-gray-100 text-left"
+                      onClick={() => { setCustomerId("none"); setOpenCustomerDialog(false); }}
                     >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          customerId === customer.id.toString()
-                            ? "opacity-100"
-                            : "opacity-0"
-                        )}
-                      />
-                      <div className="flex flex-col">
-                        <span>{customer.name}</span>
-                        {customer.idNumber && (
-                          <span className="text-xs text-blue-600 font-medium">{customer.idNumber}</span>
-                        )}
-                        {customer.phone && (
-                          <span className="text-xs text-gray-500">{customer.phone}</span>
-                        )}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
-          </Popover>
+                      <Check className={cn("h-5 w-5 text-blue-600", customerId === "none" ? "opacity-100" : "opacity-0")} />
+                      <span className="text-gray-500">Sin cliente</span>
+                    </button>
+                    {customers
+                      ?.filter((c) => {
+                        const q = mobileCustomerSearch.toLowerCase();
+                        return !q ||
+                          c.name.toLowerCase().includes(q) ||
+                          (c.idNumber || "").toLowerCase().includes(q) ||
+                          (c.phone || "").toLowerCase().includes(q);
+                      })
+                      .map((customer) => (
+                        <button
+                          key={customer.id}
+                          className="w-full flex items-center gap-3 px-4 py-3 border-b hover:bg-gray-50 active:bg-gray-100 text-left"
+                          onClick={() => { setCustomerId(customer.id.toString()); setOpenCustomerDialog(false); }}
+                        >
+                          <Check className={cn("h-5 w-5 text-blue-600 flex-shrink-0", customerId === customer.id.toString() ? "opacity-100" : "opacity-0")} />
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-medium truncate">{customer.name}</span>
+                            {customer.idNumber && <span className="text-xs text-blue-600">{customer.idNumber}</span>}
+                            {customer.phone && <span className="text-xs text-gray-500">{customer.phone}</span>}
+                          </div>
+                        </button>
+                      ))
+                    }
+                    {customers?.filter((c) => {
+                      const q = mobileCustomerSearch.toLowerCase();
+                      return q && !c.name.toLowerCase().includes(q) &&
+                        !(c.idNumber || "").toLowerCase().includes(q) &&
+                        !(c.phone || "").toLowerCase().includes(q);
+                    }).length === customers?.length && mobileCustomerSearch && (
+                      <p className="text-center text-gray-400 py-8">No se encontró cliente</p>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
+
           <Button
             type="button"
             size="icon"
