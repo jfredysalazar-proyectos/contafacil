@@ -390,81 +390,18 @@ export default function SalesPOS() {
             </Popover>
           )}
 
-          {/* ── Móvil: botón que abre Dialog de pantalla completa ── */}
+          {/* ── Móvil: botón que abre Dialog de pantalla completa (Dialog montado fuera de CartContent) ── */}
           {isMobile && (
-            <>
-              <Button
-                variant="outline"
-                className="flex-1 justify-between"
-                onClick={() => { setMobileCustomerSearch(""); setOpenCustomerDialog(true); }}
-              >
-                {customerId && customerId !== "none"
-                  ? customers?.find((c) => c.id.toString() === customerId)?.name
-                  : "Seleccionar cliente"}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-
-              {/* Dialog de selección de cliente para móvil */}
-              <Dialog open={openCustomerDialog} onOpenChange={setOpenCustomerDialog}>
-                <DialogContent className="w-full max-w-full h-[90vh] flex flex-col p-0 gap-0 rounded-t-2xl">
-                  <DialogHeader className="px-4 pt-4 pb-2 border-b">
-                    <DialogTitle>Seleccionar Cliente</DialogTitle>
-                  </DialogHeader>
-                  {/* Campo de búsqueda */}
-                  <div className="px-4 py-3 border-b">
-                    <Input
-                      autoFocus
-                      placeholder="Buscar por nombre, cédula o teléfono..."
-                      value={mobileCustomerSearch}
-                      onChange={(e) => setMobileCustomerSearch(e.target.value)}
-                      className="h-11 text-base"
-                    />
-                  </div>
-                  {/* Lista de clientes */}
-                  <div className="flex-1 overflow-y-auto">
-                    {/* Opción sin cliente */}
-                    <button
-                      className="w-full flex items-center gap-3 px-4 py-3 border-b hover:bg-gray-50 active:bg-gray-100 text-left"
-                      onClick={() => { setCustomerId("none"); setOpenCustomerDialog(false); }}
-                    >
-                      <Check className={cn("h-5 w-5 text-blue-600", customerId === "none" ? "opacity-100" : "opacity-0")} />
-                      <span className="text-gray-500">Sin cliente</span>
-                    </button>
-                    {customers
-                      ?.filter((c) => {
-                        const q = mobileCustomerSearch.toLowerCase();
-                        return !q ||
-                          c.name.toLowerCase().includes(q) ||
-                          (c.idNumber || "").toLowerCase().includes(q) ||
-                          (c.phone || "").toLowerCase().includes(q);
-                      })
-                      .map((customer) => (
-                        <button
-                          key={customer.id}
-                          className="w-full flex items-center gap-3 px-4 py-3 border-b hover:bg-gray-50 active:bg-gray-100 text-left"
-                          onClick={() => { setCustomerId(customer.id.toString()); setOpenCustomerDialog(false); }}
-                        >
-                          <Check className={cn("h-5 w-5 text-blue-600 flex-shrink-0", customerId === customer.id.toString() ? "opacity-100" : "opacity-0")} />
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-medium truncate">{customer.name}</span>
-                            {customer.idNumber && <span className="text-xs text-blue-600">{customer.idNumber}</span>}
-                            {customer.phone && <span className="text-xs text-gray-500">{customer.phone}</span>}
-                          </div>
-                        </button>
-                      ))
-                    }
-                    {customers?.filter((c) => {
-                      const q = mobileCustomerSearch.toLowerCase();
-                      return q && !c.name.toLowerCase().includes(q) &&
-                        !(c.idNumber || "").toLowerCase().includes(q) &&
-                        !(c.phone || "").toLowerCase().includes(q);
-                    }).length === customers?.length && mobileCustomerSearch && (
-                      <p className="text-center text-gray-400 py-8">No se encontró cliente</p>
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </>
+            <Button
+              variant="outline"
+              className="flex-1 justify-between"
+              onClick={() => { setMobileCustomerSearch(""); setOpenCustomerDialog(true); }}
+            >
+              {customerId && customerId !== "none"
+                ? customers?.find((c) => c.id.toString() === customerId)?.name
+                : "Seleccionar cliente"}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
           )}
 
           <Button
@@ -911,6 +848,61 @@ export default function SalesPOS() {
         </DrawerContent>
       </Drawer>
       
+      {/* Dialog de selección de cliente para móvil - montado fuera de CartContent para evitar re-renders */}
+      <Dialog open={openCustomerDialog} onOpenChange={setOpenCustomerDialog}>
+        <DialogContent className="w-full max-w-full h-[90vh] flex flex-col p-0 gap-0 rounded-t-2xl">
+          <DialogHeader className="px-4 pt-4 pb-2 border-b">
+            <DialogTitle>Seleccionar Cliente</DialogTitle>
+          </DialogHeader>
+          {/* Campo de búsqueda - estable porque no está dentro de CartContent */}
+          <div className="px-4 py-3 border-b">
+            <Input
+              autoFocus
+              placeholder="Buscar por nombre, cédula o teléfono..."
+              value={mobileCustomerSearch}
+              onChange={(e) => setMobileCustomerSearch(e.target.value)}
+              className="h-11 text-base"
+            />
+          </div>
+          {/* Lista de clientes */}
+          <div className="flex-1 overflow-y-auto">
+            <button
+              className="w-full flex items-center gap-3 px-4 py-3 border-b hover:bg-gray-50 active:bg-gray-100 text-left"
+              onClick={() => { setCustomerId("none"); setOpenCustomerDialog(false); }}
+            >
+              <Check className={cn("h-5 w-5 text-blue-600", customerId === "none" ? "opacity-100" : "opacity-0")} />
+              <span className="text-gray-500">Sin cliente</span>
+            </button>
+            {(() => {
+              const q = mobileCustomerSearch.toLowerCase();
+              const filtered = customers?.filter((c) =>
+                !q ||
+                c.name.toLowerCase().includes(q) ||
+                (c.idNumber || "").toLowerCase().includes(q) ||
+                (c.phone || "").toLowerCase().includes(q)
+              ) ?? [];
+              if (q && filtered.length === 0) {
+                return <p className="text-center text-gray-400 py-8">No se encontró cliente</p>;
+              }
+              return filtered.map((customer) => (
+                <button
+                  key={customer.id}
+                  className="w-full flex items-center gap-3 px-4 py-3 border-b hover:bg-gray-50 active:bg-gray-100 text-left"
+                  onClick={() => { setCustomerId(customer.id.toString()); setOpenCustomerDialog(false); }}
+                >
+                  <Check className={cn("h-5 w-5 text-blue-600 flex-shrink-0", customerId === customer.id.toString() ? "opacity-100" : "opacity-0")} />
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-medium truncate">{customer.name}</span>
+                    {customer.idNumber && <span className="text-xs text-blue-600">{customer.idNumber}</span>}
+                    {customer.phone && <span className="text-xs text-gray-500">{customer.phone}</span>}
+                  </div>
+                </button>
+              ));
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Dialog para crear cliente rápido */}
       <Dialog open={isAddCustomerDialogOpen} onOpenChange={setIsAddCustomerDialogOpen}>
         <DialogContent className="max-w-md">
