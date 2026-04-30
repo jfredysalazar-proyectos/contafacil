@@ -128,6 +128,29 @@ export async function createProduct(data: InsertProduct) {
       .set({ qrCode })
       .where(eq(products.id, productId));
   }
+
+  // Si el producto tiene control de stock activo, stock inicial > 0 y no es servicio,
+  // registrar el inventario inicial con su costo promedio ponderado
+  if (
+    data.stockControlEnabled &&
+    !data.isService &&
+    data.stock &&
+    data.stock > 0 &&
+    result.insertId
+  ) {
+    const productId = Number(result.insertId);
+    const unitCost = cost ? parseFloat(cost) : 0;
+    await addInventoryMovement({
+      userId: data.userId,
+      productId,
+      movementType: "in",
+      quantity: data.stock,
+      unitCost: unitCost > 0 ? unitCost : undefined,
+      totalCost: unitCost > 0 ? unitCost * data.stock : undefined,
+      reason: "Inventario inicial",
+      notes: `Stock inicial al crear el producto: ${data.name}`,
+    });
+  }
   
   return result;
 }
