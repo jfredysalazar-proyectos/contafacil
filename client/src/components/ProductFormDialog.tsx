@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,8 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Loader2, Package, Image as ImageIcon } from "lucide-react";
+import { Loader2, Package, Image as ImageIcon, Camera, FolderOpen, X } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export interface ProductFormData {
   name: string;
@@ -75,11 +76,14 @@ export function ProductFormDialog({
   onSuccess,
 }: ProductFormDialogProps) {
   const utils = trpc.useUtils();
+  const isMobile = useIsMobile();
   const [formData, setFormData] = useState<ProductFormData>(defaultFormData);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [showNewCategory, setShowNewCategory] = useState(false);
+  const galleryInputRef = React.useRef<HTMLInputElement>(null);
+  const cameraInputRef = React.useRef<HTMLInputElement>(null);
 
   const { data: categories } = trpc.categories.products.list.useQuery();
 
@@ -249,34 +253,96 @@ export function ProductFormDialog({
             {/* Imagen del Producto */}
             <div className="space-y-2">
               <Label>Imagen del Producto (Opcional)</Label>
-              <div className="flex items-center gap-4">
-                <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
+              <div className="flex items-start gap-4">
+                {/* Vista previa */}
+                <div className="relative w-32 h-32 flex-shrink-0 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
                   {imagePreview ? (
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
+                    <>
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Botón quitar imagen */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImagePreview(null);
+                          setFormData((prev) => ({ ...prev, imageUrl: "" }));
+                        }}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600"
+                        title="Quitar imagen"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </>
                   ) : (
                     <ImageIcon className="h-12 w-12 text-gray-400" />
                   )}
                 </div>
-                <div className="flex-1">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="cursor-pointer"
-                    disabled={isUploadingImage}
-                  />
+
+                <div className="flex-1 space-y-2">
+                  {isMobile ? (
+                    /* ── Móvil: dos botones separados para Galería y Cámara ── */
+                    <div className="flex flex-col gap-2">
+                      {/* Botón Galería */}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-start gap-2"
+                        disabled={isUploadingImage}
+                        onClick={() => galleryInputRef.current?.click()}
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                        Elegir de Galería
+                      </Button>
+                      <input
+                        ref={galleryInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageChange}
+                      />
+
+                      {/* Botón Cámara */}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-start gap-2"
+                        disabled={isUploadingImage}
+                        onClick={() => cameraInputRef.current?.click()}
+                      >
+                        <Camera className="h-4 w-4" />
+                        Tomar Foto con Cámara
+                      </Button>
+                      <input
+                        ref={cameraInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={handleImageChange}
+                      />
+                    </div>
+                  ) : (
+                    /* ── Desktop: input de archivo estándar ── */
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="cursor-pointer"
+                      disabled={isUploadingImage}
+                    />
+                  )}
+
                   {isUploadingImage ? (
-                    <p className="text-sm text-blue-600 mt-2 flex items-center gap-2">
+                    <p className="text-sm text-blue-600 flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Subiendo imagen a Cloudinary...
+                      Subiendo imagen...
                     </p>
                   ) : (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Sube una imagen del producto (JPG, PNG, máx 5MB)
+                    <p className="text-sm text-muted-foreground">
+                      JPG, PNG, máx 5MB
                     </p>
                   )}
                 </div>
