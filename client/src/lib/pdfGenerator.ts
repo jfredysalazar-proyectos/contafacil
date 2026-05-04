@@ -20,6 +20,7 @@ interface SaleData {
   tax?: string;
   total: string;
   paymentMethod?: string;
+  voided?: boolean; // true cuando la venta está anulada
 }
 
 interface UserData {
@@ -30,6 +31,45 @@ interface UserData {
   address?: string;
   phone?: string;
   logoUrl?: string;
+}
+
+/**
+ * Dibuja una marca de agua diagonal "ANULADA" sobre todas las páginas del documento.
+ */
+function addVoidedWatermark(doc: jsPDF): void {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const totalPages = (doc.internal as any).getNumberOfPages
+    ? (doc.internal as any).getNumberOfPages()
+    : 1;
+
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+
+    // Guardar estado gráfico actual
+    doc.saveGraphicsState();
+
+    // Color rojo semitransparente
+    doc.setTextColor(220, 38, 38);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(72);
+
+    // Calcular ángulo diagonal de la página (esquina a esquina)
+    const angleDeg = Math.atan2(pageHeight, pageWidth) * (180 / Math.PI);
+
+    // Centrar el texto en la página y rotarlo
+    doc.text("ANULADA", pageWidth / 2, pageHeight / 2, {
+      align: "center",
+      baseline: "middle",
+      angle: angleDeg,
+    });
+
+    // Restaurar estado gráfico
+    doc.restoreGraphicsState();
+
+    // Restablecer color de texto a negro para el contenido normal
+    doc.setTextColor(0, 0, 0);
+  }
 }
 
 export async function generateReceiptPDF(sale: SaleData, user: UserData): Promise<string> {
@@ -220,7 +260,12 @@ export async function generateReceiptPDF(sale: SaleData, user: UserData): Promis
   doc.text("Gracias por su compra", pageWidth / 2, yPos, { align: "center" });
   yPos += 5;
   doc.text("Documento generado por ContaFácil", pageWidth / 2, yPos, { align: "center" });
-  
+
+  // Marca de agua diagonal si la venta está anulada
+  if (sale.voided) {
+    addVoidedWatermark(doc);
+  }
+
   return doc.output("datauristring");
 }
 

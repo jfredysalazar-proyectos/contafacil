@@ -264,6 +264,7 @@ export default function SalesHistory() {
           subtotal: sale.subtotal,
           tax: sale.tax,
           total: sale.total,
+          voided: sale.status === "cancelled",
         },
         {
           name: user.name || "Negocio",
@@ -308,6 +309,7 @@ export default function SalesHistory() {
           subtotal: sale.subtotal,
           tax: sale.tax,
           total: sale.total,
+          voided: sale.status === "cancelled",
         },
         {
           name: user.name || "Negocio",
