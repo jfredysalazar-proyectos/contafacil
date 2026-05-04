@@ -14,6 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2, DollarSign, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { formatDate } from "@/lib/dateUtils";
 
 export default function Debts() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -175,7 +176,7 @@ export default function Debts() {
                               ${Number(debt.remainingAmount).toLocaleString("es-CO")}
                             </TableCell>
                             <TableCell>
-                              {debt.dueDate ? new Date(debt.dueDate).toLocaleDateString("es-CO") : "-"}
+                              {debt.dueDate ? formatDate(debt.dueDate, (user as any)?.timezone) : "-"}
                               {isOverdue && <Badge variant="destructive" className="ml-2">Vencida</Badge>}
                             </TableCell>
                             <TableCell>
@@ -249,7 +250,7 @@ export default function Debts() {
                               ${Number(debt.remainingAmount).toLocaleString("es-CO")}
                             </TableCell>
                             <TableCell>
-                              {debt.dueDate ? new Date(debt.dueDate).toLocaleDateString("es-CO") : "-"}
+                              {debt.dueDate ? formatDate(debt.dueDate, (user as any)?.timezone) : "-"}
                               {isOverdue && <Badge variant="destructive" className="ml-2">Vencida</Badge>}
                             </TableCell>
                             <TableCell>

@@ -12,22 +12,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2, DollarSign, Lock, Unlock, Clock, CreditCard, Banknote, ArrowLeftRight, Receipt } from "lucide-react";
+import { formatDateTime } from "@/lib/dateUtils";
 
 const formatCOP = (value: string | number | null | undefined) => {
   const num = parseFloat(String(value || "0"));
   return `$${num.toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 };
 
-const formatDate = (date: string | Date | null | undefined) => {
-  if (!date) return "-";
-  return new Date(date).toLocaleString("es-CO", {
-    year: "numeric", month: "short", day: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
-};
-
 export default function CashRegister() {
   const { user, loading, isAuthenticated } = useAuth();
+  const userTimezone = (user as any)?.timezone || "America/Bogota";
+  const formatDate = (date: string | Date | null | undefined) => formatDateTime(date, userTimezone);
   const [, setLocation] = useLocation();
 
   useEffect(() => {

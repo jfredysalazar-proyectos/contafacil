@@ -6,8 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Loader2, User, Lock, Building2, Mail, Phone, Upload, X } from "lucide-react";
+import { Loader2, User, Lock, Building2, Mail, Phone, Upload, X, Globe } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TIMEZONE_OPTIONS, getTimezoneLabel } from "@/lib/dateUtils";
 
 export default function Profile() {
   const { data: profile, isLoading } = trpc.profile.getProfile.useQuery();
@@ -24,6 +26,7 @@ export default function Profile() {
   const [quotationsPrefix, setQuotationsPrefix] = useState("COT-");
   const [quotationsNextNumber, setQuotationsNextNumber] = useState(1);
   const [servicesModuleEnabled, setServicesModuleEnabled] = useState(false);
+  const [timezone, setTimezone] = useState("America/Bogota");
 
   // Estado para cambio de contraseña
   const [currentPassword, setCurrentPassword] = useState("");
@@ -46,6 +49,7 @@ export default function Profile() {
       setQuotationsPrefix(profile.quotationsPrefix || "COT-");
       setQuotationsNextNumber(profile.quotationsNextNumber || 1);
       setServicesModuleEnabled(profile.servicesModuleEnabled || false);
+      setTimezone(profile.timezone || "America/Bogota");
     }
   }, [profile]);
 
@@ -104,6 +108,7 @@ export default function Profile() {
       salesNextNumber,
       quotationsPrefix,
       quotationsNextNumber,
+      timezone,
     });
   };
 
@@ -564,6 +569,75 @@ export default function Profile() {
               )}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Zona Horaria */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            Zona Horaria
+          </CardTitle>
+          <CardDescription>
+            Selecciona el país y ciudad donde opera tu negocio. Todas las fechas y horas de la aplicación se mostrarán en esta zona horaria.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="timezone">País / Ciudad</Label>
+              <Select
+                value={timezone}
+                onValueChange={(value) => setTimezone(value)}
+              >
+                <SelectTrigger id="timezone" className="w-full">
+                  <SelectValue placeholder="Selecciona tu zona horaria" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {TIMEZONE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.timezone} value={opt.timezone}>
+                      {opt.country} — {opt.city} ({opt.offset})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Zona horaria actual: <span className="font-medium">{getTimezoneLabel(timezone)}</span>
+              </p>
+            </div>
+
+            <div className="rounded-lg border bg-blue-50/50 p-4">
+              <p className="text-sm font-semibold text-blue-900 mb-1">Hora actual en tu zona horaria</p>
+              <p className="text-sm text-blue-700">
+                {new Intl.DateTimeFormat("es-CO", {
+                  timeZone: timezone,
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                }).format(new Date())}
+              </p>
+            </div>
+
+            <Button
+              onClick={() => updateProfileMutation.mutate({ timezone })}
+              disabled={updateProfileMutation.isPending}
+              className="w-full"
+            >
+              {updateProfileMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                "Guardar zona horaria"
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

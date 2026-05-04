@@ -25,6 +25,7 @@ export const users = mysqlTable("users", {
   membershipEndDate: timestamp("membershipEndDate"),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   servicesModuleEnabled: boolean("servicesModuleEnabled").default(false).notNull(),
+  timezone: varchar("timezone", { length: 60 }).default("America/Bogota").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

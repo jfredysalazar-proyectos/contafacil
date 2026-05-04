@@ -194,6 +194,7 @@ export const authRouter = router({
       phone: user.phone,
       address: user.address,
       logoUrl: user.logoUrl,
+      timezone: user.timezone || "America/Bogota",
     };
   }),
 

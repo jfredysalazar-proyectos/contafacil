@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2, Plus, Receipt, Edit, Trash2 } from "lucide-react";
+import { formatDate, todayInTimezone } from "@/lib/dateUtils";
 import { Textarea } from "@/components/ui/textarea";
 
 export default function Expenses() {
@@ -23,7 +24,7 @@ export default function Expenses() {
   const [formData, setFormData] = useState({
     description: "",
     amount: "",
-    expenseDate: new Date().toISOString().split("T")[0],
+    expenseDate: todayInTimezone((user as any)?.timezone),
     supplierId: "",
     paymentMethod: "cash" as "cash" | "card" | "transfer" | "credit",
     creditDays: "30",
@@ -79,7 +80,7 @@ export default function Expenses() {
     setFormData({
       description: "",
       amount: "",
-      expenseDate: new Date().toISOString().split("T")[0],
+      expenseDate: todayInTimezone((user as any)?.timezone),
       supplierId: "",
       paymentMethod: "cash",
       creditDays: "30",
@@ -325,7 +326,7 @@ export default function Expenses() {
                 <TableBody>
                   {expenses.map((expense) => (
                     <TableRow key={expense.id}>
-                      <TableCell>{new Date(expense.expenseDate).toLocaleDateString("es-CO")}</TableCell>
+                      <TableCell>{formatDate(expense.expenseDate, (user as any)?.timezone)}</TableCell>
                       <TableCell className="font-medium">{expense.description}</TableCell>
                       <TableCell>${Number(expense.amount).toLocaleString("es-CO")}</TableCell>
                       <TableCell className="capitalize">{expense.paymentMethod}</TableCell>

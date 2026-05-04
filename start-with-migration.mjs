@@ -213,6 +213,15 @@ async function runMigrationIfNeeded() {
         statements.push("ALTER TABLE `users` ADD COLUMN `servicesModuleEnabled` BOOLEAN NOT NULL DEFAULT FALSE");
       }
 
+      // Verificar y agregar columna timezone en users
+      const [timezoneRows] = await connection.execute(`
+        SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'timezone'
+      `);
+      if (timezoneRows.length === 0) {
+        statements.push("ALTER TABLE `users` ADD COLUMN `timezone` VARCHAR(60) NOT NULL DEFAULT 'America/Bogota'");
+      }
+
       // Crear tabla de cierres de caja
       statements.push(`
         CREATE TABLE IF NOT EXISTS \`cashRegisters\` (

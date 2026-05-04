@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { generateReceiptPDF } from "@/lib/pdfGenerator";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, subDays } from "date-fns";
 import { es } from "date-fns/locale";
+import { formatDateTime } from "@/lib/dateUtils";
 
 // Atajos de rango de fechas
 const DATE_SHORTCUTS = [
@@ -514,7 +515,7 @@ export default function SalesHistory() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          {format(new Date(sale.saleDate), "dd/MM/yyyy HH:mm", { locale: es })}
+                          {formatDateTime(sale.saleDate, (user as any)?.timezone || "America/Bogota")}
                         </TableCell>
                         <TableCell>{customerName}</TableCell>
                         <TableCell>

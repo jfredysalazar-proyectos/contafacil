@@ -86,6 +86,7 @@ export async function getUserById(id: number) {
     membershipStartDate: users.membershipStartDate,
     membershipEndDate: users.membershipEndDate,
     role: users.role,
+    timezone: users.timezone,
     createdAt: users.createdAt,
     updatedAt: users.updatedAt,
     lastSignedIn: users.lastSignedIn,

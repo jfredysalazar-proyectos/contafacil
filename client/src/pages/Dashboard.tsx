@@ -8,6 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { Loader2, TrendingUp, TrendingDown, Package, Users, DollarSign, AlertTriangle, Download, CheckCircle } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { toast } from "sonner";
+import { todayInTimezone } from "@/lib/dateUtils";
 
 export default function Dashboard() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -26,7 +27,7 @@ export default function Dashboard() {
         throw new Error(err.error || `Error ${response.status}`);
       }
       const blob = await response.blob();
-      const today = new Date().toISOString().split("T")[0];
+      const today = todayInTimezone((user as any)?.timezone);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
