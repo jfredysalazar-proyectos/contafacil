@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Loader2, FileText, Download, Eye, ArrowLeft, CalendarDays, X, RotateCcw, AlertTriangle } from "lucide-react";
+import { Loader2, FileText, Download, Eye, ArrowLeft, CalendarDays, X, RotateCcw, AlertTriangle, Ban } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { generateReceiptPDF } from "@/lib/pdfGenerator";
@@ -45,6 +45,11 @@ export default function SalesHistory() {
   const [returnReason, setReturnReason] = useState("");
   const [returnNotes, setReturnNotes] = useState("");
   const [isLoadingReturnItems, setIsLoadingReturnItems] = useState(false);
+
+  // Estado del modal de anulación
+  const [showVoidModal, setShowVoidModal] = useState(false);
+  const [voidSale, setVoidSale] = useState<any>(null);
+  const [voidReason, setVoidReason] = useState("");
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -89,6 +94,22 @@ export default function SalesHistory() {
     },
   });
 
+  // Mutación para anular venta
+  const voidSaleMutation = trpc.sales.void.useMutation({
+    onSuccess: () => {
+      toast.success(`Venta ${voidSale?.saleNumber || `#${voidSale?.id}`} anulada correctamente. El inventario ha sido restaurado.`);
+      setShowVoidModal(false);
+      setVoidSale(null);
+      setVoidReason("");
+      utils.sales.list.invalidate();
+      utils.inventory.list.invalidate();
+      utils.inventory.lowStock?.invalidate?.();
+    },
+    onError: (error) => {
+      toast.error("Error al anular la venta: " + error.message);
+    },
+  });
+
   // Aplicar atajo de fecha
   const applyShortcut = (shortcut: typeof DATE_SHORTCUTS[0]) => {
     const { from, to } = shortcut.getValue();
@@ -115,18 +136,20 @@ export default function SalesHistory() {
 
   const hasFilter = dateFrom !== "" || dateTo !== "";
 
-  // Totales del período filtrado
+  // Totales del período filtrado (excluye ventas anuladas)
   const periodTotals = useMemo(() => {
     if (!sales) return { count: 0, subtotal: 0, tax: 0, total: 0 };
-    return sales.reduce(
-      (acc: any, sale: any) => ({
-        count: acc.count + 1,
-        subtotal: acc.subtotal + Number(sale.subtotal),
-        tax: acc.tax + Number(sale.tax),
-        total: acc.total + Number(sale.total),
-      }),
-      { count: 0, subtotal: 0, tax: 0, total: 0 }
-    );
+    return (sales as any[])
+      .filter((sale: any) => sale.status !== "cancelled")
+      .reduce(
+        (acc: any, sale: any) => ({
+          count: acc.count + 1,
+          subtotal: acc.subtotal + Number(sale.subtotal),
+          tax: acc.tax + Number(sale.tax),
+          total: acc.total + Number(sale.total),
+        }),
+        { count: 0, subtotal: 0, tax: 0, total: 0 }
+      );
   }, [sales]);
 
   // Abrir modal de devolución
@@ -200,6 +223,22 @@ export default function SalesHistory() {
         return acc + parseFloat(item.unitPrice || "0") * qty;
       }, 0);
   }, [returnSaleItems, returnSelections]);
+
+  // Abrir modal de anulación
+  const handleOpenVoid = (sale: any) => {
+    setVoidSale(sale);
+    setVoidReason("");
+    setShowVoidModal(true);
+  };
+
+  // Confirmar anulación
+  const handleConfirmVoid = () => {
+    if (!voidSale) return;
+    voidSaleMutation.mutate({
+      id: voidSale.id,
+      reason: voidReason || undefined,
+    });
+  };
 
   const handleViewPDF = async (sale: any) => {
     if (!user) return;
@@ -280,52 +319,52 @@ export default function SalesHistory() {
           logoUrl: (user as any).logoUrl || undefined,
         }
       );
+      // Descargar el PDF
       const link = document.createElement("a");
       link.href = pdfDataUrl;
-      link.download = `Comprobante-${sale.saleNumber || "venta"}.pdf`;
+      link.download = `comprobante-${sale.saleNumber || sale.id}.pdf`;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
       toast.success("Comprobante descargado");
     } catch (error: any) {
-      console.error("Error al generar PDF:", error);
-      toast.error("Error al generar comprobante PDF");
+      console.error("Error al descargar PDF:", error);
+      toast.error("Error al descargar comprobante PDF");
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto px-4 py-6 space-y-6">
+      {/* Encabezado */}
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" onClick={() => setLocation("/sales")}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Volver
+        </Button>
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <Button variant="ghost" size="sm" onClick={() => setLocation("/sales")}>
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Volver al POS
-            </Button>
-          </div>
-          <h1 className="text-3xl font-bold">Historial de Ventas</h1>
-          <p className="text-gray-500 mt-1">Consulta y gestiona todas tus ventas registradas</p>
+          <h1 className="text-2xl font-bold text-gray-900">Historial de Ventas</h1>
+          <p className="text-sm text-gray-500">Consulta y gestiona todas tus ventas registradas</p>
         </div>
       </div>
 
-      {/* Filtro por fechas */}
-      <Card className="shadow-sm border-blue-100">
+      {/* Filtros de fecha */}
+      <Card className="shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <CalendarDays className="h-4 w-4 text-blue-600" />
+            <CalendarDays className="h-4 w-4" />
             Filtrar por fecha
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Atajos rápidos */}
-          <div className="flex flex-wrap gap-2">
+        <CardContent>
+          <div className="flex flex-wrap gap-2 mb-3">
             {DATE_SHORTCUTS.map((shortcut) => (
               <Button
                 key={shortcut.label}
@@ -339,62 +378,54 @@ export default function SalesHistory() {
             {hasFilter && (
               <Button variant="ghost" size="sm" onClick={clearFilters} className="text-red-500 hover:text-red-600">
                 <X className="h-4 w-4 mr-1" />
-                Limpiar filtro
+                Limpiar
               </Button>
             )}
           </div>
-
-          {/* Selector de rango personalizado */}
-          <div className="flex flex-wrap gap-4 items-end">
+          <div className="flex flex-wrap gap-4">
             <div className="space-y-1">
-              <Label htmlFor="dateFrom" className="text-sm text-gray-600">Desde</Label>
+              <Label className="text-xs text-gray-600">Desde</Label>
               <Input
-                id="dateFrom"
                 type="date"
                 value={dateFrom}
                 onChange={(e) => handleDateFromChange(e.target.value)}
-                className="w-44"
+                className="w-40 h-8 text-sm"
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="dateTo" className="text-sm text-gray-600">Hasta</Label>
+              <Label className="text-xs text-gray-600">Hasta</Label>
               <Input
-                id="dateTo"
                 type="date"
                 value={dateTo}
                 onChange={(e) => handleDateToChange(e.target.value)}
-                className="w-44"
+                className="w-40 h-8 text-sm"
               />
             </div>
-            {hasFilter && (
-              <p className="text-sm text-blue-600 font-medium pb-1">
-                Mostrando {periodTotals.count} venta{periodTotals.count !== 1 ? "s" : ""}
-                {dateFrom && dateTo
-                  ? ` del ${format(new Date(dateFrom), "dd/MM/yyyy")} al ${format(new Date(dateTo), "dd/MM/yyyy")}`
-                  : dateFrom
-                  ? ` desde el ${format(new Date(dateFrom), "dd/MM/yyyy")}`
-                  : ` hasta el ${format(new Date(dateTo), "dd/MM/yyyy")}`}
-              </p>
-            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Tarjetas de resumen del período */}
+      {/* Totales del período */}
       {hasFilter && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="bg-blue-50 border-blue-200">
             <CardContent className="pt-4 pb-4">
-              <p className="text-sm text-blue-600 font-medium">Subtotal del período</p>
-              <p className="text-2xl font-bold text-blue-800">
+              <p className="text-sm text-blue-600 font-medium">Ventas activas</p>
+              <p className="text-2xl font-bold text-blue-800">{periodTotals.count}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gray-50 border-gray-200">
+            <CardContent className="pt-4 pb-4">
+              <p className="text-sm text-gray-600 font-medium">Subtotal</p>
+              <p className="text-2xl font-bold text-gray-800">
                 ${periodTotals.subtotal.toLocaleString("es-CO")}
               </p>
             </CardContent>
           </Card>
-          <Card className="bg-amber-50 border-amber-200">
+          <Card className="bg-yellow-50 border-yellow-200">
             <CardContent className="pt-4 pb-4">
-              <p className="text-sm text-amber-600 font-medium">IVA del período</p>
-              <p className="text-2xl font-bold text-amber-800">
+              <p className="text-sm text-yellow-600 font-medium">IVA</p>
+              <p className="text-2xl font-bold text-yellow-800">
                 ${periodTotals.tax.toLocaleString("es-CO")}
               </p>
             </CardContent>
@@ -418,7 +449,7 @@ export default function SalesHistory() {
             {isLoading
               ? "Cargando ventas..."
               : hasFilter
-              ? `${periodTotals.count} venta${periodTotals.count !== 1 ? "s" : ""} en el período seleccionado`
+              ? `${periodTotals.count} venta${periodTotals.count !== 1 ? "s" : ""} activa${periodTotals.count !== 1 ? "s" : ""} en el período seleccionado`
               : `${sales?.length || 0} ventas registradas en total`}
           </CardDescription>
         </CardHeader>
@@ -455,6 +486,7 @@ export default function SalesHistory() {
                     <TableHead>Fecha</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Método de Pago</TableHead>
+                    <TableHead>Estado</TableHead>
                     <TableHead className="text-right">Subtotal</TableHead>
                     <TableHead className="text-right">IVA</TableHead>
                     <TableHead className="text-right">Total</TableHead>
@@ -467,11 +499,17 @@ export default function SalesHistory() {
                       sale.customerName ||
                       customers?.find((c: any) => c.id === sale.customerId)?.name ||
                       "Cliente general";
+                    const isCancelled = sale.status === "cancelled";
 
                     return (
-                      <TableRow key={sale.id}>
+                      <TableRow
+                        key={sale.id}
+                        className={isCancelled ? "opacity-60 bg-red-50" : ""}
+                      >
                         <TableCell className="font-medium">
-                          {sale.saleNumber || `#${sale.id}`}
+                          <span className={isCancelled ? "line-through text-gray-400" : ""}>
+                            {sale.saleNumber || `#${sale.id}`}
+                          </span>
                         </TableCell>
                         <TableCell>
                           {format(new Date(sale.saleDate), "dd/MM/yyyy HH:mm", { locale: es })}
@@ -485,13 +523,28 @@ export default function SalesHistory() {
                             {sale.paymentMethod === "credit" && "Crédito"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell>
+                          {isCancelled ? (
+                            <Badge variant="destructive" className="text-xs">
+                              Anulada
+                            </Badge>
+                          ) : sale.status === "pending" ? (
+                            <Badge variant="outline" className="text-xs text-yellow-700 border-yellow-400 bg-yellow-50">
+                              Pendiente
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs text-green-700 border-green-400 bg-green-50">
+                              Completada
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className={`text-right ${isCancelled ? "line-through text-gray-400" : ""}`}>
                           ${Number(sale.subtotal).toLocaleString("es-CO")}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className={`text-right ${isCancelled ? "line-through text-gray-400" : ""}`}>
                           ${Number(sale.tax).toLocaleString("es-CO")}
                         </TableCell>
-                        <TableCell className="text-right font-bold">
+                        <TableCell className={`text-right font-bold ${isCancelled ? "line-through text-gray-400" : ""}`}>
                           ${Number(sale.total).toLocaleString("es-CO")}
                         </TableCell>
                         <TableCell className="text-right">
@@ -512,15 +565,28 @@ export default function SalesHistory() {
                             >
                               <Download className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenReturn(sale)}
-                              title="Registrar devolución"
-                              className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                            >
-                              <RotateCcw className="h-4 w-4" />
-                            </Button>
+                            {!isCancelled && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleOpenReturn(sale)}
+                                  title="Registrar devolución parcial"
+                                  className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                >
+                                  <RotateCcw className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleOpenVoid(sale)}
+                                  title="Anular venta completa"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Ban className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -551,7 +617,7 @@ export default function SalesHistory() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de devolución */}
+      {/* Modal de devolución parcial */}
       <Dialog open={showReturnModal} onOpenChange={(open) => { if (!open) { setShowReturnModal(false); setReturnSale(null); } }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -697,6 +763,77 @@ export default function SalesHistory() {
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Procesando...</>
                 ) : (
                   <><RotateCcw className="h-4 w-4 mr-2" /> Confirmar Devolución</>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de anulación de venta completa */}
+      <Dialog open={showVoidModal} onOpenChange={(open) => { if (!open) { setShowVoidModal(false); setVoidSale(null); setVoidReason(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-700">
+              <Ban className="h-5 w-5" />
+              Anular Venta Completa
+            </DialogTitle>
+            <DialogDescription>
+              {voidSale && (
+                <span>
+                  Vas a anular la venta <strong>{voidSale.saleNumber || `#${voidSale.id}`}</strong> por un total de{" "}
+                  <strong>${Number(voidSale.total).toLocaleString("es-CO")}</strong>.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Advertencia */}
+            <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-red-800 space-y-1">
+                <p className="font-semibold">Esta acción no se puede deshacer.</p>
+                <p>Al anular la venta:</p>
+                <ul className="list-disc ml-4 space-y-0.5">
+                  <li>La venta quedará marcada como <strong>Anulada</strong>.</li>
+                  <li>Todos los productos físicos serán <strong>devueltos al inventario</strong> automáticamente.</li>
+                  <li>Los totales de ventas del período se recalcularán excluyendo esta venta.</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Motivo */}
+            <div className="space-y-1">
+              <Label htmlFor="voidReason" className="text-sm font-medium">
+                Motivo de anulación <span className="text-gray-400 font-normal">(opcional)</span>
+              </Label>
+              <Input
+                id="voidReason"
+                placeholder="Ej: Error en la facturación, pedido cancelado por el cliente..."
+                value={voidReason}
+                onChange={(e) => setVoidReason(e.target.value)}
+              />
+            </div>
+
+            {/* Botones */}
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => { setShowVoidModal(false); setVoidSale(null); setVoidReason(""); }}
+                disabled={voidSaleMutation.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleConfirmVoid}
+                disabled={voidSaleMutation.isPending}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {voidSaleMutation.isPending ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Anulando...</>
+                ) : (
+                  <><Ban className="h-4 w-4 mr-2" /> Confirmar Anulación</>
                 )}
               </Button>
             </div>

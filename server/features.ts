@@ -648,6 +648,57 @@ export const salesRouter = router({
       await dbQueries.deleteSale(input.id, ctx.user.id);
       return { success: true };
     }),
+
+  // ==================== ANULAR VENTA COMPLETA ====================
+  void: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        reason: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+      // Verificar que la venta pertenece al usuario
+      const sale = await dbQueries.getSaleById(input.id, ctx.user.id);
+      if (!sale) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Venta no encontrada o sin autorización" });
+      }
+
+      // No permitir anular una venta ya cancelada
+      if (sale.status === "cancelled") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Esta venta ya se encuentra anulada" });
+      }
+
+      // Obtener todos los items de la venta
+      const items = await dbQueries.getSaleItemsBySaleId(input.id, ctx.user.id);
+
+      // Reintegrar stock de cada producto físico al inventario
+      for (const item of items) {
+        const product = await dbQueries.getProductById(item.productId, ctx.user.id);
+        // Solo reintegrar productos físicos (no servicios)
+        if (product?.isService) continue;
+
+        await dbQueries.addInventoryMovement({
+          userId: ctx.user.id,
+          productId: item.productId,
+          variationId: item.variationId || undefined,
+          saleId: input.id,
+          movementType: "in",
+          quantity: item.quantity,
+          unitCost: item.unitCost ? parseFloat(item.unitCost) : undefined,
+          reason: "Anulación de venta",
+          notes: `Venta ${sale.saleNumber || `#${sale.id}`} anulada${input.reason ? ` - Motivo: ${input.reason}` : ""}`,
+        });
+      }
+
+      // Marcar la venta como cancelada
+      await dbQueries.updateSale(input.id, ctx.user.id, { status: "cancelled" });
+
+      return { success: true, saleId: input.id };
+    }),
 });
 
 // ==================== GASTOS ====================
